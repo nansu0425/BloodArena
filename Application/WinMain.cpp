@@ -1,5 +1,4 @@
-﻿#include <Windows.h>
-#include <cstdio>
+#include "PCH.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
