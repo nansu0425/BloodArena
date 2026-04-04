@@ -1,4 +1,4 @@
-#include "PCH.h"
+﻿#include "PCH.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -44,7 +44,12 @@ void ShowLastError(LPCWSTR errorFunction)
     }
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, [[maybe_unused]] HINSTANCE hPrevInstance, [[maybe_unused]] LPSTR lpCmdLine, int nCmdShow)
+int WINAPI wWinMain(
+    _In_ HINSTANCE hInstance,
+    _In_opt_ HINSTANCE /*hPrevInstance*/,
+    _In_ LPWSTR /*lpCmdLine*/,
+    _In_ int nShowCmd
+)
 {
     WNDCLASSEX wc = {};
     wc.cbSize = sizeof(WNDCLASSEX);
@@ -82,7 +87,7 @@ int WINAPI WinMain(HINSTANCE hInstance, [[maybe_unused]] HINSTANCE hPrevInstance
         return -1;
     }
 
-    ShowWindow(hWnd, nCmdShow);
+    ShowWindow(hWnd, nShowCmd);
 
     // Message loop, to be extended into game loop
     MSG msg = {};
