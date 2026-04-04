@@ -1,36 +1,36 @@
 # Blood Arena
 
-3인칭 아레나 웨이브 서바이벌 게임. 중세 판타지 검투사 테마.
+A third-person arena wave survival game with a medieval fantasy gladiator theme.
 
-## 프로젝트 목적
+## Project Purpose
 
-- 게임 프로그래밍에 필요한 주요 시스템 학습.
-- 게임 프로그래머 포트폴리오 제작.
+- Learn core systems required for game programming.
+- Build a game programmer portfolio.
 
-## 기술 스택
+## Tech Stack
 
 - C++20
 - DirectX 11
 - Windows API
 - ImGui
 
-## 핵심 시스템
+## Core Systems
 
-아래 시스템은 필수 구현 대상이며, 개발 과정에서 필요한 추가 시스템이 있다면 구현할 수 있다.
+The following systems are mandatory. Additional systems may be implemented as needed during development.
 
-- 게임 루프 / 델타 타임
-- 충돌 시스템
-- 게임 오브젝트 / 컴포넌트 시스템
-- 오브젝트 풀링 / 메모리 관리
-- 카메라 시스템
-- 이벤트 시스템
-- 입력 시스템
-- 애니메이션 시스템
-- 렌더링 시스템
+- Game Loop / Delta Time
+- Collision System
+- Game Object / Component System
+- Object Pooling / Memory Management
+- Camera System
+- Event System
+- Input System
+- Animation System
+- Rendering System
 
-## 빌드 구성
+## Build Configuration
 
-단일 프로젝트(Application) 구조이며, 전처리기 매크로를 통해 두 가지 빌드를 지원한다.
+Single-project (Application) structure. Two build variants are supported via preprocessor macros:
 
-- **Editor 빌드** — 씬 편집 및 디버그 UI 포함, PIE(Play in Editor) 가능
-- **Game 빌드** — 에디터 UI 없이 플레이 모드로 실행
+- **Editor Build** — Includes scene editing and debug UI, supports PIE (Play in Editor)
+- **Game Build** — Runs in play mode without editor UI
