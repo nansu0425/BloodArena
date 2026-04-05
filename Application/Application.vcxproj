@@ -92,6 +92,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Core\Assert.h" />
     <ClInclude Include="Core\PCH.h" />
   </ItemGroup>
   <ItemGroup>
