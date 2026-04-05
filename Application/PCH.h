@@ -1,7 +1,22 @@
 ﻿#pragma once
 
 #include <Windows.h>
+
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <cstdio>
+#include <format>
+#include <functional>
+#include <memory>
+#include <span>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <vector>
 
 #ifdef _DEBUG
 #define BA_ASSERT(expression)                                                                                                  \
