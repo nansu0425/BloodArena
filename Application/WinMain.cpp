@@ -53,6 +53,11 @@ int WINAPI wWinMain(
     //              Initialization Phase              //
     ////////////////////////////////////////////////////
 
+#ifdef _DEBUG
+    _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
+    // _CrtSetBreakAlloc(allocation number); // Break at the specified allocation number during memory allocation
+#endif // _DEBUG
+
     BA::g_logger = new BA::Logger();
     if (BA::g_logger->Initialize() == false)
     {
