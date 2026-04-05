@@ -12,15 +12,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-void ShowLastError(LPCWSTR errorFunction)
+void ShowLastError(HRESULT lastError, LPCWSTR functionName)
 {
-    HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
-
     LPWSTR errorMsg = nullptr;
     FormatMessage(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         nullptr,
-        hr,
+        lastError,
         0,
         reinterpret_cast<LPWSTR>(&errorMsg), // Interpreted as LPWSTR* internally in ALLOCATE_BUFFER mode
         0,
@@ -33,13 +31,13 @@ void ShowLastError(LPCWSTR errorFunction)
 
     if (errorMsg != nullptr)
     {
-        swprintf_s(messageBuf, L"%s failed: %s (HRESULT: 0x%08X)", errorFunction, errorMsg, hr);
+        swprintf_s(messageBuf, L"%s failed: %s (HRESULT: 0x%08X)", functionName, errorMsg, lastError);
         MessageBox(nullptr, messageBuf, L"Last Error", MB_OK | MB_ICONERROR);
         LocalFree(errorMsg);
     }
     else
     {
-        swprintf_s(messageBuf, L"%s failed: Unknown error code (HRESULT: 0x%08X)", errorFunction, hr);
+        swprintf_s(messageBuf, L"%s failed: Unknown error code (HRESULT: 0x%08X)", functionName, lastError);
         MessageBox(nullptr, messageBuf, L"Last Error", MB_OK | MB_ICONERROR);
     }
 }
@@ -51,6 +49,10 @@ int WINAPI wWinMain(
     _In_ int nShowCmd
 )
 {
+    ////////////////////////////////////////////////////
+    //              Initialization Phase              //
+    ////////////////////////////////////////////////////
+
     BA::g_logger = new BA::Logger();
     BA::g_logger->Initialize();
     
@@ -63,7 +65,7 @@ int WINAPI wWinMain(
     wc.lpszClassName = L"BloodArenaClass";
     if (RegisterClassEx(&wc) == 0)
     {
-        ShowLastError(L"RegisterClassEx");
+        ShowLastError(HRESULT_FROM_WIN32(GetLastError()), L"RegisterClassEx");
         return -1;
     }
 
@@ -86,11 +88,15 @@ int WINAPI wWinMain(
     );
     if (hWnd == nullptr)
     {
-        ShowLastError(L"CreateWindowEx");
+        ShowLastError(HRESULT_FROM_WIN32(GetLastError()), L"CreateWindowEx");
         return -1;
     }
 
     ShowWindow(hWnd, nShowCmd);
+
+    ///////////////////////////////////////////////////
+    //                 Runtime Phase                 //
+    ///////////////////////////////////////////////////
 
     // Message loop, to be extended into game loop
     MSG msg = {};
@@ -106,6 +112,10 @@ int WINAPI wWinMain(
             // Game update / rendering goes here
         }
     }
+
+    ////////////////////////////////////////////////////
+    //                 Shutdown Phase                 //
+    ////////////////////////////////////////////////////
 
     BA::g_logger->Shutdown();
     delete BA::g_logger;
