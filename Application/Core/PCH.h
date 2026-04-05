@@ -19,4 +19,5 @@
 #include <vector>
 
 #include "Core/Assert.h"
+#include "Core/Crash.h"
 #include "Core/Logger.h"

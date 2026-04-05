@@ -54,8 +54,11 @@ int WINAPI wWinMain(
     ////////////////////////////////////////////////////
 
     BA::g_logger = new BA::Logger();
-    BA::g_logger->Initialize();
-    
+    if (BA::g_logger->Initialize() == false)
+    {
+        BA_CRASH();
+    }
+
     WNDCLASSEX wc = {};
     wc.cbSize = sizeof(WNDCLASSEX);
     wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -66,7 +69,7 @@ int WINAPI wWinMain(
     if (RegisterClassEx(&wc) == 0)
     {
         ShowLastError(HRESULT_FROM_WIN32(GetLastError()), L"RegisterClassEx");
-        return -1;
+        BA_CRASH();
     }
 
     RECT rc = {0, 0, 1280, 720};
@@ -89,7 +92,7 @@ int WINAPI wWinMain(
     if (hWnd == nullptr)
     {
         ShowLastError(HRESULT_FROM_WIN32(GetLastError()), L"CreateWindowEx");
-        return -1;
+        BA_CRASH();
     }
 
     ShowWindow(hWnd, nShowCmd);
@@ -117,7 +120,10 @@ int WINAPI wWinMain(
     //                 Shutdown Phase                 //
     ////////////////////////////////////////////////////
 
-    BA::g_logger->Shutdown();
+    if (BA::g_logger->Shutdown() == false)
+    {
+        BA_CRASH();
+    }
     delete BA::g_logger;
 
     return static_cast<int>(msg.wParam);

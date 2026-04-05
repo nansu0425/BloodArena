@@ -93,6 +93,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Core\Assert.h" />
+    <ClInclude Include="Core\Crash.h" />
     <ClInclude Include="Core\PCH.h" />
     <ClInclude Include="Core\Logger.h" />
   </ItemGroup>
