@@ -51,6 +51,9 @@ int WINAPI wWinMain(
     _In_ int nShowCmd
 )
 {
+    BA::g_logger = new BA::Logger();
+    BA::g_logger->Initialize();
+    
     WNDCLASSEX wc = {};
     wc.cbSize = sizeof(WNDCLASSEX);
     wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -103,6 +106,9 @@ int WINAPI wWinMain(
             // Game update / rendering goes here
         }
     }
+
+    BA::g_logger->Shutdown();
+    delete BA::g_logger;
 
     return static_cast<int>(msg.wParam);
 }

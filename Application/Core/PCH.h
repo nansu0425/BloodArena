@@ -19,3 +19,4 @@
 #include <vector>
 
 #include "Core/Assert.h"
+#include "Core/Logger.h"

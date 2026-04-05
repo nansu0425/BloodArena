@@ -64,7 +64,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4530;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Core\PCH.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>Core/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -84,7 +84,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4530;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>Core\PCH.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>Core/PCH.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -94,11 +94,13 @@
   <ItemGroup>
     <ClInclude Include="Core\Assert.h" />
     <ClInclude Include="Core\PCH.h" />
+    <ClInclude Include="Core\Logger.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\PCH.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Core\Logger.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
