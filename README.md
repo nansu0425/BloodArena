@@ -18,15 +18,13 @@ A third-person arena wave survival game with a medieval fantasy gladiator theme.
 
 The following systems are mandatory. Additional systems may be implemented as needed during development.
 
-- Game Loop / Delta Time
-- Collision System
-- Game Object / Component System
-- Object Pooling / Memory Management
-- Camera System
-- Event System
-- Input System
-- Animation System
-- Rendering System
+- Scene
+- Physics
+- Camera
+- Event
+- Input
+- Animation
+- Rendering
 
 ## Build Configuration
 
