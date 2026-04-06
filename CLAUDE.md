@@ -1,51 +1,37 @@
 # BloodArena — Claude Code Guidelines
 
-## Project Overview
-- Third-person arena wave survival game (medieval fantasy gladiator theme)
-- No game engine; all game systems built from scratch (game programmer portfolio)
-- Tech stack: C++20, DirectX 11, Win32 API, ImGui
-
-## Build
-- Visual Studio 2026 / MSBuild
-- Platform: x64 (Debug / Release)
-- Single project (Application) structure
-- Editor build / Game build: distinguished by preprocessor macros
-
 ## Coding Conventions
-- C++20 (header/source separation, no modules)
-- Naming: PascalCase (classes, functions) / camelCase (variables) / kPrefixedPascalCase (constants) / UPPER_SNAKE_CASE (macros)
-- Header guards: `#pragma once`
-- Comments & documentation: English
-- COM objects: use ComPtr
-- Prefer RAII and smart pointers
+- Headers: declarations only. Definitions go in `.cpp` files.
+- Naming:
+  - PascalCase: classes, functions, enums
+  - camelCase: variables
+  - Prefixes: `m_` (member), `s_` (static), `g_` (global), `k` (constant)
+  - Macros: `BA_UPPER_SNAKE_CASE`
+- All classes and functions must be defined within the `BA` namespace
+- Code should be self-documenting. Avoid code that requires comments to be understood.
+- Fail fast: use project crash/assert macros aggressively — surface problems early, never hide them.
 - Formatting: see `.editorconfig` and `.clang-format`
 
-## Workflow Rules (Important)
+## Workflow Rules
 
-### Default Role: Reviewer / Advisor
-- **Do not write code directly.** The user drives all code design and implementation.
-- When the user presents code, provide a **comprehensive review** (bugs, performance, design, conventions, readability).
-- For design questions, present **options and trade-offs**, leaving the final decision to the user.
-- When suggesting architecture, explain rationale and alternatives.
+### Default Role: Coding Agent
+- Claude acts as a **coding agent** that can write code in **all areas** (including core game systems, architecture, gameplay logic).
+- All code must be **transparent** — the user must be able to understand and explain every line. Black-box code is not acceptable.
 
-### Freely Editable Areas
-- **Documentation** (README, design docs, comments, etc.)
-- **Project setup** (build config, project structure, .gitignore, vcxproj, etc.)
-- **Config files** (CLAUDE.md, CI/CD, linter settings, etc.)
+### Work Process (4 Steps)
+1. **Explore** — Identify the scope of work and related code
+2. **Plan** — Explain design intent and approach, including **why** each decision was made. Proceed only after user approval.
+3. **Implement** — Write code according to the approved plan
+4. **Review** — User reviews the code. Commit only when the user fully understands and is satisfied with the code.
 
-### Conditions for Writing Code
-Code may only be written in these cases:
-1. The user **explicitly requests** code to be written
-2. **Boilerplate** code (window procedure, DirectX init, COM setup, etc.)
-3. **Simple repetitive** code (getters/setters, serialization, enum mapping, etc.)
-4. **Non-core** utility/helper code
+### Build
+- The user handles all builds manually. Claude must **not** run build commands.
 
-### Code Writing Restrictions (Unless Explicitly Requested)
-- Core game systems (rendering, collision, game object/component, events, input, animation, etc.)
-- Code involving architecture/design decisions
-- Gameplay logic
+### Transparency Principles
+- If the user cannot understand or explain the code, it will not be used
+- Plans must include rationale ("why this approach")
+- Respond fully to user questions during code review
 
-## General Guidelines
-- Response language: Korean
-- Balance performance and readability
-- Prioritize review feedback by severity (bugs > performance > design > conventions > style)
+## Language
+- Response: Korean
+- Everything else (code, comments, documentation, commit messages, etc.): English
