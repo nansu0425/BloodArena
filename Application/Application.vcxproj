@@ -99,6 +99,7 @@
     <ClInclude Include="Core\PCH.h" />
     <ClInclude Include="Core\Logger.h" />
     <ClInclude Include="Graphics\Renderer.h" />
+    <ClInclude Include="Core\Window.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\PCH.cpp">
@@ -106,6 +107,7 @@
     </ClCompile>
     <ClCompile Include="Core\Logger.cpp" />
     <ClCompile Include="Graphics\Renderer.cpp" />
+    <ClCompile Include="Core\Window.cpp" />
     <ClCompile Include="WinMain.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
