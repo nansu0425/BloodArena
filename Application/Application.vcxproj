@@ -100,6 +100,7 @@
     <ClInclude Include="Core\Logger.h" />
     <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Core\Window.h" />
+    <ClInclude Include="Core\Lifecycle.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\PCH.cpp">
@@ -108,7 +109,8 @@
     <ClCompile Include="Core\Logger.cpp" />
     <ClCompile Include="Graphics\Renderer.cpp" />
     <ClCompile Include="Core\Window.cpp" />
-    <ClCompile Include="WinMain.cpp" />
+    <ClCompile Include="Core\WinMain.cpp" />
+    <ClCompile Include="Core\Lifecycle.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
