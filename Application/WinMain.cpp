@@ -18,11 +18,8 @@ int WINAPI wWinMain(
     // _CrtSetBreakAlloc(allocation number); // Break at the specified allocation number during memory allocation
 #endif // _DEBUG
 
-    BA::g_logger = new BA::Logger();
-    if (BA::g_logger->Initialize() == false)
-    {
-        BA_CRASH();
-    }
+    BA::g_logger = std::make_unique<BA::Logger>();
+    BA::g_logger->Initialize();
 
     BA::g_window = std::make_unique<BA::Window>();
     BA::g_window->Initialize(hInstance, nShowCmd);
@@ -57,12 +54,7 @@ int WINAPI wWinMain(
 
     BA::g_renderer->Shutdown();
     BA::g_window->Shutdown();
-
-    if (BA::g_logger->Shutdown() == false)
-    {
-        BA_CRASH();
-    }
-    delete BA::g_logger;
+    BA::g_logger->Shutdown();
 
     return static_cast<int>(msg.wParam);
 }

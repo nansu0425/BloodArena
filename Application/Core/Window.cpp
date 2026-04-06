@@ -12,11 +12,15 @@ void Window::Initialize(HINSTANCE hInstance, int nCmdShow)
     SetWindowRect();
     CreateWnd();
     ShowWindow(m_handle, nCmdShow);
+
+    BA_LOG_INFO("Window initialized.");
 }
 
 void Window::Shutdown()
 {
     UnregisterClass(kClassName, m_hInstance);
+
+    BA_LOG_INFO("Window shutdown.");
 }
 
 HWND Window::GetHandle() const

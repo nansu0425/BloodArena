@@ -8,8 +8,8 @@ namespace BA
 class Logger
 {
 public:
-    bool Initialize();
-    bool Shutdown();
+    void Initialize();
+    void Shutdown();
 
     spdlog::logger* GetInternalLogger() const;
 
@@ -17,7 +17,7 @@ private:
     std::shared_ptr<spdlog::logger> m_internalLogger;
 };
 
-extern Logger* g_logger;
+extern std::unique_ptr<Logger> g_logger;
 
 } // namespace BA
 

@@ -7,7 +7,7 @@
 namespace BA
 {
 
-bool Logger::Initialize()
+void Logger::Initialize()
 {
     std::vector<spdlog::sink_ptr> sinks;
     sinks.push_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
@@ -22,15 +22,11 @@ bool Logger::Initialize()
     m_internalLogger->set_pattern("[%Y-%m-%d %H:%M:%S] [%s:%# %!] [%l] %v");
     m_internalLogger->set_level(spdlog::level::trace);
     m_internalLogger->flush_on(spdlog::level::warn);
-
-    return true;
 }
 
-bool Logger::Shutdown()
+void Logger::Shutdown()
 {
     spdlog::shutdown();
-
-    return true;
 }
 
 spdlog::logger* Logger::GetInternalLogger() const
@@ -38,6 +34,6 @@ spdlog::logger* Logger::GetInternalLogger() const
     return m_internalLogger.get();
 }
 
-Logger* g_logger = nullptr;
+std::unique_ptr<Logger> g_logger;
 
 } // namespace BA

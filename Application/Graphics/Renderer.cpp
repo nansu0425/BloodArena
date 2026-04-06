@@ -15,10 +15,13 @@ void Renderer::Initialize(HWND window)
     CreateSwapChain();
     CreateBackBufferRTV();
     SetViewports();
+
+    BA_LOG_INFO("Renderer initialized.");
 }
 
 void Renderer::Shutdown()
 {
+    BA_LOG_INFO("Renderer shutdown.");
 }
 
 void Renderer::BeginFrame()
