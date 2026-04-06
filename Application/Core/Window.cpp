@@ -53,9 +53,7 @@ void Window::RegisterWindowClass()
 
     if (RegisterClassEx(&wcx) == 0)
     {
-        const DWORD error = GetLastError();
-        BA_LOG_CRITICAL("Crash occurred!: {}", error);
-        BA_CRASH();
+        BA_CRASH_IF_FAILED(HRESULT_FROM_WIN32(GetLastError()));
     }
 }
 
@@ -72,9 +70,7 @@ void Window::SetWindowRect()
     // Calculate the window size required to achieve the desired client area
     if (AdjustWindowRect(&m_windowRect, WS_OVERLAPPEDWINDOW, FALSE) == FALSE)
     {
-        const DWORD error = GetLastError();
-        BA_LOG_CRITICAL("Crash occurred!: {}", error);
-        BA_CRASH();
+        BA_CRASH_IF_FAILED(HRESULT_FROM_WIN32(GetLastError()));
     }
 }
 
@@ -97,9 +93,7 @@ void Window::CreateWnd()
 
     if (m_handle == nullptr)
     {
-        const DWORD error = GetLastError();
-        BA_LOG_CRITICAL("Crash occurred!: {}", error);
-        BA_CRASH();
+        BA_CRASH_IF_FAILED(HRESULT_FROM_WIN32(GetLastError()));
     }
 }
 
