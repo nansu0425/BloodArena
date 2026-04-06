@@ -10,7 +10,6 @@
 - All classes and functions must be defined within the `BA` namespace
 - Code should be self-documenting. Avoid code that requires comments to be understood.
 - Fail fast: use project crash/assert macros aggressively — surface problems early, never hide them.
-- Formatting: see `.editorconfig` and `.clang-format`
 
 ## Workflow Rules
 
