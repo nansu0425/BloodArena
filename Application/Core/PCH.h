@@ -2,6 +2,11 @@
 
 #include <Windows.h>
 
+#include <d3d11.h>
+#include <dxgi1_3.h>
+#include <d3dcompiler.h>
+#include <wrl/client.h>
+
 #ifdef _DEBUG
 #define _CRTDBG_MAP_ALLOC
 #include <cstdlib>

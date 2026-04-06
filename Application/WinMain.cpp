@@ -1,4 +1,5 @@
 ﻿#include "Core/PCH.h"
+#include "Graphics/Renderer.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -102,6 +103,9 @@ int WINAPI wWinMain(
 
     ShowWindow(hWnd, nShowCmd);
 
+    BA::g_renderer = std::make_unique<BA::Renderer>();
+    BA::g_renderer->Initialize(hWnd);
+
     ///////////////////////////////////////////////////
     //                 Runtime Phase                 //
     ///////////////////////////////////////////////////
@@ -118,12 +122,16 @@ int WINAPI wWinMain(
         else
         {
             // Game update / rendering goes here
+            BA::g_renderer->BeginFrame();
+            BA::g_renderer->EndFrame();
         }
     }
 
     ////////////////////////////////////////////////////
     //                 Shutdown Phase                 //
     ////////////////////////////////////////////////////
+
+    BA::g_renderer->Shutdown();
 
     if (BA::g_logger->Shutdown() == false)
     {

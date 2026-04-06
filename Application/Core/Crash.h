@@ -20,3 +20,13 @@
     }                               \
     while (0)
 #endif // _DEBUG
+
+#define BA_CRASH_IF_FAILED(hr)      \
+    do                              \
+    {                               \
+        if (FAILED(hr))             \
+        {                           \
+            BA_CRASH();             \
+        }                           \
+    }                               \
+    while (0)
