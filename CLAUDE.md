@@ -31,6 +31,9 @@
 - Plans must include rationale ("why this approach")
 - Respond fully to user questions during code review
 
+## References
+- Project roadmap: `Documentation/ROADMAP.md`
+
 ## Language
 - Response: Korean
 - Everything else (code, comments, documentation, commit messages, etc.): English
