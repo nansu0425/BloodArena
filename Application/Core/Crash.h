@@ -21,6 +21,17 @@
     while (0)
 #endif // _DEBUG
 
+#define BA_CRASH_LOG(message)                           \
+    do                                                  \
+    {                                                   \
+        BA_LOG_CRITICAL(                                \
+            "BA_CRASH_LOG({})",                         \
+            message                                     \
+        );                                              \
+        BA_CRASH();                                     \
+    }                                                   \
+    while (0)
+
 #define BA_CRASH_IF(expression)                         \
     do                                                  \
     {                                                   \

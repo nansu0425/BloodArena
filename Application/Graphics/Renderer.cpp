@@ -6,6 +6,12 @@ namespace BA
 
 using namespace Microsoft::WRL;
 
+struct Vertex
+{
+    float position[3];
+    float color[4];
+};
+
 void Renderer::Initialize(HWND window)
 {
     m_window = window;
@@ -15,6 +21,7 @@ void Renderer::Initialize(HWND window)
     CreateSwapChain();
     CreateBackBufferRTV();
     SetViewports();
+    CreateTriangle();
 
     BA_LOG_INFO("Renderer initialized.");
 }
@@ -30,11 +37,130 @@ void Renderer::BeginFrame()
 
     m_deviceContext->ClearRenderTargetView(m_backBufferRTV.Get(), clearColor);
     m_deviceContext->OMSetRenderTargets(1, m_backBufferRTV.GetAddressOf(), nullptr);
+
+    UINT stride = sizeof(Vertex);
+    UINT offset = 0;
+    m_deviceContext->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
+    m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_deviceContext->IASetInputLayout(m_inputLayout.Get());
+    m_deviceContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
+    m_deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
+    m_deviceContext->Draw(3, 0);
 }
 
 void Renderer::EndFrame()
 {
     BA_CRASH_IF_FAILED(m_swapChain->Present(1, 0));
+}
+
+void Renderer::CreateTriangle()
+{
+    CreateVertexBuffer();
+    CompileShaders();
+}
+
+void Renderer::CreateVertexBuffer()
+{
+    BA_ASSERT(m_device.Get());
+
+    Vertex vertices[] =
+    {
+        {{ 0.0f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+        {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+    };
+
+    D3D11_BUFFER_DESC bufferDesc = {
+        .ByteWidth = sizeof(vertices),
+        .Usage = D3D11_USAGE_IMMUTABLE,
+        .BindFlags = D3D11_BIND_VERTEX_BUFFER,
+    };
+
+    D3D11_SUBRESOURCE_DATA initData = {
+        .pSysMem = vertices,
+    };
+
+    BA_CRASH_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &initData, m_vertexBuffer.GetAddressOf()));
+}
+
+void Renderer::CompileShaders()
+{
+    ComPtr<ID3DBlob> vsBlob = CompileShader(L"Shaders/VertexShader.hlsl", "vs_5_0");
+    ComPtr<ID3DBlob> psBlob = CompileShader(L"Shaders/PixelShader.hlsl", "ps_5_0");
+
+    BA_CRASH_IF_FAILED(m_device->CreateVertexShader(
+        vsBlob->GetBufferPointer(),
+        vsBlob->GetBufferSize(),
+        nullptr,
+        m_vertexShader.GetAddressOf()
+    ));
+
+    BA_CRASH_IF_FAILED(m_device->CreatePixelShader(
+        psBlob->GetBufferPointer(),
+        psBlob->GetBufferSize(),
+        nullptr,
+        m_pixelShader.GetAddressOf()
+    ));
+
+    CreateInputLayout(vsBlob.Get());
+}
+
+ComPtr<ID3DBlob> Renderer::CompileShader(const wchar_t* filePath, const char* target)
+{
+#ifdef _DEBUG
+    UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+    UINT compileFlags = 0;
+#endif // _DEBUG
+
+    ComPtr<ID3DBlob> blob;
+    ComPtr<ID3DBlob> errorBlob;
+
+    HRESULT hr = D3DCompileFromFile(
+        filePath,
+        nullptr,
+        nullptr,
+        "main",
+        target,
+        compileFlags,
+        0,
+        blob.GetAddressOf(),
+        errorBlob.GetAddressOf()
+    );
+
+    if (FAILED(hr))
+    {
+        if (errorBlob)
+        {
+            BA_CRASH_LOG(static_cast<const char*>(errorBlob->GetBufferPointer()));
+        }
+        else
+        {
+            BA_CRASH_IF_FAILED(hr);
+        }
+    }
+
+    return blob;
+}
+
+void Renderer::CreateInputLayout(ID3DBlob* vsBlob)
+{
+    BA_ASSERT(m_device.Get());
+    BA_ASSERT(vsBlob);
+
+    D3D11_INPUT_ELEMENT_DESC inputElements[] =
+    {
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    };
+
+    BA_CRASH_IF_FAILED(m_device->CreateInputLayout(
+        inputElements,
+        _countof(inputElements),
+        vsBlob->GetBufferPointer(),
+        vsBlob->GetBufferSize(),
+        m_inputLayout.GetAddressOf()
+    ));
 }
 
 void Renderer::CreateDevice()
