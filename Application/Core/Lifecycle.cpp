@@ -2,6 +2,7 @@
 #include "Core/Lifecycle.h"
 #include "Core/Window.h"
 #include "Graphics/Renderer.h"
+#include "Scene/Scene.h"
 
 namespace BA
 {
@@ -21,6 +22,9 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 
     g_renderer = std::make_unique<Renderer>();
     g_renderer->Initialize(g_window->GetHandle());
+
+    g_scene = std::make_unique<Scene>();
+    g_scene->Initialize();
 }
 
 int Run()
@@ -45,6 +49,7 @@ int Run()
 
 void Shutdown()
 {
+    g_scene->Shutdown();
     g_renderer->Shutdown();
     g_window->Shutdown();
     g_logger->Shutdown();

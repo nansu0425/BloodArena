@@ -1,5 +1,6 @@
 ﻿#include "Core/PCH.h"
 #include "Core/Window.h"
+#include "Scene/Scene.h"
 
 namespace BA
 {
@@ -35,6 +36,29 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
+
+    case WM_KEYDOWN:
+    {
+        bool wasAlreadyDown = (lParam >> 30) & 1;
+        if (wasAlreadyDown)
+        {
+            break;
+        }
+
+        if (wParam == '1')
+        {
+            g_scene->CreateGameObject();
+        }
+        else if (wParam == '2')
+        {
+            std::span<const GameObject> gameObjects = g_scene->GetGameObjects();
+            if (gameObjects.empty() == false)
+            {
+                g_scene->DestroyGameObject(gameObjects.back().m_id);
+            }
+        }
+        return 0;
+    }
     }
 
     return DefWindowProc(hWnd, uMsg, wParam, lParam);

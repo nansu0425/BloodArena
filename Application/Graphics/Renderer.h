@@ -18,11 +18,11 @@ private:
     void CreateSwapChain();
     void CreateBackBufferRTV();
     void SetViewports();
-    void CreateTriangle();
-    void CreateVertexBuffer();
+    void CreateSharedMesh();
     void CompileShaders();
     Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const wchar_t* filePath, const char* target);
     void CreateInputLayout(ID3DBlob* vsBlob);
+    void CreateConstantBuffer();
 
 private:
     HWND m_window = nullptr;
@@ -37,6 +37,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
 };
 
 extern std::unique_ptr<Renderer> g_renderer;

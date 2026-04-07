@@ -1,7 +1,13 @@
+cbuffer ObjectConstants : register(b0)
+{
+    float2 objectPosition;
+    float2 _padding;
+    float4 objectColor;
+};
+
 struct VSInput
 {
     float3 position : POSITION;
-    float4 color : COLOR;
 };
 
 struct VSOutput
@@ -13,7 +19,7 @@ struct VSOutput
 VSOutput main(VSInput input)
 {
     VSOutput output;
-    output.position = float4(input.position, 1.0);
-    output.color = input.color;
+    output.position = float4(input.position.xy + objectPosition, input.position.z, 1.0);
+    output.color = objectColor;
     return output;
 }

@@ -107,6 +107,8 @@
     <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Core\Window.h" />
     <ClInclude Include="Core\Lifecycle.h" />
+    <ClInclude Include="Scene\GameObject.h" />
+    <ClInclude Include="Scene\Scene.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\PCH.cpp">
@@ -117,6 +119,7 @@
     <ClCompile Include="Core\Window.cpp" />
     <ClCompile Include="Core\WinMain.cpp" />
     <ClCompile Include="Core\Lifecycle.cpp" />
+    <ClCompile Include="Scene\Scene.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

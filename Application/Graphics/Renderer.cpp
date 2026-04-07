@@ -1,5 +1,6 @@
 ﻿#include "Core/PCH.h"
 #include "Graphics/Renderer.h"
+#include "Scene/Scene.h"
 
 namespace BA
 {
@@ -9,6 +10,12 @@ using namespace Microsoft::WRL;
 struct Vertex
 {
     float position[3];
+};
+
+struct ObjectConstants
+{
+    float position[2];
+    float padding[2];
     float color[4];
 };
 
@@ -21,7 +28,9 @@ void Renderer::Initialize(HWND window)
     CreateSwapChain();
     CreateBackBufferRTV();
     SetViewports();
-    CreateTriangle();
+    CreateSharedMesh();
+    CompileShaders();
+    CreateConstantBuffer();
 
     BA_LOG_INFO("Renderer initialized.");
 }
@@ -45,7 +54,24 @@ void Renderer::BeginFrame()
     m_deviceContext->IASetInputLayout(m_inputLayout.Get());
     m_deviceContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     m_deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
-    m_deviceContext->Draw(3, 0);
+    m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+
+    for (const GameObject& gameObject : g_scene->GetGameObjects())
+    {
+        D3D11_MAPPED_SUBRESOURCE mapped = {};
+        BA_CRASH_IF_FAILED(m_deviceContext->Map(m_constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
+
+        ObjectConstants* constants = static_cast<ObjectConstants*>(mapped.pData);
+        constants->position[0] = gameObject.m_position[0];
+        constants->position[1] = gameObject.m_position[1];
+        constants->color[0] = gameObject.m_color[0];
+        constants->color[1] = gameObject.m_color[1];
+        constants->color[2] = gameObject.m_color[2];
+        constants->color[3] = gameObject.m_color[3];
+
+        m_deviceContext->Unmap(m_constantBuffer.Get(), 0);
+        m_deviceContext->Draw(3, 0);
+    }
 }
 
 void Renderer::EndFrame()
@@ -53,21 +79,15 @@ void Renderer::EndFrame()
     BA_CRASH_IF_FAILED(m_swapChain->Present(1, 0));
 }
 
-void Renderer::CreateTriangle()
-{
-    CreateVertexBuffer();
-    CompileShaders();
-}
-
-void Renderer::CreateVertexBuffer()
+void Renderer::CreateSharedMesh()
 {
     BA_ASSERT(m_device.Get());
 
     Vertex vertices[] =
     {
-        {{ 0.0f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-        {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+        {{ 0.0f,   0.06f, 0.0f}},
+        {{ 0.06f, -0.04f, 0.0f}},
+        {{-0.06f, -0.04f, 0.0f}},
     };
 
     D3D11_BUFFER_DESC bufferDesc = {
@@ -80,11 +100,35 @@ void Renderer::CreateVertexBuffer()
         .pSysMem = vertices,
     };
 
-    BA_CRASH_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &initData, m_vertexBuffer.GetAddressOf()));
+    BA_CRASH_IF_FAILED(m_device->CreateBuffer(
+        &bufferDesc,
+        &initData,
+        m_vertexBuffer.GetAddressOf()
+    ));
+}
+
+void Renderer::CreateConstantBuffer()
+{
+    BA_ASSERT(m_device.Get());
+
+    D3D11_BUFFER_DESC bufferDesc = {
+        .ByteWidth = sizeof(ObjectConstants),
+        .Usage = D3D11_USAGE_DYNAMIC,
+        .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+    };
+
+    BA_CRASH_IF_FAILED(m_device->CreateBuffer(
+        &bufferDesc,
+        nullptr,
+        m_constantBuffer.GetAddressOf()
+    ));
 }
 
 void Renderer::CompileShaders()
 {
+    BA_ASSERT(m_device.Get());
+
     ComPtr<ID3DBlob> vsBlob = CompileShader(L"Shaders/VertexShader.hlsl", "vs_5_0");
     ComPtr<ID3DBlob> psBlob = CompileShader(L"Shaders/PixelShader.hlsl", "ps_5_0");
 
@@ -168,7 +212,6 @@ void Renderer::CreateInputLayout(ID3DBlob* vsBlob)
     D3D11_INPUT_ELEMENT_DESC inputElements[] =
     {
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
     };
 
     BA_CRASH_IF_FAILED(m_device->CreateInputLayout(
