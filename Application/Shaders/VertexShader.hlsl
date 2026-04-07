@@ -1,7 +1,6 @@
 cbuffer ObjectConstants : register(b0)
 {
-    float2 objectPosition;
-    float2 _padding;
+    row_major float4x4 worldMatrix;
     float4 objectColor;
 };
 
@@ -19,7 +18,7 @@ struct VSOutput
 VSOutput main(VSInput input)
 {
     VSOutput output;
-    output.position = float4(input.position.xy + objectPosition, input.position.z, 1.0);
+    output.position = mul(float4(input.position, 1.0), worldMatrix);
     output.color = objectColor;
     return output;
 }

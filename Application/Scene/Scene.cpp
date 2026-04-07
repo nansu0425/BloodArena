@@ -39,16 +39,16 @@ uint32_t Scene::CreateGameObject()
     uint32_t index = static_cast<uint32_t>(m_gameObjects.size());
 
     GameObject gameObject;
-    gameObject.m_id = id;
+    gameObject.id = id;
 
     const float* palette = kPalette[index % kPaletteSize];
-    gameObject.m_color[0] = palette[0];
-    gameObject.m_color[1] = palette[1];
-    gameObject.m_color[2] = palette[2];
-    gameObject.m_color[3] = palette[3];
+    gameObject.color[0] = palette[0];
+    gameObject.color[1] = palette[1];
+    gameObject.color[2] = palette[2];
+    gameObject.color[3] = palette[3];
 
-    gameObject.m_position[0] = kGridStartX + static_cast<float>(index % kGridColumns) * kGridSpacing;
-    gameObject.m_position[1] = kGridStartY - static_cast<float>(index / kGridColumns) * kGridSpacing;
+    gameObject.transform.position[0] = kGridStartX + static_cast<float>(index % kGridColumns) * kGridSpacing;
+    gameObject.transform.position[1] = kGridStartY - static_cast<float>(index / kGridColumns) * kGridSpacing;
 
     m_gameObjects.push_back(gameObject);
 
@@ -63,7 +63,7 @@ void Scene::DestroyGameObject(uint32_t id)
         m_gameObjects.end(),
         [id](const GameObject& obj)
         {
-            return (obj.m_id == id);
+            return (obj.id == id);
         }
     );
 

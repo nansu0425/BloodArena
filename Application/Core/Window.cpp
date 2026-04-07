@@ -61,7 +61,7 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             std::span<const GameObject> gameObjects = g_scene->GetGameObjects();
             if (gameObjects.empty() == false)
             {
-                g_scene->DestroyGameObject(gameObjects.back().m_id);
+                g_scene->DestroyGameObject(gameObjects.back().id);
             }
         }
         return 0;

@@ -1,5 +1,6 @@
 ﻿#include "Core/PCH.h"
 #include "Graphics/Renderer.h"
+#include "Math/MathUtils.h"
 #include "Scene/Scene.h"
 
 namespace BA
@@ -14,8 +15,7 @@ struct Vertex
 
 struct ObjectConstants
 {
-    float position[2];
-    float padding[2];
+    float worldMatrix[4][4];
     float color[4];
 };
 
@@ -73,12 +73,11 @@ void Renderer::BeginFrame()
         BA_CRASH_IF_FAILED(m_deviceContext->Map(m_constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
 
         ObjectConstants* constants = static_cast<ObjectConstants*>(mapped.pData);
-        constants->position[0] = gameObject.m_position[0];
-        constants->position[1] = gameObject.m_position[1];
-        constants->color[0] = gameObject.m_color[0];
-        constants->color[1] = gameObject.m_color[1];
-        constants->color[2] = gameObject.m_color[2];
-        constants->color[3] = gameObject.m_color[3];
+        BuildWorldMatrix(gameObject.transform, constants->worldMatrix);
+        constants->color[0] = gameObject.color[0];
+        constants->color[1] = gameObject.color[1];
+        constants->color[2] = gameObject.color[2];
+        constants->color[3] = gameObject.color[3];
 
         m_deviceContext->Unmap(m_constantBuffer.Get(), 0);
         m_deviceContext->Draw(3, 0);
