@@ -10,6 +10,9 @@
 - All classes and functions must be defined within the `BA` namespace
 - Code should be self-documenting. Avoid code that requires comments to be understood.
 - Fail fast: use project crash/assert macros aggressively — surface problems early, never hide them.
+- Simple and intuitive code. Clarity over cleverness.
+- No premature optimization. Only optimize verified bottlenecks.
+- Minimize abstraction. Keep related code together. Added complexity must justify lost readability.
 
 ## Workflow Rules
 
