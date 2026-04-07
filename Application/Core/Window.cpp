@@ -19,6 +19,12 @@ void Window::Initialize(HINSTANCE hInstance, int nCmdShow)
 
 void Window::Shutdown()
 {
+    if (m_handle)
+    {
+        DestroyWindow(m_handle);
+        m_handle = nullptr;
+    }
+
     UnregisterClass(kClassName, m_hInstance);
 
     BA_LOG_INFO("Window shutdown.");
@@ -34,6 +40,7 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
     switch (uMsg)
     {
     case WM_DESTROY:
+        g_window->m_handle = nullptr;
         PostQuitMessage(0);
         return 0;
 

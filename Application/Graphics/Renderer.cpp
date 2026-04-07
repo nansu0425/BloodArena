@@ -37,6 +37,17 @@ void Renderer::Initialize(HWND window)
 
 void Renderer::Shutdown()
 {
+    m_constantBuffer.Reset();
+    m_inputLayout.Reset();
+    m_pixelShader.Reset();
+    m_vertexShader.Reset();
+    m_vertexBuffer.Reset();
+    m_backBufferRTV.Reset();
+    m_swapChain.Reset();
+    m_factory.Reset();
+    m_deviceContext.Reset();
+    m_device.Reset();
+
     BA_LOG_INFO("Renderer shutdown.");
 }
 

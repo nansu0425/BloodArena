@@ -50,9 +50,16 @@ int Run()
 void Shutdown()
 {
     g_scene->Shutdown();
+    g_scene.reset();
+
     g_renderer->Shutdown();
+    g_renderer.reset();
+
     g_window->Shutdown();
+    g_window.reset();
+
     g_logger->Shutdown();
+    g_logger.reset();
 }
 
 } // namespace BA
