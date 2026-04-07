@@ -107,6 +107,23 @@ void Renderer::CompileShaders()
 
 ComPtr<ID3DBlob> Renderer::CompileShader(const wchar_t* filePath, const char* target)
 {
+    // Debugger attached: use relative path (CWD = ProjectDir, reads source shaders directly)
+    // Standalone exe: resolve from exe directory (reads deployed shader copies)
+    std::wstring resolvedPath;
+
+    if (IsDebuggerPresent())
+    {
+        resolvedPath = filePath;
+    }
+    else
+    {
+        wchar_t exePath[MAX_PATH];
+        GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+
+        resolvedPath = std::wstring(exePath).substr(0, std::wstring(exePath).rfind(L'\\') + 1);
+        resolvedPath += filePath;
+    }
+
 #ifdef _DEBUG
     UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
 #else
@@ -117,7 +134,7 @@ ComPtr<ID3DBlob> Renderer::CompileShader(const wchar_t* filePath, const char* ta
     ComPtr<ID3DBlob> errorBlob;
 
     HRESULT hr = D3DCompileFromFile(
-        filePath,
+        resolvedPath.c_str(),
         nullptr,
         nullptr,
         "main",
