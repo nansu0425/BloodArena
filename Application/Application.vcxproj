@@ -104,6 +104,7 @@
     <ClInclude Include="Core\Crash.h" />
     <ClInclude Include="Core\PCH.h" />
     <ClInclude Include="Core\Logger.h" />
+    <ClInclude Include="Graphics\GraphicsDevice.h" />
     <ClInclude Include="Graphics\Renderer.h" />
     <ClInclude Include="Core\Window.h" />
     <ClInclude Include="Core\Lifecycle.h" />
@@ -117,6 +118,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Core\Logger.cpp" />
+    <ClCompile Include="Graphics\GraphicsDevice.cpp" />
     <ClCompile Include="Graphics\Renderer.cpp" />
     <ClCompile Include="Core\Window.cpp" />
     <ClCompile Include="Core\WinMain.cpp" />

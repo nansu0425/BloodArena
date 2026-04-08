@@ -1,6 +1,7 @@
-﻿#include "Core/PCH.h"
+#include "Core/PCH.h"
 #include "Core/Lifecycle.h"
 #include "Core/Window.h"
+#include "Graphics/GraphicsDevice.h"
 #include "Graphics/Renderer.h"
 #include "Scene/Scene.h"
 
@@ -20,8 +21,11 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_window = std::make_unique<Window>();
     g_window->Initialize(hInstance, nShowCmd);
 
+    g_graphicsDevice = std::make_unique<GraphicsDevice>();
+    g_graphicsDevice->Initialize(g_window->GetHandle());
+
     g_renderer = std::make_unique<Renderer>();
-    g_renderer->Initialize(g_window->GetHandle());
+    g_renderer->Initialize();
 
     g_scene = std::make_unique<Scene>();
     g_scene->Initialize();
@@ -39,8 +43,9 @@ int Run()
         }
         else
         {
-            g_renderer->BeginFrame();
-            g_renderer->EndFrame();
+            g_graphicsDevice->BeginFrame();
+            g_renderer->Render();
+            g_graphicsDevice->EndFrame();
         }
     }
 
@@ -54,6 +59,9 @@ void Shutdown()
 
     g_renderer->Shutdown();
     g_renderer.reset();
+
+    g_graphicsDevice->Shutdown();
+    g_graphicsDevice.reset();
 
     g_window->Shutdown();
     g_window.reset();

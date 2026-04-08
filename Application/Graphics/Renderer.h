@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 namespace BA
 {
@@ -6,18 +6,12 @@ namespace BA
 class Renderer
 {
 public:
-    void Initialize(HWND window);
+    void Initialize();
     void Shutdown();
 
-    void BeginFrame();
-    void EndFrame();
+    void Render();
 
 private:
-    void CreateDevice();
-    void SetFactory();
-    void CreateSwapChain();
-    void CreateBackBufferRTV();
-    void SetViewports();
     void CreateSharedMesh();
     void CompileShaders();
     Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const wchar_t* filePath, const char* target);
@@ -25,13 +19,8 @@ private:
     void CreateConstantBuffer();
 
 private:
-    HWND m_window = nullptr;
-
-    Microsoft::WRL::ComPtr<ID3D11Device> m_device;
-    Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_deviceContext;
-    Microsoft::WRL::ComPtr<IDXGIFactory3> m_factory;
-    Microsoft::WRL::ComPtr<IDXGISwapChain1> m_swapChain;
-    Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_backBufferRTV;
+    ID3D11Device* m_device = nullptr;
+    ID3D11DeviceContext* m_deviceContext = nullptr;
 
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
     Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
