@@ -12,7 +12,11 @@ public:
     void Render();
 
 private:
-    bool m_showDemoWindow = true;
+    void RenderHierarchy();
+    void RenderInspector();
+
+private:
+    uint32_t m_selectedGameObjectId = 0;
 };
 
 extern std::unique_ptr<EditorUI> g_editorUI;

@@ -1,7 +1,8 @@
-﻿#include "Core/PCH.h"
+#include "Core/PCH.h"
 #include "Editor/EditorUI.h"
 #include "Core/Window.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Scene/Scene.h"
 
 #pragma warning(push, 0)
 #include <imgui.h>
@@ -61,10 +62,92 @@ void EditorUI::Render()
 
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-    ImGui::ShowDemoWindow(&m_showDemoWindow);
+    RenderHierarchy();
+    RenderInspector();
 
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+}
+
+void EditorUI::RenderHierarchy()
+{
+    ImGui::Begin("Hierarchy");
+
+    for (const GameObject& gameObject : g_scene->GetGameObjects())
+    {
+        bool isSelected = (m_selectedGameObjectId == gameObject.id);
+
+        char label[32];
+        snprintf(label, sizeof(label), "GameObject %u", gameObject.id);
+
+        if (ImGui::Selectable(label, isSelected))
+        {
+            m_selectedGameObjectId = gameObject.id;
+        }
+    }
+
+    ImGui::End();
+}
+
+void EditorUI::RenderInspector()
+{
+    ImGui::Begin("Inspector");
+
+    if (m_selectedGameObjectId == 0)
+    {
+        ImGui::TextDisabled("No object selected");
+        ImGui::End();
+        return;
+    }
+
+    const GameObject* selected = nullptr;
+    for (const GameObject& gameObject : g_scene->GetGameObjects())
+    {
+        if (gameObject.id == m_selectedGameObjectId)
+        {
+            selected = &gameObject;
+            break;
+        }
+    }
+
+    if (selected == nullptr)
+    {
+        m_selectedGameObjectId = 0;
+        ImGui::TextDisabled("No object selected");
+        ImGui::End();
+        return;
+    }
+
+    ImGui::Text("ID: %u", selected->id);
+    ImGui::Separator();
+
+    ImGui::Text("Position: %.3f, %.3f, %.3f",
+        selected->transform.position[0],
+        selected->transform.position[1],
+        selected->transform.position[2]);
+
+    ImGui::Text("Rotation: %.3f", selected->transform.rotation);
+
+    ImGui::Text("Scale: %.3f, %.3f, %.3f",
+        selected->transform.scale[0],
+        selected->transform.scale[1],
+        selected->transform.scale[2]);
+
+    ImGui::Separator();
+
+    ImGui::ColorButton("##color", ImVec4(
+        selected->color[0],
+        selected->color[1],
+        selected->color[2],
+        selected->color[3]));
+    ImGui::SameLine();
+    ImGui::Text("Color: %.2f, %.2f, %.2f, %.2f",
+        selected->color[0],
+        selected->color[1],
+        selected->color[2],
+        selected->color[3]);
+
+    ImGui::End();
 }
 
 std::unique_ptr<EditorUI> g_editorUI;
