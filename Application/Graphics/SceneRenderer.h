@@ -3,7 +3,7 @@
 namespace BA
 {
 
-class Renderer
+class SceneRenderer
 {
 public:
     void Initialize();
@@ -29,6 +29,6 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
 };
 
-extern std::unique_ptr<Renderer> g_renderer;
+extern std::unique_ptr<SceneRenderer> g_sceneRenderer;
 
 } // namespace BA

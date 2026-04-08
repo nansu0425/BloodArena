@@ -55,3 +55,6 @@ Desktop.ini
 
 # vcpkg
 vcpkg_installed/
+
+# ImGui
+imgui.ini

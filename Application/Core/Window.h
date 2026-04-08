@@ -3,6 +3,8 @@
 namespace BA
 {
 
+using WndProcCallback = LRESULT(CALLBACK*)(HWND, UINT, WPARAM, LPARAM);
+
 class Window
 {
 public:
@@ -10,6 +12,8 @@ public:
     void Shutdown();
 
     HWND GetHandle() const;
+
+    void SetEditorWndProc(WndProcCallback callback);
 
 private:
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -25,6 +29,7 @@ private:
     HINSTANCE m_hInstance = nullptr;
     RECT m_windowRect = {};
     HWND m_handle = nullptr;
+    WndProcCallback m_editorWndProc = nullptr;
 };
 
 extern std::unique_ptr<Window> g_window;

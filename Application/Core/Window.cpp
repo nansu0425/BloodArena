@@ -35,15 +35,30 @@ HWND Window::GetHandle() const
     return m_handle;
 }
 
+void Window::SetEditorWndProc(WndProcCallback callback)
+{
+    m_editorWndProc = callback;
+}
+
 LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    BA_ASSERT(g_window);
+
+    // Editor WndProc returns nonzero if it consumed the message, 0 if not
+    WndProcCallback editorWndProc = g_window->m_editorWndProc;
+    if (editorWndProc && editorWndProc(hWnd, uMsg, wParam, lParam))
+    {
+        return 0;
+    }
+
     switch (uMsg)
     {
     case WM_DESTROY:
+    {
         g_window->m_handle = nullptr;
         PostQuitMessage(0);
         return 0;
-
+    }
     case WM_KEYDOWN:
     {
         bool wasAlreadyDown = (lParam >> 30) & 1;

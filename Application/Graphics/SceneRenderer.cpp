@@ -1,5 +1,5 @@
-﻿#include "Core/PCH.h"
-#include "Graphics/Renderer.h"
+#include "Core/PCH.h"
+#include "Graphics/SceneRenderer.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Math/MathUtils.h"
 #include "Scene/Scene.h"
@@ -20,7 +20,7 @@ struct ObjectConstants
     float color[4];
 };
 
-void Renderer::Initialize()
+void SceneRenderer::Initialize()
 {
     BA_ASSERT(g_graphicsDevice);
 
@@ -31,10 +31,10 @@ void Renderer::Initialize()
     CompileShaders();
     CreateConstantBuffer();
 
-    BA_LOG_INFO("Renderer initialized.");
+    BA_LOG_INFO("SceneRenderer initialized.");
 }
 
-void Renderer::Shutdown()
+void SceneRenderer::Shutdown()
 {
     m_constantBuffer.Reset();
     m_inputLayout.Reset();
@@ -44,10 +44,10 @@ void Renderer::Shutdown()
     m_deviceContext = nullptr;
     m_device = nullptr;
 
-    BA_LOG_INFO("Renderer shutdown.");
+    BA_LOG_INFO("SceneRenderer shutdown.");
 }
 
-void Renderer::Render()
+void SceneRenderer::Render()
 {
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
@@ -75,7 +75,7 @@ void Renderer::Render()
     }
 }
 
-void Renderer::CreateSharedMesh()
+void SceneRenderer::CreateSharedMesh()
 {
     BA_ASSERT(m_device);
 
@@ -103,7 +103,7 @@ void Renderer::CreateSharedMesh()
     ));
 }
 
-void Renderer::CreateConstantBuffer()
+void SceneRenderer::CreateConstantBuffer()
 {
     BA_ASSERT(m_device);
 
@@ -121,7 +121,7 @@ void Renderer::CreateConstantBuffer()
     ));
 }
 
-void Renderer::CompileShaders()
+void SceneRenderer::CompileShaders()
 {
     BA_ASSERT(m_device);
 
@@ -145,7 +145,7 @@ void Renderer::CompileShaders()
     CreateInputLayout(vsBlob.Get());
 }
 
-ComPtr<ID3DBlob> Renderer::CompileShader(const wchar_t* filePath, const char* target)
+ComPtr<ID3DBlob> SceneRenderer::CompileShader(const wchar_t* filePath, const char* target)
 {
     // Debugger attached: use relative path (CWD = ProjectDir, reads source shaders directly)
     // Standalone exe: resolve from exe directory (reads deployed shader copies)
@@ -200,7 +200,7 @@ ComPtr<ID3DBlob> Renderer::CompileShader(const wchar_t* filePath, const char* ta
     return blob;
 }
 
-void Renderer::CreateInputLayout(ID3DBlob* vsBlob)
+void SceneRenderer::CreateInputLayout(ID3DBlob* vsBlob)
 {
     BA_ASSERT(m_device);
     BA_ASSERT(vsBlob);
@@ -219,6 +219,6 @@ void Renderer::CreateInputLayout(ID3DBlob* vsBlob)
     ));
 }
 
-std::unique_ptr<Renderer> g_renderer;
+std::unique_ptr<SceneRenderer> g_sceneRenderer;
 
 } // namespace BA

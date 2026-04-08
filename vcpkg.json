@@ -1,5 +1,11 @@
 {
   "name": "blood-arena",
   "version-string": "0.1.0",
-  "dependencies": ["spdlog"]
+  "dependencies": [
+    "spdlog",
+    {
+      "name": "imgui",
+      "features": ["dx11-binding", "win32-binding", "docking-experimental"]
+    }
+  ]
 }

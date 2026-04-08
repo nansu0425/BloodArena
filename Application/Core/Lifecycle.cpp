@@ -2,8 +2,9 @@
 #include "Core/Lifecycle.h"
 #include "Core/Window.h"
 #include "Graphics/GraphicsDevice.h"
-#include "Graphics/Renderer.h"
+#include "Graphics/SceneRenderer.h"
 #include "Scene/Scene.h"
+#include "Editor/EditorUI.h"
 
 namespace BA
 {
@@ -24,11 +25,14 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_graphicsDevice = std::make_unique<GraphicsDevice>();
     g_graphicsDevice->Initialize(g_window->GetHandle());
 
-    g_renderer = std::make_unique<Renderer>();
-    g_renderer->Initialize();
-
     g_scene = std::make_unique<Scene>();
     g_scene->Initialize();
+
+    g_sceneRenderer = std::make_unique<SceneRenderer>();
+    g_sceneRenderer->Initialize();
+
+    g_editorUI = std::make_unique<EditorUI>();
+    g_editorUI->Initialize();
 }
 
 int Run()
@@ -44,7 +48,8 @@ int Run()
         else
         {
             g_graphicsDevice->BeginFrame();
-            g_renderer->Render();
+            g_sceneRenderer->Render();
+            g_editorUI->Render();
             g_graphicsDevice->EndFrame();
         }
     }
@@ -54,11 +59,14 @@ int Run()
 
 void Shutdown()
 {
+    g_editorUI->Shutdown();
+    g_editorUI.reset();
+
+    g_sceneRenderer->Shutdown();
+    g_sceneRenderer.reset();
+
     g_scene->Shutdown();
     g_scene.reset();
-
-    g_renderer->Shutdown();
-    g_renderer.reset();
 
     g_graphicsDevice->Shutdown();
     g_graphicsDevice.reset();
