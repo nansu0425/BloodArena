@@ -5,7 +5,8 @@
 - Naming:
   - PascalCase: classes, functions, enums
   - camelCase: variables
-  - Prefixes: `m_` (member), `s_` (static), `g_` (global), `k` (constant)
+  - Prefixes: `m_` (class private members), `s_` (static), `g_` (global), `k` (constant)
+  - Struct fields: plain camelCase (no `m_` prefix)
   - Macros: `BA_UPPER_SNAKE_CASE`
 - All classes and functions must be defined within the `BA` namespace
 - Code should be self-documenting. Avoid code that requires comments to be understood.
@@ -14,28 +15,24 @@
 - No premature optimization. Only optimize verified bottlenecks.
 - Minimize abstraction. Keep related code together. Added complexity must justify lost readability.
 
-## Workflow Rules
+## Design-Code Dependency
+- Design documents and code are both first-class project resources.
+- Code depends on design documents. The reverse is not allowed.
+- Flow: design document → code. Never: code → design document.
+- When a design document changes, the corresponding code must be updated to reflect it.
+- Code must not be modified independently of its design document.
 
-### Default Role: Coding Agent
-- Claude acts as a **coding agent** that can write code in **all areas** (including core game systems, architecture, gameplay logic).
-- All code must be **transparent** — the user must be able to understand and explain every line. Black-box code is not acceptable.
+## Workflow
+- Two work modes: `/design` (design) and `/implement` (implementation).
+- Each mode has its own behavioral rules defined in the corresponding skill.
+- Without an active mode, Claude operates as a general assistant.
 
-### Work Process (4 Steps)
-1. **Explore** — Identify the scope of work and related code
-2. **Plan** — Explain design intent and approach, including **why** each decision was made. Proceed only after user approval.
-3. **Implement** — Write code according to the approved plan
-4. **Review** — User reviews the code. Commit only when the user fully understands and is satisfied with the code.
-
-### Build
+## Build
 - The user handles all builds manually. Claude must **not** run build commands.
-
-### Transparency Principles
-- If the user cannot understand or explain the code, it will not be used
-- Plans must include rationale ("why this approach")
-- Respond fully to user questions during code review
 
 ## References
 - Project roadmap: `Documentation/ROADMAP.md`
+- Phase work orders: `Documentation/PHASE*.md`
 
 ## Language
 - Response: Korean
