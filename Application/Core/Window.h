@@ -4,6 +4,7 @@ namespace BA
 {
 
 using WndProcCallback = LRESULT(CALLBACK*)(HWND, UINT, WPARAM, LPARAM);
+using ResizeCallback = void(*)(UINT width, UINT height);
 
 class Window
 {
@@ -14,6 +15,7 @@ public:
     HWND GetHandle() const;
 
     void SetEditorWndProc(WndProcCallback callback);
+    void SetResizeCallback(ResizeCallback callback);
 
 private:
     static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -30,6 +32,7 @@ private:
     RECT m_windowRect = {};
     HWND m_handle = nullptr;
     WndProcCallback m_editorWndProc = nullptr;
+    ResizeCallback m_resizeCallback = nullptr;
 };
 
 extern std::unique_ptr<Window> g_window;

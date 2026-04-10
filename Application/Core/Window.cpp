@@ -1,6 +1,5 @@
 ﻿#include "Core/PCH.h"
 #include "Core/Window.h"
-#include "Graphics/GraphicsDevice.h"
 #include "Scene/Scene.h"
 
 namespace BA
@@ -41,6 +40,11 @@ void Window::SetEditorWndProc(WndProcCallback callback)
     m_editorWndProc = callback;
 }
 
+void Window::SetResizeCallback(ResizeCallback callback)
+{
+    m_resizeCallback = callback;
+}
+
 LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     BA_ASSERT(g_window);
@@ -61,14 +65,14 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             break;
         }
 
-        if (g_graphicsDevice == nullptr)
+        ResizeCallback resizeCallback = g_window->m_resizeCallback;
+        if (resizeCallback)
         {
-            break;
+            UINT width = LOWORD(lParam);
+            UINT height = HIWORD(lParam);
+            resizeCallback(width, height);
         }
 
-        UINT width = LOWORD(lParam);
-        UINT height = HIWORD(lParam);
-        g_graphicsDevice->Resize(width, height);
         return 0;
     }
     case WM_DESTROY:

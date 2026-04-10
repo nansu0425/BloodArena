@@ -1,4 +1,4 @@
-#include "Core/PCH.h"
+﻿#include "Core/PCH.h"
 #include "Core/Lifecycle.h"
 #include "Core/Window.h"
 #include "Graphics/GraphicsDevice.h"
@@ -9,6 +9,20 @@
 
 namespace BA
 {
+
+static void RenderFrame()
+{
+    g_graphicsDevice->BeginFrame();
+    g_sceneRenderer->Render();
+    g_editorRenderer->Render();
+    g_graphicsDevice->EndFrame();
+}
+
+static void OnResize(UINT width, UINT height)
+{
+    g_graphicsDevice->Resize(width, height);
+    RenderFrame();
+}
 
 void Initialize(HINSTANCE hInstance, int nShowCmd)
 {
@@ -37,6 +51,8 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 
     g_editorRenderer = std::make_unique<EditorRenderer>();
     g_editorRenderer->Initialize();
+
+    g_window->SetResizeCallback(OnResize);
 }
 
 int Run()
@@ -51,10 +67,7 @@ int Run()
         }
         else
         {
-            g_graphicsDevice->BeginFrame();
-            g_sceneRenderer->Render();
-            g_editorRenderer->Render();
-            g_graphicsDevice->EndFrame();
+            RenderFrame();
         }
     }
 
