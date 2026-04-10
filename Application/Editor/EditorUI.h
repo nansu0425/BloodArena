@@ -9,11 +9,8 @@ public:
     void Initialize();
     void Shutdown();
 
-    void Render();
-
-private:
-    void RenderHierarchy();
-    void RenderInspector();
+    uint32_t GetSelectedGameObjectId() const;
+    void SetSelectedGameObjectId(uint32_t id);
 
 private:
     uint32_t m_selectedGameObjectId = 0;

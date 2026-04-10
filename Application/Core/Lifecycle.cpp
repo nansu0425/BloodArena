@@ -5,6 +5,7 @@
 #include "Graphics/SceneRenderer.h"
 #include "Scene/Scene.h"
 #include "Editor/EditorUI.h"
+#include "Graphics/EditorRenderer.h"
 
 namespace BA
 {
@@ -33,6 +34,9 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 
     g_editorUI = std::make_unique<EditorUI>();
     g_editorUI->Initialize();
+
+    g_editorRenderer = std::make_unique<EditorRenderer>();
+    g_editorRenderer->Initialize();
 }
 
 int Run()
@@ -49,7 +53,7 @@ int Run()
         {
             g_graphicsDevice->BeginFrame();
             g_sceneRenderer->Render();
-            g_editorUI->Render();
+            g_editorRenderer->Render();
             g_graphicsDevice->EndFrame();
         }
     }
@@ -59,6 +63,9 @@ int Run()
 
 void Shutdown()
 {
+    g_editorRenderer->Shutdown();
+    g_editorRenderer.reset();
+
     g_editorUI->Shutdown();
     g_editorUI.reset();
 
