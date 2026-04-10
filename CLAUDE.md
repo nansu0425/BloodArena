@@ -15,24 +15,34 @@
 - No premature optimization. Only optimize verified bottlenecks.
 - Minimize abstraction. Keep related code together. Added complexity must justify lost readability.
 
-## Design-Code Dependency
-- Design documents and code are both first-class project resources.
-- Code depends on design documents. The reverse is not allowed.
-- Flow: design document → code. Never: code → design document.
-- When a design document changes, the corresponding code must be updated to reflect it.
-- Code must not be modified independently of its design document.
+## Spec-Driven Development
 
-## Workflow
-- Two work modes: `/design` (design) and `/implement` (implementation).
-- Each mode has its own behavioral rules defined in the corresponding skill.
-- Without an active mode, Claude operates as a general assistant.
+### Spec-as-Source
+- Specs in `Documentation/Specs/` are the source of truth for all implementation.
+- Code depends on specs. The reverse is not allowed.
+- Flow: spec → code. Never: code → spec.
+- When a spec changes, the corresponding code must be updated to reflect it.
+- Code must not be modified independently of its spec.
+- When spec and code disagree, the spec is correct and the code must be fixed.
+- If the spec itself is wrong, update the spec first via `/spec-update`, then fix the code.
+
+### Spec Structure
+- Specs are organized by module, mirroring the code structure under `Application/`.
+- Each module can contain multiple specs.
+- Path format: `Documentation/Specs/{Module}/{feature}/`
+
+### Workflow
+- `/spec-create {description}`: Create a new feature spec. Module placement is decided during design.
+- `/spec-implement {Module/feature} {task#}`: Implement a single task from an existing spec.
+- `/spec-update {Module/feature}`: Update a spec and propagate changes to code.
+- Without an active command, Claude operates as a general assistant.
 
 ## Build
 - The user handles all builds manually. Claude must **not** run build commands.
 
 ## References
 - Project roadmap: `Documentation/ROADMAP.md`
-- Phase work orders: `Documentation/PHASE*.md`
+- Feature specs: `Documentation/Specs/{Module}/{feature}/`
 
 ## Language
 - Response: Korean
