@@ -29,6 +29,17 @@ void Logger::Shutdown()
     spdlog::shutdown();
 }
 
+void Logger::AddSink(spdlog::sink_ptr sink)
+{
+    m_internalLogger->sinks().push_back(std::move(sink));
+}
+
+void Logger::RemoveSink(const spdlog::sink_ptr& sink)
+{
+    auto& sinks = m_internalLogger->sinks();
+    sinks.erase(std::remove(sinks.begin(), sinks.end(), sink), sinks.end());
+}
+
 spdlog::logger* Logger::GetInternalLogger() const
 {
     return m_internalLogger.get();

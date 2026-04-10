@@ -15,6 +15,9 @@ private:
     void RenderViewport();
     void RenderHierarchy();
     void RenderInspector();
+    void RenderConsole();
+
+    char m_consoleInputBuffer[256] = {};
 };
 
 extern std::unique_ptr<EditorRenderer> g_editorRenderer;

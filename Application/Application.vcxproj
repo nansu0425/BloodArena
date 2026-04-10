@@ -104,6 +104,7 @@
     <ClInclude Include="Core\Crash.h" />
     <ClInclude Include="Core\PCH.h" />
     <ClInclude Include="Core\Logger.h" />
+    <ClInclude Include="Editor\EditorConsoleSink.h" />
     <ClInclude Include="Graphics\GraphicsDevice.h" />
     <ClInclude Include="Graphics\SceneRenderer.h" />
     <ClInclude Include="Core\Window.h" />
@@ -121,6 +122,7 @@
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Core\Logger.cpp" />
+    <ClCompile Include="Editor\EditorConsoleSink.cpp" />
     <ClCompile Include="Graphics\GraphicsDevice.cpp" />
     <ClCompile Include="Graphics\SceneRenderer.cpp" />
     <ClCompile Include="Core\Window.cpp" />

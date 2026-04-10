@@ -5,11 +5,24 @@
 namespace BA
 {
 
+enum class LogLevel
+{
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Critical
+};
+
 class Logger
 {
 public:
     void Initialize();
     void Shutdown();
+
+    void AddSink(spdlog::sink_ptr sink);
+    void RemoveSink(const spdlog::sink_ptr& sink);
 
     spdlog::logger* GetInternalLogger() const;
 

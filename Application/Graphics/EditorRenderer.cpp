@@ -68,6 +68,7 @@ void EditorRenderer::Render()
     RenderViewport();
     RenderHierarchy();
     RenderInspector();
+    RenderConsole();
 
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -185,6 +186,87 @@ void EditorRenderer::RenderInspector()
         selected->color[1],
         selected->color[2],
         selected->color[3]);
+
+    ImGui::End();
+}
+
+static ImVec4 GetLogLevelColor(LogLevel level)
+{
+    switch (level)
+    {
+    case LogLevel::Trace:    return ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+    case LogLevel::Debug:    return ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+    case LogLevel::Info:     return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    case LogLevel::Warn:     return ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+    case LogLevel::Error:    return ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
+    case LogLevel::Critical: return ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
+    default:                 return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+}
+
+static const char* kLogLevelNames[] = { "Trace", "Debug", "Info", "Warn", "Error", "Critical" };
+
+void EditorRenderer::RenderConsole()
+{
+    ImGui::Begin("Console");
+
+    if (ImGui::Button("Clear"))
+    {
+        g_editorUI->ClearConsole();
+    }
+
+    ImGui::SameLine();
+
+    int filterLevel = static_cast<int>(g_editorUI->GetConsoleFilterLevel());
+    ImGui::SetNextItemWidth(100);
+    if (ImGui::Combo("##Filter", &filterLevel, kLogLevelNames, IM_ARRAYSIZE(kLogLevelNames)))
+    {
+        g_editorUI->SetConsoleFilterLevel(static_cast<LogLevel>(filterLevel));
+    }
+
+    ImGui::SameLine();
+
+    bool autoScroll = g_editorUI->GetConsoleAutoScroll();
+    if (ImGui::Checkbox("AutoScroll", &autoScroll))
+    {
+        g_editorUI->SetConsoleAutoScroll(autoScroll);
+    }
+
+    ImGui::Separator();
+
+    ImGui::BeginChild("ConsoleScrollRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
+
+    LogLevel currentFilter = g_editorUI->GetConsoleFilterLevel();
+    for (const ConsoleEntry& entry : g_editorUI->GetConsoleEntries())
+    {
+        if (entry.level < currentFilter)
+        {
+            continue;
+        }
+
+        ImGui::PushStyleColor(ImGuiCol_Text, GetLogLevelColor(entry.level));
+        ImGui::TextUnformatted(entry.message.c_str());
+        ImGui::PopStyleColor();
+    }
+
+    if (g_editorUI->GetConsoleAutoScroll() && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+    {
+        ImGui::SetScrollHereY(1.0f);
+    }
+
+    ImGui::EndChild();
+
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if (ImGui::InputText("##ConsoleInput", m_consoleInputBuffer, sizeof(m_consoleInputBuffer), ImGuiInputTextFlags_EnterReturnsTrue))
+    {
+        if (m_consoleInputBuffer[0] != '\0')
+        {
+            BA_LOG_INFO("Console> {}", m_consoleInputBuffer);
+            m_consoleInputBuffer[0] = '\0';
+        }
+
+        ImGui::SetKeyboardFocusHere(-1);
+    }
 
     ImGui::End();
 }
