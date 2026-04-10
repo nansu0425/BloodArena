@@ -6,6 +6,8 @@ namespace BA
 
 using namespace Microsoft::WRL;
 
+static constexpr FLOAT kEditorBackgroundColor[4] = {0.1f, 0.1f, 0.1f, 1.0f};
+
 void GraphicsDevice::Initialize(HWND window)
 {
     m_window = window;
@@ -32,9 +34,7 @@ void GraphicsDevice::Shutdown()
 
 void GraphicsDevice::BeginFrame()
 {
-    const FLOAT clearColor[4] = {0.392f, 0.584f, 0.929f, 1.0f};
-
-    m_deviceContext->ClearRenderTargetView(m_backBufferRTV.Get(), clearColor);
+    m_deviceContext->ClearRenderTargetView(m_backBufferRTV.Get(), kEditorBackgroundColor);
     m_deviceContext->OMSetRenderTargets(1, m_backBufferRTV.GetAddressOf(), nullptr);
 }
 
@@ -51,6 +51,12 @@ void GraphicsDevice::Resize(UINT width, UINT height)
     m_backBufferRTV.Reset();
     BA_CRASH_IF_FAILED(m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0));
     CreateBackBufferRTV();
+    SetViewports();
+}
+
+void GraphicsDevice::RestoreBackBuffer()
+{
+    m_deviceContext->OMSetRenderTargets(1, m_backBufferRTV.GetAddressOf(), nullptr);
     SetViewports();
 }
 

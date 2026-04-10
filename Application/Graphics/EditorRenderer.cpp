@@ -1,8 +1,10 @@
 #include "Core/PCH.h"
 #include "Graphics/EditorRenderer.h"
+#include "Graphics/GraphicsDevice.h"
+#include "Graphics/SceneRenderer.h"
+#include "Graphics/SceneViewport.h"
 #include "Editor/EditorUI.h"
 #include "Core/Window.h"
-#include "Graphics/GraphicsDevice.h"
 #include "Scene/Scene.h"
 
 #pragma warning(push, 0)
@@ -61,13 +63,45 @@ void EditorRenderer::Render()
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_None);
 
+    RenderViewport();
     RenderHierarchy();
     RenderInspector();
 
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+}
+
+void EditorRenderer::RenderViewport()
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::Begin("Viewport");
+    ImGui::PopStyleVar();
+
+    ImVec2 size = ImGui::GetContentRegionAvail();
+    UINT width = static_cast<UINT>(size.x);
+    UINT height = static_cast<UINT>(size.y);
+
+    if (width > 0 && height > 0)
+    {
+        if (width != g_sceneViewport->GetWidth() || height != g_sceneViewport->GetHeight())
+        {
+            g_sceneViewport->Resize(width, height);
+        }
+
+        g_sceneViewport->Clear();
+        g_sceneRenderer->Render();
+
+        g_graphicsDevice->RestoreBackBuffer();
+
+        ImGui::Image(
+            reinterpret_cast<ImTextureID>(g_sceneViewport->GetSRV()),
+            size
+        );
+    }
+
+    ImGui::End();
 }
 
 void EditorRenderer::RenderHierarchy()

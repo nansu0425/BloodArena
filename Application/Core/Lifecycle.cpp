@@ -3,6 +3,7 @@
 #include "Core/Window.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/SceneRenderer.h"
+#include "Graphics/SceneViewport.h"
 #include "Scene/Scene.h"
 #include "Editor/EditorUI.h"
 #include "Graphics/EditorRenderer.h"
@@ -13,7 +14,6 @@ namespace BA
 static void RenderFrame()
 {
     g_graphicsDevice->BeginFrame();
-    g_sceneRenderer->Render();
     g_editorRenderer->Render();
     g_graphicsDevice->EndFrame();
 }
@@ -45,6 +45,9 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 
     g_sceneRenderer = std::make_unique<SceneRenderer>();
     g_sceneRenderer->Initialize();
+
+    g_sceneViewport = std::make_unique<SceneViewport>();
+    g_sceneViewport->Initialize();
 
     g_editorUI = std::make_unique<EditorUI>();
     g_editorUI->Initialize();
@@ -81,6 +84,9 @@ void Shutdown()
 
     g_editorUI->Shutdown();
     g_editorUI.reset();
+
+    g_sceneViewport->Shutdown();
+    g_sceneViewport.reset();
 
     g_sceneRenderer->Shutdown();
     g_sceneRenderer.reset();

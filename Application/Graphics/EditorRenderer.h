@@ -12,6 +12,7 @@ public:
     void Render();
 
 private:
+    void RenderViewport();
     void RenderHierarchy();
     void RenderInspector();
 };
