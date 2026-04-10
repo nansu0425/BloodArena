@@ -1,5 +1,6 @@
 ﻿#include "Core/PCH.h"
 #include "Core/Window.h"
+#include "Graphics/GraphicsDevice.h"
 #include "Scene/Scene.h"
 
 namespace BA
@@ -53,6 +54,23 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 
     switch (uMsg)
     {
+    case WM_SIZE:
+    {
+        if (wParam == SIZE_MINIMIZED)
+        {
+            break;
+        }
+
+        if (g_graphicsDevice == nullptr)
+        {
+            break;
+        }
+
+        UINT width = LOWORD(lParam);
+        UINT height = HIWORD(lParam);
+        g_graphicsDevice->Resize(width, height);
+        return 0;
+    }
     case WM_DESTROY:
     {
         g_window->m_handle = nullptr;

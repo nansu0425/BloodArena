@@ -43,6 +43,17 @@ void GraphicsDevice::EndFrame()
     BA_CRASH_IF_FAILED(m_swapChain->Present(1, 0));
 }
 
+void GraphicsDevice::Resize(UINT width, UINT height)
+{
+    BA_ASSERT(width > 0 && height > 0);
+
+    m_deviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+    m_backBufferRTV.Reset();
+    BA_CRASH_IF_FAILED(m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0));
+    CreateBackBufferRTV();
+    SetViewports();
+}
+
 ID3D11Device* GraphicsDevice::GetDevice() const
 {
     return m_device.Get();
