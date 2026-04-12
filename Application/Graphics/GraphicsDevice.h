@@ -14,7 +14,9 @@ public:
 
     void Resize(UINT width, UINT height);
 
+#ifdef BA_EDITOR
     void RestoreBackBuffer();
+#endif // BA_EDITOR
 
     ID3D11Device* GetDevice() const;
     ID3D11DeviceContext* GetDeviceContext() const;

@@ -1,7 +1,10 @@
 ﻿#include "Core/PCH.h"
 #include "Core/Window.h"
-#include "Editor/EditorUI.h"
 #include "Scene/Scene.h"
+
+#ifdef BA_EDITOR
+#include "Editor/EditorUI.h"
+#endif // BA_EDITOR
 
 namespace BA
 {
@@ -36,10 +39,12 @@ HWND Window::GetHandle() const
     return m_handle;
 }
 
+#ifdef BA_EDITOR
 void Window::SetEditorWndProc(WndProcCallback callback)
 {
     m_editorWndProc = callback;
 }
+#endif // BA_EDITOR
 
 void Window::SetResizeCallback(ResizeCallback callback)
 {
@@ -50,12 +55,13 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 {
     BA_ASSERT(g_window);
 
-    // Editor WndProc returns nonzero if it consumed the message, 0 if not
+#ifdef BA_EDITOR
     WndProcCallback editorWndProc = g_window->m_editorWndProc;
     if (editorWndProc && editorWndProc(hWnd, uMsg, wParam, lParam))
     {
         return 0;
     }
+#endif // BA_EDITOR
 
     switch (uMsg)
     {
@@ -100,10 +106,12 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             if (gameObjects.empty() == false)
             {
                 uint32_t id = gameObjects.back().id;
+#ifdef BA_EDITOR
                 if (g_editorUI->GetSelectedGameObjectId() == id)
                 {
                     g_editorUI->SetSelectedGameObjectId(0);
                 }
+#endif // BA_EDITOR
                 g_scene->DestroyGameObject(id);
             }
         }

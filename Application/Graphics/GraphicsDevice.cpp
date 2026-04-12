@@ -6,7 +6,11 @@ namespace BA
 
 using namespace Microsoft::WRL;
 
-static constexpr FLOAT kEditorBackgroundColor[4] = {0.1f, 0.1f, 0.1f, 1.0f};
+#ifdef BA_EDITOR
+static constexpr FLOAT kBackgroundColor[4] = {0.1f, 0.1f, 0.1f, 1.0f};
+#else
+static constexpr FLOAT kBackgroundColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+#endif // BA_EDITOR
 
 void GraphicsDevice::Initialize(HWND window)
 {
@@ -34,8 +38,12 @@ void GraphicsDevice::Shutdown()
 
 void GraphicsDevice::BeginFrame()
 {
-    m_deviceContext->ClearRenderTargetView(m_backBufferRTV.Get(), kEditorBackgroundColor);
+    m_deviceContext->ClearRenderTargetView(m_backBufferRTV.Get(), kBackgroundColor);
     m_deviceContext->OMSetRenderTargets(1, m_backBufferRTV.GetAddressOf(), nullptr);
+
+#ifndef BA_EDITOR
+    SetViewports();
+#endif // BA_EDITOR
 }
 
 void GraphicsDevice::EndFrame()
@@ -54,11 +62,13 @@ void GraphicsDevice::Resize(UINT width, UINT height)
     SetViewports();
 }
 
+#ifdef BA_EDITOR
 void GraphicsDevice::RestoreBackBuffer()
 {
     m_deviceContext->OMSetRenderTargets(1, m_backBufferRTV.GetAddressOf(), nullptr);
     SetViewports();
 }
+#endif // BA_EDITOR
 
 ID3D11Device* GraphicsDevice::GetDevice() const
 {

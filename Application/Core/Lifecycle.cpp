@@ -3,10 +3,13 @@
 #include "Core/Window.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/SceneRenderer.h"
-#include "Graphics/SceneViewport.h"
 #include "Scene/Scene.h"
+
+#ifdef BA_EDITOR
+#include "Graphics/SceneViewport.h"
 #include "Editor/EditorUI.h"
 #include "Graphics/EditorRenderer.h"
+#endif // BA_EDITOR
 
 namespace BA
 {
@@ -14,7 +17,14 @@ namespace BA
 static void RenderFrame()
 {
     g_graphicsDevice->BeginFrame();
+
+#ifdef BA_EDITOR
     g_editorRenderer->Render();
+#else
+    // TODO: When game modes are added, the game build will be locked to gameplay state
+    g_sceneRenderer->Render();
+#endif // BA_EDITOR
+
     g_graphicsDevice->EndFrame();
 }
 
@@ -46,6 +56,7 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_sceneRenderer = std::make_unique<SceneRenderer>();
     g_sceneRenderer->Initialize();
 
+#ifdef BA_EDITOR
     g_sceneViewport = std::make_unique<SceneViewport>();
     g_sceneViewport->Initialize();
 
@@ -54,6 +65,7 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 
     g_editorRenderer = std::make_unique<EditorRenderer>();
     g_editorRenderer->Initialize();
+#endif // BA_EDITOR
 
     g_window->SetResizeCallback(OnResize);
 }
@@ -79,6 +91,7 @@ int Run()
 
 void Shutdown()
 {
+#ifdef BA_EDITOR
     g_editorRenderer->Shutdown();
     g_editorRenderer.reset();
 
@@ -87,6 +100,7 @@ void Shutdown()
 
     g_sceneViewport->Shutdown();
     g_sceneViewport.reset();
+#endif // BA_EDITOR
 
     g_sceneRenderer->Shutdown();
     g_sceneRenderer.reset();

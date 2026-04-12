@@ -3,7 +3,9 @@
 namespace BA
 {
 
+#ifdef BA_EDITOR
 using WndProcCallback = LRESULT(CALLBACK*)(HWND, UINT, WPARAM, LPARAM);
+#endif // BA_EDITOR
 using ResizeCallback = void(*)(UINT width, UINT height);
 
 class Window
@@ -14,7 +16,9 @@ public:
 
     HWND GetHandle() const;
 
+#ifdef BA_EDITOR
     void SetEditorWndProc(WndProcCallback callback);
+#endif // BA_EDITOR
     void SetResizeCallback(ResizeCallback callback);
 
 private:
@@ -31,7 +35,9 @@ private:
     HINSTANCE m_hInstance = nullptr;
     RECT m_windowRect = {};
     HWND m_handle = nullptr;
+#ifdef BA_EDITOR
     WndProcCallback m_editorWndProc = nullptr;
+#endif // BA_EDITOR
     ResizeCallback m_resizeCallback = nullptr;
 };
 
