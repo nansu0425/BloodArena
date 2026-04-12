@@ -4,6 +4,7 @@
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/SceneViewport.h"
 #include "Editor/EditorUI.h"
+#include "Editor/ViewportPicking.h"
 #include "Core/Window.h"
 #include "Scene/Scene.h"
 
@@ -100,6 +101,21 @@ void EditorRenderer::RenderViewport()
             reinterpret_cast<ImTextureID>(g_sceneViewport->GetSRV()),
             size
         );
+
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+        {
+            ImVec2 imageMin = ImGui::GetItemRectMin();
+            ImVec2 mousePos = ImGui::GetMousePos();
+
+            float pixelX = mousePos.x - imageMin.x;
+            float pixelY = mousePos.y - imageMin.y;
+
+            float ndcX = (pixelX / size.x) * 2.0f - 1.0f;
+            float ndcY = 1.0f - (pixelY / size.y) * 2.0f;
+
+            uint32_t hitId = PickGameObject(ndcX, ndcY);
+            g_editorUI->SetSelectedGameObjectId(hitId);
+        }
     }
 
     ImGui::End();

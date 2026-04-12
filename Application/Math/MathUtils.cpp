@@ -5,7 +5,7 @@
 namespace BA
 {
 
-void BuildWorldMatrix(const Transform& transform, float outMatrix[4][4])
+Matrix4x4 BuildWorldMatrix(const Transform& transform)
 {
     float cos = cosf(transform.rotation);
     float sin = sinf(transform.rotation);
@@ -18,25 +18,43 @@ void BuildWorldMatrix(const Transform& transform, float outMatrix[4][4])
     float ty = transform.position[1];
     float tz = transform.position[2];
 
-    outMatrix[0][0] = sx * cos;
-    outMatrix[0][1] = sx * sin;
-    outMatrix[0][2] = 0.0f;
-    outMatrix[0][3] = 0.0f;
+    Matrix4x4 result = {};
 
-    outMatrix[1][0] = -sy * sin;
-    outMatrix[1][1] = sy * cos;
-    outMatrix[1][2] = 0.0f;
-    outMatrix[1][3] = 0.0f;
+    result.m[0][0] = sx * cos;
+    result.m[0][1] = sx * sin;
 
-    outMatrix[2][0] = 0.0f;
-    outMatrix[2][1] = 0.0f;
-    outMatrix[2][2] = sz;
-    outMatrix[2][3] = 0.0f;
+    result.m[1][0] = -sy * sin;
+    result.m[1][1] = sy * cos;
 
-    outMatrix[3][0] = tx;
-    outMatrix[3][1] = ty;
-    outMatrix[3][2] = tz;
-    outMatrix[3][3] = 1.0f;
+    result.m[2][2] = sz;
+
+    result.m[3][0] = tx;
+    result.m[3][1] = ty;
+    result.m[3][2] = tz;
+    result.m[3][3] = 1.0f;
+
+    return result;
+}
+
+Float3 TransformPoint(const float point[3], const Matrix4x4& matrix)
+{
+    Float3 result;
+    result.x = point[0] * matrix.m[0][0] + point[1] * matrix.m[1][0] + point[2] * matrix.m[2][0] + matrix.m[3][0];
+    result.y = point[0] * matrix.m[0][1] + point[1] * matrix.m[1][1] + point[2] * matrix.m[2][1] + matrix.m[3][1];
+    result.z = point[0] * matrix.m[0][2] + point[1] * matrix.m[1][2] + point[2] * matrix.m[2][2] + matrix.m[3][2];
+    return result;
+}
+
+bool IsPointInTriangle(float px, float py, float ax, float ay, float bx, float by, float cx, float cy)
+{
+    float d1 = (bx - ax) * (py - ay) - (by - ay) * (px - ax);
+    float d2 = (cx - bx) * (py - by) - (cy - by) * (px - bx);
+    float d3 = (ax - cx) * (py - cy) - (ay - cy) * (px - cx);
+
+    bool hasNeg = (d1 < 0.0f) || (d2 < 0.0f) || (d3 < 0.0f);
+    bool hasPos = (d1 > 0.0f) || (d2 > 0.0f) || (d3 > 0.0f);
+
+    return !(hasNeg && hasPos);
 }
 
 } // namespace BA

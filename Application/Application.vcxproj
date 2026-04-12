@@ -115,6 +115,7 @@
     <ClInclude Include="Scene\GameObject.h" />
     <ClInclude Include="Scene\Scene.h" />
     <ClInclude Include="Editor\EditorUI.h" />
+    <ClInclude Include="Editor\ViewportPicking.h" />
     <ClInclude Include="Graphics\EditorRenderer.h" />
   </ItemGroup>
   <ItemGroup>
@@ -132,6 +133,7 @@
     <ClCompile Include="Math\MathUtils.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
     <ClCompile Include="Editor\EditorUI.cpp" />
+    <ClCompile Include="Editor\ViewportPicking.cpp" />
     <ClCompile Include="Graphics\EditorRenderer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

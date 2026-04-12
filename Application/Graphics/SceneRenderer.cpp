@@ -16,7 +16,7 @@ struct Vertex
 
 struct ObjectConstants
 {
-    float worldMatrix[4][4];
+    Matrix4x4 worldMatrix;
     float color[4];
 };
 
@@ -64,7 +64,7 @@ void SceneRenderer::Render()
         BA_CRASH_IF_FAILED(m_deviceContext->Map(m_constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
 
         ObjectConstants* constants = static_cast<ObjectConstants*>(mapped.pData);
-        BuildWorldMatrix(gameObject.transform, constants->worldMatrix);
+        constants->worldMatrix = BuildWorldMatrix(gameObject.transform);
         constants->color[0] = gameObject.color[0];
         constants->color[1] = gameObject.color[1];
         constants->color[2] = gameObject.color[2];
