@@ -15,6 +15,7 @@ public:
     void DestroyGameObject(uint32_t id);
 
     std::span<const GameObject> GetGameObjects() const;
+    GameObject* FindGameObject(uint32_t id);
 
 private:
     std::vector<GameObject> m_gameObjects;

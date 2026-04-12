@@ -156,52 +156,19 @@ void EditorRenderer::RenderInspector()
         return;
     }
 
-    const GameObject* selected = nullptr;
-    for (const GameObject& gameObject : g_scene->GetGameObjects())
-    {
-        if (gameObject.id == selectedId)
-        {
-            selected = &gameObject;
-            break;
-        }
-    }
-
-    if (selected == nullptr)
-    {
-        g_editorUI->SetSelectedGameObjectId(0);
-        ImGui::TextDisabled("No object selected");
-        ImGui::End();
-        return;
-    }
+    GameObject* selected = g_scene->FindGameObject(selectedId);
+    BA_ASSERT(selected != nullptr);
 
     ImGui::Text("ID: %u", selected->id);
     ImGui::Separator();
 
-    ImGui::Text("Position: %.3f, %.3f, %.3f",
-        selected->transform.position[0],
-        selected->transform.position[1],
-        selected->transform.position[2]);
-
-    ImGui::Text("Rotation: %.3f", selected->transform.rotation);
-
-    ImGui::Text("Scale: %.3f, %.3f, %.3f",
-        selected->transform.scale[0],
-        selected->transform.scale[1],
-        selected->transform.scale[2]);
+    ImGui::DragFloat3("Position", selected->transform.position, 0.01f);
+    ImGui::DragFloat("Rotation", &selected->transform.rotation, 0.1f);
+    ImGui::DragFloat3("Scale", selected->transform.scale, 0.01f);
 
     ImGui::Separator();
 
-    ImGui::ColorButton("##color", ImVec4(
-        selected->color[0],
-        selected->color[1],
-        selected->color[2],
-        selected->color[3]));
-    ImGui::SameLine();
-    ImGui::Text("Color: %.2f, %.2f, %.2f, %.2f",
-        selected->color[0],
-        selected->color[1],
-        selected->color[2],
-        selected->color[3]);
+    ImGui::ColorEdit4("Color", selected->color);
 
     ImGui::End();
 }

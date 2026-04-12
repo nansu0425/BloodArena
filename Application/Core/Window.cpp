@@ -1,5 +1,6 @@
 ﻿#include "Core/PCH.h"
 #include "Core/Window.h"
+#include "Editor/EditorUI.h"
 #include "Scene/Scene.h"
 
 namespace BA
@@ -98,7 +99,12 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             std::span<const GameObject> gameObjects = g_scene->GetGameObjects();
             if (gameObjects.empty() == false)
             {
-                g_scene->DestroyGameObject(gameObjects.back().id);
+                uint32_t id = gameObjects.back().id;
+                if (g_editorUI->GetSelectedGameObjectId() == id)
+                {
+                    g_editorUI->SetSelectedGameObjectId(0);
+                }
+                g_scene->DestroyGameObject(id);
             }
         }
         return 0;

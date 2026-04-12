@@ -61,10 +61,7 @@ void Scene::DestroyGameObject(uint32_t id)
     auto it = std::find_if(
         m_gameObjects.begin(),
         m_gameObjects.end(),
-        [id](const GameObject& obj)
-        {
-            return (obj.id == id);
-        }
+        [id](const GameObject& obj) { return (obj.id == id); }
     );
 
     BA_ASSERT(it != m_gameObjects.end());
@@ -76,6 +73,17 @@ void Scene::DestroyGameObject(uint32_t id)
 std::span<const GameObject> Scene::GetGameObjects() const
 {
     return m_gameObjects;
+}
+
+GameObject* Scene::FindGameObject(uint32_t id)
+{
+    auto it = std::find_if(
+        m_gameObjects.begin(),
+        m_gameObjects.end(),
+        [id](const GameObject& obj) { return (obj.id == id); }
+    );
+
+    return (it != m_gameObjects.end()) ? &(*it) : nullptr;
 }
 
 std::unique_ptr<Scene> g_scene;
