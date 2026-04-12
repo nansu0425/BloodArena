@@ -11,12 +11,12 @@ using namespace Microsoft::WRL;
 
 struct Vertex
 {
-    float position[3];
+    Float3 position;
 };
 
 struct ObjectConstants
 {
-    Matrix4x4 worldMatrix;
+    Float4x4 worldMatrix;
     float color[4];
 };
 
@@ -64,7 +64,7 @@ void SceneRenderer::Render()
         BA_CRASH_IF_FAILED(m_deviceContext->Map(m_constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
 
         ObjectConstants* constants = static_cast<ObjectConstants*>(mapped.pData);
-        constants->worldMatrix = BuildWorldMatrix(gameObject.transform);
+        constants->worldMatrix = BuildWorld(gameObject.transform);
         constants->color[0] = gameObject.color[0];
         constants->color[1] = gameObject.color[1];
         constants->color[2] = gameObject.color[2];
@@ -85,6 +85,7 @@ void SceneRenderer::CreateSharedMesh()
         {{ 0.06f, -0.04f, 0.0f}},
         {{-0.06f, -0.04f, 0.0f}},
     };
+    static_assert(sizeof(Vertex) == sizeof(float) * 3);
 
     D3D11_BUFFER_DESC bufferDesc = {
         .ByteWidth = sizeof(vertices),

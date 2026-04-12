@@ -162,9 +162,9 @@ void EditorRenderer::RenderInspector()
     ImGui::Text("ID: %u", selected->id);
     ImGui::Separator();
 
-    ImGui::DragFloat3("Position", selected->transform.position, 0.01f);
-    ImGui::DragFloat("Rotation", &selected->transform.rotation, 0.1f);
-    ImGui::DragFloat3("Scale", selected->transform.scale, 0.01f);
+    ImGui::DragFloat3("Position", &selected->transform.position.x, 0.01f);
+    ImGui::DragFloat3("Rotation", &selected->transform.rotation.x, 0.1f);
+    ImGui::DragFloat3("Scale", &selected->transform.scale.x, 0.01f);
 
     ImGui::Separator();
 

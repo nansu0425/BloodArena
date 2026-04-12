@@ -47,8 +47,8 @@ uint32_t Scene::CreateGameObject()
     gameObject.color[2] = palette[2];
     gameObject.color[3] = palette[3];
 
-    gameObject.transform.position[0] = kGridStartX + static_cast<float>(index % kGridColumns) * kGridSpacing;
-    gameObject.transform.position[1] = kGridStartY - static_cast<float>(index / kGridColumns) * kGridSpacing;
+    gameObject.transform.position.x = kGridStartX + static_cast<float>(index % kGridColumns) * kGridSpacing;
+    gameObject.transform.position.y = kGridStartY - static_cast<float>(index / kGridColumns) * kGridSpacing;
 
     m_gameObjects.push_back(gameObject);
 

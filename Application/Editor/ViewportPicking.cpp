@@ -6,7 +6,7 @@
 namespace BA
 {
 
-static constexpr float kTriangleVertices[3][3] =
+static const Float3 kTriangleVertices[3] =
 {
     { 0.0f,   0.06f, 0.0f},
     { 0.06f, -0.04f, 0.0f},
@@ -21,7 +21,7 @@ uint32_t PickGameObject(float ndcX, float ndcY)
     {
         const GameObject& gameObject = gameObjects[i];
 
-        Matrix4x4 worldMatrix = BuildWorldMatrix(gameObject.transform);
+        Float4x4 worldMatrix = BuildWorld(gameObject.transform);
 
         Float3 v0 = TransformPoint(kTriangleVertices[0], worldMatrix);
         Float3 v1 = TransformPoint(kTriangleVertices[1], worldMatrix);
