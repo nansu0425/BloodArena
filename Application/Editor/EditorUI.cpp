@@ -5,8 +5,13 @@
 namespace BA
 {
 
-static constexpr size_t kMaxConsoleEntries = 10000;
-static spdlog::sink_ptr s_consoleSink;
+namespace
+{
+
+constexpr size_t kMaxConsoleEntries = 10000;
+spdlog::sink_ptr s_consoleSink;
+
+} // namespace
 
 void EditorUI::Initialize()
 {

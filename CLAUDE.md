@@ -9,6 +9,7 @@
   - Struct fields: plain camelCase (no `m_` prefix)
   - Macros: `BA_UPPER_SNAKE_CASE`
 - All classes and functions must be defined within the `BA` namespace
+- File-local helpers (non-member functions, file-scope variables, file-only types) must be placed inside an anonymous namespace, not marked `static`. Anonymous namespace applies uniformly to functions, variables, and types.
 - Code should be self-documenting. Avoid code that requires comments to be understood.
 - Fail fast: use project crash/assert macros aggressively — surface problems early, never hide them.
 - Simple and intuitive code. Clarity over cleverness.

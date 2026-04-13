@@ -5,7 +5,10 @@
 namespace BA
 {
 
-static LogLevel ToLogLevel(spdlog::level::level_enum level)
+namespace
+{
+
+LogLevel ToLogLevel(spdlog::level::level_enum level)
 {
     switch (level)
     {
@@ -18,6 +21,8 @@ static LogLevel ToLogLevel(spdlog::level::level_enum level)
     default:                      return LogLevel::Info;
     }
 }
+
+} // namespace
 
 void EditorConsoleSink::sink_it_(const spdlog::details::log_msg& msg)
 {

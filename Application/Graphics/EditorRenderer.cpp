@@ -19,10 +19,31 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 namespace BA
 {
 
-static LRESULT ImGuiWndProcHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+namespace
+{
+
+LRESULT ImGuiWndProcHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     return ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
 }
+
+ImVec4 GetLogLevelColor(LogLevel level)
+{
+    switch (level)
+    {
+    case LogLevel::Trace:    return ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+    case LogLevel::Debug:    return ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
+    case LogLevel::Info:     return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    case LogLevel::Warn:     return ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
+    case LogLevel::Error:    return ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
+    case LogLevel::Critical: return ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
+    default:                 return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+}
+
+const char* kLogLevelNames[] = { "Trace", "Debug", "Info", "Warn", "Error", "Critical" };
+
+} // namespace
 
 void EditorRenderer::Initialize()
 {
@@ -172,22 +193,6 @@ void EditorRenderer::RenderInspector()
 
     ImGui::End();
 }
-
-static ImVec4 GetLogLevelColor(LogLevel level)
-{
-    switch (level)
-    {
-    case LogLevel::Trace:    return ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
-    case LogLevel::Debug:    return ImVec4(0.6f, 0.6f, 0.6f, 1.0f);
-    case LogLevel::Info:     return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-    case LogLevel::Warn:     return ImVec4(1.0f, 1.0f, 0.0f, 1.0f);
-    case LogLevel::Error:    return ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
-    case LogLevel::Critical: return ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
-    default:                 return ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-    }
-}
-
-static const char* kLogLevelNames[] = { "Trace", "Debug", "Info", "Warn", "Error", "Critical" };
 
 void EditorRenderer::RenderConsole()
 {

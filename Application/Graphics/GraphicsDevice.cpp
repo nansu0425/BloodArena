@@ -6,11 +6,16 @@ namespace BA
 
 using namespace Microsoft::WRL;
 
+namespace
+{
+
 #ifdef BA_EDITOR
-static constexpr FLOAT kBackgroundColor[4] = {0.1f, 0.1f, 0.1f, 1.0f};
+constexpr FLOAT kBackgroundColor[4] = {0.1f, 0.1f, 0.1f, 1.0f};
 #else
-static constexpr FLOAT kBackgroundColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+constexpr FLOAT kBackgroundColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 #endif // BA_EDITOR
+
+} // namespace
 
 void GraphicsDevice::Initialize(HWND window)
 {

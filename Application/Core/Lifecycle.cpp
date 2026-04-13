@@ -14,7 +14,10 @@
 namespace BA
 {
 
-static void RenderFrame()
+namespace
+{
+
+void RenderFrame()
 {
     g_graphicsDevice->BeginFrame();
 
@@ -28,11 +31,13 @@ static void RenderFrame()
     g_graphicsDevice->EndFrame();
 }
 
-static void OnResize(UINT width, UINT height)
+void OnResize(UINT width, UINT height)
 {
     g_graphicsDevice->Resize(width, height);
     RenderFrame();
 }
+
+} // namespace
 
 void Initialize(HINSTANCE hInstance, int nShowCmd)
 {
