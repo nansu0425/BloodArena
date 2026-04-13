@@ -3,6 +3,7 @@
 #include "Graphics/GraphicsDevice.h"
 #include "Math/Transform.h"
 #include "Scene/Scene.h"
+#include "Scene/Camera.h"
 
 namespace BA
 {
@@ -17,6 +18,8 @@ struct Vertex
 struct ObjectConstants
 {
     Float4x4 worldMatrix;
+    Float4x4 viewMatrix;
+    Float4x4 projectionMatrix;
     float color[4];
 };
 
@@ -58,6 +61,9 @@ void SceneRenderer::Render()
     m_deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
     m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
 
+    Float4x4 viewMatrix = g_camera->GetViewMatrix();
+    Float4x4 projectionMatrix = g_camera->GetProjectionMatrix(g_graphicsDevice->GetAspectRatio());
+
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
         D3D11_MAPPED_SUBRESOURCE mapped = {};
@@ -65,6 +71,8 @@ void SceneRenderer::Render()
 
         ObjectConstants* constants = static_cast<ObjectConstants*>(mapped.pData);
         constants->worldMatrix = BuildWorld(gameObject.transform);
+        constants->viewMatrix = viewMatrix;
+        constants->projectionMatrix = projectionMatrix;
         constants->color[0] = gameObject.color[0];
         constants->color[1] = gameObject.color[1];
         constants->color[2] = gameObject.color[2];

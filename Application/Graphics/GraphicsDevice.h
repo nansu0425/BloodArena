@@ -20,6 +20,7 @@ public:
 
     ID3D11Device* GetDevice() const;
     ID3D11DeviceContext* GetDeviceContext() const;
+    float GetAspectRatio() const;
 
 private:
     void CreateDevice();

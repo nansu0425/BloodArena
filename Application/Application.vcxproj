@@ -185,8 +185,11 @@
   <ItemGroup>
     <ClInclude Include="Core\Assert.h" />
     <ClInclude Include="Core\Crash.h" />
+    <ClInclude Include="Core\Input.h" />
     <ClInclude Include="Core\PCH.h" />
     <ClInclude Include="Core\Logger.h" />
+    <ClInclude Include="Core\Time.h" />
+    <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="Editor\EditorConsoleSink.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Graphics\GraphicsDevice.h" />
     <ClInclude Include="Graphics\SceneRenderer.h" />
@@ -196,6 +199,8 @@
     <ClInclude Include="Math\Float3.h" />
     <ClInclude Include="Math\Float4x4.h" />
     <ClInclude Include="Math\Transform.h" />
+    <ClInclude Include="Math\Angle.h" />
+    <ClInclude Include="Math\Axes.h" />
     <ClInclude Include="Scene\GameObject.h" />
     <ClInclude Include="Scene\Scene.h" />
     <ClInclude Include="Editor\EditorUI.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
@@ -206,7 +211,10 @@
     <ClCompile Include="Core\PCH.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Core\Input.cpp" />
     <ClCompile Include="Core\Logger.cpp" />
+    <ClCompile Include="Core\Time.cpp" />
+    <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="Editor\EditorConsoleSink.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Graphics\GraphicsDevice.cpp" />
     <ClCompile Include="Graphics\SceneRenderer.cpp" />

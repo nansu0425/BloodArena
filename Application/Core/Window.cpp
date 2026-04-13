@@ -1,6 +1,9 @@
 ﻿#include "Core/PCH.h"
 #include "Core/Window.h"
+#include "Core/Input.h"
 #include "Scene/Scene.h"
+
+#include <windowsx.h>
 
 #ifdef BA_EDITOR
 #include "Editor/EditorUI.h"
@@ -54,6 +57,7 @@ void Window::SetResizeCallback(ResizeCallback callback)
 LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     BA_ASSERT(g_window);
+    BA_ASSERT(g_input);
 
 #ifdef BA_EDITOR
     WndProcCallback editorWndProc = g_window->m_editorWndProc;
@@ -88,6 +92,28 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         PostQuitMessage(0);
         return 0;
     }
+    case WM_MOUSEMOVE:
+    {
+        g_input->OnMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        return 0;
+    }
+    case WM_RBUTTONDOWN:
+    {
+        g_input->OnRightMouseDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        SetCapture(hWnd);
+        return 0;
+    }
+    case WM_RBUTTONUP:
+    {
+        g_input->OnRightMouseUp();
+        ReleaseCapture();
+        return 0;
+    }
+    case WM_KEYUP:
+    {
+        g_input->OnKeyUp(static_cast<uint32_t>(wParam));
+        return 0;
+    }
     case WM_KEYDOWN:
     {
         bool wasAlreadyDown = (lParam >> 30) & 1;
@@ -95,6 +121,8 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         {
             break;
         }
+
+        g_input->OnKeyDown(static_cast<uint32_t>(wParam));
 
         if (wParam == '1')
         {

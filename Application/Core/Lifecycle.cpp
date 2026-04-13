@@ -1,9 +1,12 @@
 ﻿#include "Core/PCH.h"
 #include "Core/Lifecycle.h"
 #include "Core/Window.h"
+#include "Core/Time.h"
+#include "Core/Input.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/SceneRenderer.h"
 #include "Scene/Scene.h"
+#include "Scene/Camera.h"
 
 #ifdef BA_EDITOR
 #include "Graphics/SceneViewport.h"
@@ -49,6 +52,12 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_logger = std::make_unique<Logger>();
     g_logger->Initialize();
 
+    g_time = std::make_unique<Time>();
+    g_time->Initialize();
+
+    g_input = std::make_unique<Input>();
+    g_input->Initialize();
+
     g_window = std::make_unique<Window>();
     g_window->Initialize(hInstance, nShowCmd);
 
@@ -57,6 +66,9 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 
     g_scene = std::make_unique<Scene>();
     g_scene->Initialize();
+
+    g_camera = std::make_unique<Camera>();
+    g_camera->Initialize();
 
     g_sceneRenderer = std::make_unique<SceneRenderer>();
     g_sceneRenderer->Initialize();
@@ -78,17 +90,24 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 int Run()
 {
     MSG msg = {};
-    while (msg.message != WM_QUIT)
+    for (;;)
     {
-        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+        g_input->BeginFrame();
+
+        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg); // Call WndProc
         }
-        else
+
+        if (msg.message == WM_QUIT)
         {
-            RenderFrame();
+            break;
         }
+
+        g_time->Tick();
+        g_camera->Update(g_time->GetDeltaSeconds());
+        RenderFrame();
     }
 
     return static_cast<int>(msg.wParam);
@@ -110,6 +129,9 @@ void Shutdown()
     g_sceneRenderer->Shutdown();
     g_sceneRenderer.reset();
 
+    g_camera->Shutdown();
+    g_camera.reset();
+
     g_scene->Shutdown();
     g_scene.reset();
 
@@ -118,6 +140,12 @@ void Shutdown()
 
     g_window->Shutdown();
     g_window.reset();
+
+    g_input->Shutdown();
+    g_input.reset();
+
+    g_time->Shutdown();
+    g_time.reset();
 
     g_logger->Shutdown();
     g_logger.reset();

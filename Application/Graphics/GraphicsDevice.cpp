@@ -1,4 +1,4 @@
-#include "Core/PCH.h"
+﻿#include "Core/PCH.h"
 #include "Graphics/GraphicsDevice.h"
 
 namespace BA
@@ -58,7 +58,13 @@ void GraphicsDevice::EndFrame()
 
 void GraphicsDevice::Resize(UINT width, UINT height)
 {
-    BA_ASSERT(width > 0 && height > 0);
+    // Client area height can legitimately collapse to 0 when the user shrinks
+    // the window below the title bar + borders. Skip the resize in that case
+    // so the swap chain keeps its last valid dimensions.
+    if (width == 0 || height == 0)
+    {
+        return;
+    }
 
     m_deviceContext->OMSetRenderTargets(0, nullptr, nullptr);
     m_backBufferRTV.Reset();
@@ -83,6 +89,17 @@ ID3D11Device* GraphicsDevice::GetDevice() const
 ID3D11DeviceContext* GraphicsDevice::GetDeviceContext() const
 {
     return m_deviceContext.Get();
+}
+
+float GraphicsDevice::GetAspectRatio() const
+{
+    BA_ASSERT(m_swapChain.Get());
+
+    DXGI_SWAP_CHAIN_DESC1 desc = {};
+    m_swapChain->GetDesc1(&desc);
+    BA_ASSERT(desc.Width > 0 && desc.Height > 0);
+
+    return static_cast<float>(desc.Width) / static_cast<float>(desc.Height);
 }
 
 void GraphicsDevice::CreateDevice()
