@@ -6,6 +6,18 @@
 namespace BA
 {
 
+struct CameraSettings
+{
+    Float3 position;
+    float yaw;
+    float pitch;
+    float fovY;
+    float nearZ;
+    float farZ;
+    float moveSpeed;
+    float mouseSensitivity;
+};
+
 class Camera
 {
 public:
@@ -16,6 +28,10 @@ public:
 
     Float4x4 GetViewMatrix() const;
     Float4x4 GetProjectionMatrix(float aspect) const;
+
+    CameraSettings GetSettings() const;
+    void SetSettings(const CameraSettings& settings);
+    void ResetToDefaults();
 
 private:
     // Rotation sign convention matches the left-handed X/Y rotation matrices:

@@ -13,6 +13,7 @@ public:
 
 private:
     void RenderViewport();
+    void RenderCameraSettingsMenu();
     void RenderHierarchy();
     void RenderInspector();
     void RenderConsole();

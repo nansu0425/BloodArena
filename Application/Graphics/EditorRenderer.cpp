@@ -7,6 +7,8 @@
 #include "Editor/ViewportPicking.h"
 #include "Core/Window.h"
 #include "Scene/Scene.h"
+#include "Scene/Camera.h"
+#include "Math/Angle.h"
 
 #pragma warning(push, 0)
 #include <imgui.h>
@@ -99,8 +101,29 @@ void EditorRenderer::Render()
 void EditorRenderer::RenderViewport()
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::Begin("Viewport");
+    ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar);
     ImGui::PopStyleVar();
+
+    if (ImGui::BeginMenuBar())
+    {
+        const char* kCameraLabel = "Camera";
+        float buttonWidth = ImGui::CalcTextSize(kCameraLabel).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+        float available = ImGui::GetContentRegionAvail().x;
+        if (available > buttonWidth)
+        {
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + available - buttonWidth);
+        }
+        if (ImGui::Button(kCameraLabel))
+        {
+            ImGui::OpenPopup("CameraSettingsPopup");
+        }
+        if (ImGui::BeginPopup("CameraSettingsPopup"))
+        {
+            RenderCameraSettingsMenu();
+            ImGui::EndPopup();
+        }
+        ImGui::EndMenuBar();
+    }
 
     ImVec2 size = ImGui::GetContentRegionAvail();
     UINT width = static_cast<UINT>(size.x);
@@ -140,6 +163,49 @@ void EditorRenderer::RenderViewport()
     }
 
     ImGui::End();
+}
+
+void EditorRenderer::RenderCameraSettingsMenu()
+{
+    BA_ASSERT(g_camera);
+
+    CameraSettings settings = g_camera->GetSettings();
+
+    ImGui::PushItemWidth(180.0f);
+
+    ImGui::DragFloat3("Position", &settings.position.x, 0.1f);
+
+    float yawDeg = RadToDeg(settings.yaw);
+    float pitchDeg = RadToDeg(settings.pitch);
+    if (ImGui::DragFloat("Yaw", &yawDeg, 0.5f))
+    {
+        settings.yaw = DegToRad(yawDeg);
+    }
+    if (ImGui::DragFloat("Pitch", &pitchDeg, 0.5f, -89.0f, 89.0f))
+    {
+        settings.pitch = DegToRad(pitchDeg);
+    }
+
+    float fovDeg = RadToDeg(settings.fovY);
+    if (ImGui::SliderFloat("FOV", &fovDeg, 10.0f, 120.0f, "%.1f deg"))
+    {
+        settings.fovY = DegToRad(fovDeg);
+    }
+
+    ImGui::DragFloat("Near Z", &settings.nearZ, 0.01f, 0.001f, settings.farZ);
+    ImGui::DragFloat("Far Z", &settings.farZ, 1.0f, settings.nearZ, 100000.0f);
+    ImGui::DragFloat("Move Speed", &settings.moveSpeed, 0.1f, 0.0f, 1000.0f);
+    ImGui::DragFloat("Mouse Sensitivity", &settings.mouseSensitivity, 0.0001f, 0.0f, 1.0f, "%.4f");
+
+    ImGui::PopItemWidth();
+
+    g_camera->SetSettings(settings);
+
+    ImGui::Separator();
+    if (ImGui::Button("Reset"))
+    {
+        g_camera->ResetToDefaults();
+    }
 }
 
 void EditorRenderer::RenderHierarchy()

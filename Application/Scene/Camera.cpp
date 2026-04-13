@@ -70,6 +70,37 @@ Float4x4 Camera::GetProjectionMatrix(float aspect) const
     return BuildPerspective(m_fovY, aspect, m_nearZ, m_farZ);
 }
 
+CameraSettings Camera::GetSettings() const
+{
+    CameraSettings settings;
+    settings.position = m_position;
+    settings.yaw = m_yaw;
+    settings.pitch = m_pitch;
+    settings.fovY = m_fovY;
+    settings.nearZ = m_nearZ;
+    settings.farZ = m_farZ;
+    settings.moveSpeed = m_moveSpeed;
+    settings.mouseSensitivity = m_mouseSensitivity;
+    return settings;
+}
+
+void Camera::SetSettings(const CameraSettings& settings)
+{
+    m_position = settings.position;
+    m_yaw = settings.yaw;
+    m_pitch = settings.pitch;
+    m_fovY = settings.fovY;
+    m_nearZ = settings.nearZ;
+    m_farZ = settings.farZ;
+    m_moveSpeed = settings.moveSpeed;
+    m_mouseSensitivity = settings.mouseSensitivity;
+}
+
+void Camera::ResetToDefaults()
+{
+    *this = Camera{};
+}
+
 std::unique_ptr<Camera> g_camera;
 
 } // namespace BA
