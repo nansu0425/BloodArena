@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Math/Float3.h"
+#include "Math/MathTypes.h"
 
 namespace BA
 {
@@ -20,14 +20,14 @@ public:
     void OnRightMouseUp();
 
     bool IsKeyDown(uint32_t vkCode) const;
-    Float2 GetMouseDelta() const;
+    Vector2 GetMouseDelta() const;
     bool IsRightMouseDown() const;
 
 private:
     static constexpr uint32_t kKeyCount = 256;
 
     std::array<bool, kKeyCount> m_keyDown = {};
-    Float2 m_mouseDelta = {};
+    Vector2 m_mouseDelta = {};
     int32_t m_lastMouseX = 0;
     int32_t m_lastMouseY = 0;
     bool m_rightMouseDown = false;

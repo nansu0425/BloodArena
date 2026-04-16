@@ -3,8 +3,7 @@
 #include "Editor/ViewportPicking.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
-#include "Math/Transform.h"
-#include "Math/Ray.h"
+#include "Math/MathUtils.h"
 
 namespace BA
 {
@@ -12,12 +11,25 @@ namespace BA
 namespace
 {
 
-const Float3 kTriangleVertices[3] =
+const Vector3 kTriangleVertices[3] =
 {
     { 0.0f,   0.06f, 0.0f},
     { 0.06f, -0.04f, 0.0f},
     {-0.06f, -0.04f, 0.0f},
 };
+
+Ray BuildPickRayFromNdc(float ndcX, float ndcY, const Matrix& view, const Matrix& projection)
+{
+    Matrix invViewProj = (view * projection).Invert();
+
+    Vector3 nearPoint = Vector3::Transform(Vector3(ndcX, ndcY, 0.0f), invViewProj);
+    Vector3 farPoint  = Vector3::Transform(Vector3(ndcX, ndcY, 1.0f), invViewProj);
+
+    Vector3 direction = farPoint - nearPoint;
+    direction.Normalize();
+
+    return Ray(nearPoint, direction);
+}
 
 } // namespace
 
@@ -30,16 +42,16 @@ uint32_t PickGameObject(float ndcX, float ndcY, const Camera& camera, float aspe
 
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
-        Float4x4 worldMatrix = BuildWorld(gameObject.transform);
+        Matrix worldMatrix = BuildWorld(gameObject.transform);
 
-        Float3 v0 = TransformPoint(kTriangleVertices[0], worldMatrix);
-        Float3 v1 = TransformPoint(kTriangleVertices[1], worldMatrix);
-        Float3 v2 = TransformPoint(kTriangleVertices[2], worldMatrix);
+        Vector3 v0 = Vector3::Transform(kTriangleVertices[0], worldMatrix);
+        Vector3 v1 = Vector3::Transform(kTriangleVertices[1], worldMatrix);
+        Vector3 v2 = Vector3::Transform(kTriangleVertices[2], worldMatrix);
 
-        RayTriangleHit hit = IntersectRayTriangle(ray, v0, v1, v2);
-        if (hit.isHit && hit.t < closestT)
+        float distance = 0.0f;
+        if (ray.Intersects(v0, v1, v2, distance) && distance < closestT)
         {
-            closestT = hit.t;
+            closestT = distance;
             hitId = gameObject.id;
         }
     }

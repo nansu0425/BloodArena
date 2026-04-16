@@ -8,7 +8,7 @@
 #include "Core/Window.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
-#include "Math/Angle.h"
+#include "Math/MathUtils.h"
 
 #pragma warning(push, 0)
 #include <imgui.h>

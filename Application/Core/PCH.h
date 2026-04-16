@@ -6,6 +6,7 @@
 #include <dxgi1_3.h>
 #include <d3dcompiler.h>
 #include <wrl/client.h>
+#include <directxtk/SimpleMath.h>
 
 #ifdef _DEBUG
 #define _CRTDBG_MAP_ALLOC

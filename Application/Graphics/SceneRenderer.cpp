@@ -1,7 +1,7 @@
 ﻿#include "Core/PCH.h"
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/GraphicsDevice.h"
-#include "Math/Transform.h"
+#include "Math/MathUtils.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
 
@@ -12,14 +12,14 @@ using namespace Microsoft::WRL;
 
 struct Vertex
 {
-    Float3 position;
+    Vector3 position;
 };
 
 struct ObjectConstants
 {
-    Float4x4 worldMatrix;
-    Float4x4 viewMatrix;
-    Float4x4 projectionMatrix;
+    Matrix worldMatrix;
+    Matrix viewMatrix;
+    Matrix projectionMatrix;
     float color[4];
 };
 
@@ -61,8 +61,8 @@ void SceneRenderer::Render(float aspect)
     m_deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
     m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
 
-    Float4x4 viewMatrix = g_camera->GetViewMatrix();
-    Float4x4 projectionMatrix = g_camera->GetProjectionMatrix(aspect);
+    Matrix viewMatrix = g_camera->GetViewMatrix();
+    Matrix projectionMatrix = g_camera->GetProjectionMatrix(aspect);
 
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {

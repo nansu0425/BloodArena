@@ -1,14 +1,13 @@
 #pragma once
 
-#include "Math/Float4x4.h"
-#include "Math/Angle.h"
+#include "Math/MathUtils.h"
 
 namespace BA
 {
 
 struct CameraSettings
 {
-    Float3 position;
+    Vector3 position;
     float yaw;
     float pitch;
     float fovY;
@@ -26,8 +25,8 @@ public:
 
     void Update(float deltaSeconds);
 
-    Float4x4 GetViewMatrix() const;
-    Float4x4 GetProjectionMatrix(float aspect) const;
+    Matrix GetViewMatrix() const;
+    Matrix GetProjectionMatrix(float aspect) const;
 
     CameraSettings GetSettings() const;
     void SetSettings(const CameraSettings& settings);
@@ -37,7 +36,7 @@ private:
     // Rotation sign convention matches the left-handed X/Y rotation matrices:
     //   positive m_yaw   = turn right (rotate +X toward +Z)
     //   positive m_pitch = look down  (rotate +Y toward +Z)
-    Float3 m_position = {0.0f, 0.0f, -1.0f};
+    Vector3 m_position = {0.0f, 0.0f, -1.0f};
     float m_yaw = 0.0f;
     float m_pitch = 0.0f;
     float m_fovY = DegToRad(60.0f);

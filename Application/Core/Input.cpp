@@ -66,7 +66,7 @@ bool Input::IsKeyDown(uint32_t vkCode) const
     return m_keyDown[vkCode];
 }
 
-Float2 Input::GetMouseDelta() const
+Vector2 Input::GetMouseDelta() const
 {
     return m_mouseDelta;
 }
