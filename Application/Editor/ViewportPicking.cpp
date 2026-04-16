@@ -1,7 +1,10 @@
-﻿#include "Core/PCH.h"
+#include "Core/PCH.h"
+#include <cfloat>
 #include "Editor/ViewportPicking.h"
 #include "Scene/Scene.h"
+#include "Scene/Camera.h"
 #include "Math/Transform.h"
+#include "Math/Ray.h"
 
 namespace BA
 {
@@ -16,41 +19,32 @@ const Float3 kTriangleVertices[3] =
     {-0.06f, -0.04f, 0.0f},
 };
 
-bool IsPointInTriangle(float px, float py, float ax, float ay, float bx, float by, float cx, float cy)
-{
-    float d1 = (bx - ax) * (py - ay) - (by - ay) * (px - ax);
-    float d2 = (cx - bx) * (py - by) - (cy - by) * (px - bx);
-    float d3 = (ax - cx) * (py - cy) - (ay - cy) * (px - cx);
-
-    bool hasNeg = (d1 < 0.0f) || (d2 < 0.0f) || (d3 < 0.0f);
-    bool hasPos = (d1 > 0.0f) || (d2 > 0.0f) || (d3 > 0.0f);
-
-    return !(hasNeg && hasPos);
-}
-
 } // namespace
 
-uint32_t PickGameObject(float ndcX, float ndcY)
+uint32_t PickGameObject(float ndcX, float ndcY, const Camera& camera, float aspect)
 {
-    auto gameObjects = g_scene->GetGameObjects();
+    Ray ray = BuildPickRayFromNdc(ndcX, ndcY, camera.GetViewMatrix(), camera.GetProjectionMatrix(aspect));
 
-    for (int32_t i = static_cast<int32_t>(gameObjects.size()) - 1; i >= 0; --i)
+    uint32_t hitId = 0;
+    float closestT = FLT_MAX;
+
+    for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
-        const GameObject& gameObject = gameObjects[i];
-
         Float4x4 worldMatrix = BuildWorld(gameObject.transform);
 
         Float3 v0 = TransformPoint(kTriangleVertices[0], worldMatrix);
         Float3 v1 = TransformPoint(kTriangleVertices[1], worldMatrix);
         Float3 v2 = TransformPoint(kTriangleVertices[2], worldMatrix);
 
-        if (IsPointInTriangle(ndcX, ndcY, v0.x, v0.y, v1.x, v1.y, v2.x, v2.y))
+        RayTriangleHit hit = IntersectRayTriangle(ray, v0, v1, v2);
+        if (hit.isHit && hit.t < closestT)
         {
-            return gameObject.id;
+            closestT = hit.t;
+            hitId = gameObject.id;
         }
     }
 
-    return 0;
+    return hitId;
 }
 
 } // namespace BA

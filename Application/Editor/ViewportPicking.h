@@ -5,6 +5,8 @@
 namespace BA
 {
 
-uint32_t PickGameObject(float ndcX, float ndcY);
+class Camera;
+
+uint32_t PickGameObject(float ndcX, float ndcY, const Camera& camera, float aspect);
 
 } // namespace BA

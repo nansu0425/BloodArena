@@ -198,6 +198,7 @@
     <ClInclude Include="Graphics\SceneViewport.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Math\Float3.h" />
     <ClInclude Include="Math\Float4x4.h" />
+    <ClInclude Include="Math\Ray.h" />
     <ClInclude Include="Math\Transform.h" />
     <ClInclude Include="Math\Angle.h" />
     <ClInclude Include="Math\Axes.h" />
@@ -224,6 +225,7 @@
     <ClCompile Include="Graphics\SceneViewport.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Math\Float3.cpp" />
     <ClCompile Include="Math\Float4x4.cpp" />
+    <ClCompile Include="Math\Ray.cpp" />
     <ClCompile Include="Math\Transform.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
     <ClCompile Include="Editor\EditorUI.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />

@@ -15,5 +15,5 @@
     while (0)
 #else // Release
 #define BA_ASSERT(expression)                                                                                                   \
-    (void)0
+    (void)(sizeof(expression))
 #endif // _DEBUG

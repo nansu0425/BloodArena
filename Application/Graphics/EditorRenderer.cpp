@@ -137,7 +137,9 @@ void EditorRenderer::RenderViewport()
         }
 
         g_sceneViewport->Clear();
-        g_sceneRenderer->Render();
+
+        float aspect = size.x / size.y;
+        g_sceneRenderer->Render(aspect);
 
         g_graphicsDevice->RestoreBackBuffer();
 
@@ -157,7 +159,7 @@ void EditorRenderer::RenderViewport()
             float ndcX = (pixelX / size.x) * 2.0f - 1.0f;
             float ndcY = 1.0f - (pixelY / size.y) * 2.0f;
 
-            uint32_t hitId = PickGameObject(ndcX, ndcY);
+            uint32_t hitId = PickGameObject(ndcX, ndcY, *g_camera, aspect);
             g_editorUI->SetSelectedGameObjectId(hitId);
         }
     }

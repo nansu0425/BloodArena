@@ -28,7 +28,7 @@ void RenderFrame()
     g_editorRenderer->Render();
 #else
     // TODO: When game modes are added, the game build will be locked to gameplay state
-    g_sceneRenderer->Render();
+    g_sceneRenderer->Render(g_graphicsDevice->GetAspectRatio());
 #endif // BA_EDITOR
 
     g_graphicsDevice->EndFrame();

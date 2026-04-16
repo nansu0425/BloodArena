@@ -9,7 +9,7 @@ public:
     void Initialize();
     void Shutdown();
 
-    void Render();
+    void Render(float aspect);
 
 private:
     void CreateSharedMesh();

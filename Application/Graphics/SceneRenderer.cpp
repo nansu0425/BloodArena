@@ -50,7 +50,7 @@ void SceneRenderer::Shutdown()
     BA_LOG_INFO("SceneRenderer shutdown.");
 }
 
-void SceneRenderer::Render()
+void SceneRenderer::Render(float aspect)
 {
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
@@ -62,7 +62,7 @@ void SceneRenderer::Render()
     m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
 
     Float4x4 viewMatrix = g_camera->GetViewMatrix();
-    Float4x4 projectionMatrix = g_camera->GetProjectionMatrix(g_graphicsDevice->GetAspectRatio());
+    Float4x4 projectionMatrix = g_camera->GetProjectionMatrix(aspect);
 
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
