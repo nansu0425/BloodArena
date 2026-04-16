@@ -80,6 +80,20 @@ void EditorUI::SetConsoleAutoScroll(bool autoScroll)
     m_consoleAutoScroll = autoScroll;
 }
 
+EditorSettings EditorUI::GetEditorSettings() const
+{
+    EditorSettings settings;
+    settings.consoleFilterLevel = m_consoleFilterLevel;
+    settings.isConsoleAutoScroll = m_consoleAutoScroll;
+    return settings;
+}
+
+void EditorUI::SetEditorSettings(const EditorSettings& settings)
+{
+    m_consoleFilterLevel = settings.consoleFilterLevel;
+    m_consoleAutoScroll = settings.isConsoleAutoScroll;
+}
+
 std::unique_ptr<EditorUI> g_editorUI;
 
 } // namespace BA

@@ -22,6 +22,7 @@
 - File-local helpers (non-member functions, file-scope variables, file-only types) must be placed inside an anonymous namespace, not marked `static`. Anonymous namespace applies uniformly to functions, variables, and types.
 - Code should be self-documenting. Avoid code that requires comments to be understood.
 - Minimize magic numbers. Any numeric literal that carries meaning (tolerances, thresholds, limits, tuning parameters, conversion factors) must be given a `k`-prefixed named constant at the narrowest appropriate scope (function-local `constexpr` when used in one function, file-local in an anonymous namespace when shared within a translation unit, header-level when shared across files). The name must convey the semantic role, not just the value. When two literals happen to share the same value but have different meanings, give them separate names so each can be tuned independently. Exceptions: trivially self-evident literals like `0`, `1`, `-1`, array indices, and loop bounds with obvious meaning.
+- Single source of truth for default values. When a default value (initial setting, threshold, limit, etc.) is used in more than one place, it must be defined exactly once and every consumer must refer to that definition. Do not duplicate the same default in multiple locations (e.g. a settings struct and a class member). Instead, have one authoritative definition and derive the rest from it.
 - Fail fast: use project crash/assert macros aggressively — surface problems early, never hide them.
 - Simple and intuitive code. Clarity over cleverness.
 - No premature optimization. Only optimize verified bottlenecks.
@@ -42,6 +43,7 @@
 
 ## Build
 - The user handles all builds manually. Claude must **not** run build commands.
+- IDE diagnostics (IntelliSense errors/warnings) may be stale or incorrect. Do not treat them as ground truth or change code solely to satisfy them. Only actual build output from the compiler is authoritative.
 
 ## References
 - Project roadmap: `Documentation/ROADMAP.md`

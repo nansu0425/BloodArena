@@ -1,5 +1,6 @@
 ﻿#include "Core/PCH.h"
 #include "Core/Lifecycle.h"
+#include "Core/Settings.h"
 #include "Core/Window.h"
 #include "Core/Time.h"
 #include "Core/Input.h"
@@ -52,6 +53,8 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_logger = std::make_unique<Logger>();
     g_logger->Initialize();
 
+    AppSettings appSettings = LoadSettings();
+
     g_time = std::make_unique<Time>();
     g_time->Initialize();
 
@@ -59,7 +62,7 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_input->Initialize();
 
     g_window = std::make_unique<Window>();
-    g_window->Initialize(hInstance, nShowCmd);
+    g_window->Initialize(hInstance, nShowCmd, appSettings.window);
 
     g_graphicsDevice = std::make_unique<GraphicsDevice>();
     g_graphicsDevice->Initialize(g_window->GetHandle());
@@ -68,7 +71,7 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_scene->Initialize();
 
     g_camera = std::make_unique<Camera>();
-    g_camera->Initialize();
+    g_camera->Initialize(appSettings.camera);
 
     g_sceneRenderer = std::make_unique<SceneRenderer>();
     g_sceneRenderer->Initialize();
@@ -79,6 +82,7 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 
     g_editorUI = std::make_unique<EditorUI>();
     g_editorUI->Initialize();
+    g_editorUI->SetEditorSettings(appSettings.editor);
 
     g_editorRenderer = std::make_unique<EditorRenderer>();
     g_editorRenderer->Initialize();
@@ -115,6 +119,14 @@ int Run()
 
 void Shutdown()
 {
+    AppSettings appSettings;
+    appSettings.window = g_window->GetSettings();
+    appSettings.camera = g_camera->GetSettings();
+#ifdef BA_EDITOR
+    appSettings.editor = g_editorUI->GetEditorSettings();
+#endif // BA_EDITOR
+    SaveSettings(appSettings);
+
 #ifdef BA_EDITOR
     g_editorRenderer->Shutdown();
     g_editorRenderer.reset();

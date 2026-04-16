@@ -7,20 +7,20 @@ namespace BA
 
 struct CameraSettings
 {
-    Vector3 position;
-    float yaw;
-    float pitch;
-    float fovY;
-    float nearZ;
-    float farZ;
-    float moveSpeed;
-    float mouseSensitivity;
+    Vector3 position = {0.0f, 0.0f, -1.0f};
+    float yaw = 0.0f;
+    float pitch = 0.0f;
+    float fovY = DegToRad(60.0f);
+    float nearZ = 0.1f;
+    float farZ = 1000.0f;
+    float moveSpeed = 5.0f;
+    float mouseSensitivity = 0.003f;
 };
 
 class Camera
 {
 public:
-    void Initialize();
+    void Initialize(const CameraSettings& settings);
     void Shutdown();
 
     void Update(float deltaSeconds);
@@ -34,16 +34,9 @@ public:
 
 private:
     // Rotation sign convention matches the left-handed X/Y rotation matrices:
-    //   positive m_yaw   = turn right (rotate +X toward +Z)
-    //   positive m_pitch = look down  (rotate +Y toward +Z)
-    Vector3 m_position = {0.0f, 0.0f, -1.0f};
-    float m_yaw = 0.0f;
-    float m_pitch = 0.0f;
-    float m_fovY = DegToRad(60.0f);
-    float m_nearZ = 0.1f;
-    float m_farZ = 1000.0f;
-    float m_moveSpeed = 5.0f;
-    float m_mouseSensitivity = 0.003f;
+    //   positive yaw   = turn right (rotate +X toward +Z)
+    //   positive pitch = look down  (rotate +Y toward +Z)
+    CameraSettings m_settings;
 };
 
 extern std::unique_ptr<Camera> g_camera;

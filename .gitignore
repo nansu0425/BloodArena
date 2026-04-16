@@ -58,3 +58,6 @@ vcpkg_installed/
 
 # ImGui
 imgui.ini
+
+# Settings
+settings.json

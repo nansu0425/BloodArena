@@ -1,4 +1,4 @@
-#include "Core/PCH.h"
+﻿#include "Core/PCH.h"
 #include "Scene/Camera.h"
 #include "Core/Input.h"
 
@@ -17,8 +17,10 @@ Matrix BuildCameraOrientation(float yaw, float pitch)
 
 } // namespace
 
-void Camera::Initialize()
+void Camera::Initialize(const CameraSettings& settings)
 {
+    m_settings = settings;
+
     BA_LOG_INFO("Camera initialized.");
 }
 
@@ -34,12 +36,12 @@ void Camera::Update(float deltaSeconds)
     if (g_input->IsRightMouseDown())
     {
         Vector2 delta = g_input->GetMouseDelta();
-        m_yaw += delta.x * m_mouseSensitivity;
-        m_pitch += delta.y * m_mouseSensitivity;
-        m_pitch = std::clamp(m_pitch, -kPitchLimit, kPitchLimit);
+        m_settings.yaw += delta.x * m_settings.mouseSensitivity;
+        m_settings.pitch += delta.y * m_settings.mouseSensitivity;
+        m_settings.pitch = std::clamp(m_settings.pitch, -kPitchLimit, kPitchLimit);
     }
 
-    Matrix orientation = BuildCameraOrientation(m_yaw, m_pitch);
+    Matrix orientation = BuildCameraOrientation(m_settings.yaw, m_settings.pitch);
     Vector3 forward = Vector3::TransformNormal(kAxisForward, orientation);
     Vector3 right = Vector3::TransformNormal(kAxisRight, orientation);
 
@@ -54,45 +56,30 @@ void Camera::Update(float deltaSeconds)
     if (move.LengthSquared() > 0.0f)
     {
         move.Normalize();
-        m_position += move * (m_moveSpeed * deltaSeconds);
+        m_settings.position += move * (m_settings.moveSpeed * deltaSeconds);
     }
 }
 
 Matrix Camera::GetViewMatrix() const
 {
-    Vector3 forward = Vector3::TransformNormal(kAxisForward, BuildCameraOrientation(m_yaw, m_pitch));
-    return BuildLookAt(m_position, m_position + forward, kAxisUp);
+    Vector3 forward = Vector3::TransformNormal(
+        kAxisForward, BuildCameraOrientation(m_settings.yaw, m_settings.pitch));
+    return BuildLookAt(m_settings.position, m_settings.position + forward, kAxisUp);
 }
 
 Matrix Camera::GetProjectionMatrix(float aspect) const
 {
-    return BuildPerspectiveFov(m_fovY, aspect, m_nearZ, m_farZ);
+    return BuildPerspectiveFov(m_settings.fovY, aspect, m_settings.nearZ, m_settings.farZ);
 }
 
 CameraSettings Camera::GetSettings() const
 {
-    CameraSettings settings;
-    settings.position = m_position;
-    settings.yaw = m_yaw;
-    settings.pitch = m_pitch;
-    settings.fovY = m_fovY;
-    settings.nearZ = m_nearZ;
-    settings.farZ = m_farZ;
-    settings.moveSpeed = m_moveSpeed;
-    settings.mouseSensitivity = m_mouseSensitivity;
-    return settings;
+    return m_settings;
 }
 
 void Camera::SetSettings(const CameraSettings& settings)
 {
-    m_position = settings.position;
-    m_yaw = settings.yaw;
-    m_pitch = settings.pitch;
-    m_fovY = settings.fovY;
-    m_nearZ = settings.nearZ;
-    m_farZ = settings.farZ;
-    m_moveSpeed = settings.moveSpeed;
-    m_mouseSensitivity = settings.mouseSensitivity;
+    m_settings = settings;
 }
 
 void Camera::ResetToDefaults()

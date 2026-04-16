@@ -188,6 +188,7 @@
     <ClInclude Include="Core\Input.h" />
     <ClInclude Include="Core\PCH.h" />
     <ClInclude Include="Core\Logger.h" />
+    <ClInclude Include="Core\Settings.h" />
     <ClInclude Include="Core\Time.h" />
     <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="Editor\EditorConsoleSink.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
@@ -210,6 +211,7 @@
     </ClCompile>
     <ClCompile Include="Core\Input.cpp" />
     <ClCompile Include="Core\Logger.cpp" />
+    <ClCompile Include="Core\Settings.cpp" />
     <ClCompile Include="Core\Time.cpp" />
     <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="Editor\EditorConsoleSink.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />

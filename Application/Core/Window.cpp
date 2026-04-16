@@ -12,14 +12,15 @@
 namespace BA
 {
 
-void Window::Initialize(HINSTANCE hInstance, int nCmdShow)
+void Window::Initialize(HINSTANCE hInstance, int nCmdShow, const WindowSettings& settings)
 {
     m_hInstance = hInstance;
+    m_settings = settings;
 
     RegisterWindowClass();
     SetWindowRect();
     CreateWnd();
-    ShowWindow(m_handle, nCmdShow);
+    ShowWindow(m_handle, m_settings.isMaximized ? SW_MAXIMIZE : nCmdShow);
 
     BA_LOG_INFO("Window initialized.");
 }
@@ -76,14 +77,25 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             break;
         }
 
+        UINT width = LOWORD(lParam);
+        UINT height = HIWORD(lParam);
+
+        g_window->m_settings.isMaximized = (wParam == SIZE_MAXIMIZED);
+        g_window->m_settings.clientWidth = static_cast<int>(width);
+        g_window->m_settings.clientHeight = static_cast<int>(height);
+
         ResizeCallback resizeCallback = g_window->m_resizeCallback;
         if (resizeCallback)
         {
-            UINT width = LOWORD(lParam);
-            UINT height = HIWORD(lParam);
             resizeCallback(width, height);
         }
 
+        return 0;
+    }
+    case WM_MOVE:
+    {
+        g_window->m_settings.positionX = GET_X_LPARAM(lParam);
+        g_window->m_settings.positionY = GET_Y_LPARAM(lParam);
         return 0;
     }
     case WM_DESTROY:
@@ -167,14 +179,18 @@ void Window::RegisterWindowClass()
     }
 }
 
+WindowSettings Window::GetSettings() const
+{
+    return m_settings;
+}
+
 void Window::SetWindowRect()
 {
-    // Desired client area size
     m_windowRect = {
         .left = 0,
         .top = 0,
-        .right = 1280,
-        .bottom = 720
+        .right = static_cast<LONG>(m_settings.clientWidth),
+        .bottom = static_cast<LONG>(m_settings.clientHeight)
     };
 
     // Calculate the window size required to achieve the desired client area
@@ -191,8 +207,8 @@ void Window::CreateWnd()
         kClassName,
         L"Blood Arena",
         WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
+        m_settings.positionX,
+        m_settings.positionY,
         m_windowRect.right - m_windowRect.left,
         m_windowRect.bottom - m_windowRect.top,
         nullptr,

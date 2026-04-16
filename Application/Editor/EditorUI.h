@@ -5,6 +5,12 @@
 namespace BA
 {
 
+struct EditorSettings
+{
+    LogLevel consoleFilterLevel = LogLevel::Trace;
+    bool isConsoleAutoScroll = true;
+};
+
 struct ConsoleEntry
 {
     std::string message;
@@ -29,6 +35,9 @@ public:
 
     bool GetConsoleAutoScroll() const;
     void SetConsoleAutoScroll(bool autoScroll);
+
+    EditorSettings GetEditorSettings() const;
+    void SetEditorSettings(const EditorSettings& settings);
 
 private:
     uint32_t m_selectedGameObjectId = 0;
