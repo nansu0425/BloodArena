@@ -11,11 +11,35 @@ namespace BA
 namespace
 {
 
-const Vector3 kTriangleVertices[3] =
+constexpr int kTrianglesPerFace = 2;
+constexpr int kVerticesPerFace = 4;
+constexpr int kFaceCount = 6;
+constexpr int kCubeTriangleCount = kFaceCount * kTrianglesPerFace;
+
+const Vector3 kCubePositions[kFaceCount * kVerticesPerFace] =
 {
-    { 0.0f,   0.06f, 0.0f},
-    { 0.06f, -0.04f, 0.0f},
-    {-0.06f, -0.04f, 0.0f},
+    // +Z
+    {-0.5f,  0.5f,  0.5f}, { 0.5f,  0.5f,  0.5f}, { 0.5f, -0.5f,  0.5f}, {-0.5f, -0.5f,  0.5f},
+    // -Z
+    { 0.5f,  0.5f, -0.5f}, {-0.5f,  0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, { 0.5f, -0.5f, -0.5f},
+    // +Y
+    {-0.5f,  0.5f, -0.5f}, { 0.5f,  0.5f, -0.5f}, { 0.5f,  0.5f,  0.5f}, {-0.5f,  0.5f,  0.5f},
+    // -Y
+    {-0.5f, -0.5f,  0.5f}, { 0.5f, -0.5f,  0.5f}, { 0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f},
+    // +X
+    { 0.5f,  0.5f,  0.5f}, { 0.5f,  0.5f, -0.5f}, { 0.5f, -0.5f, -0.5f}, { 0.5f, -0.5f,  0.5f},
+    // -X
+    {-0.5f,  0.5f, -0.5f}, {-0.5f,  0.5f,  0.5f}, {-0.5f, -0.5f,  0.5f}, {-0.5f, -0.5f, -0.5f},
+};
+
+const uint16_t kCubeIndices[kCubeTriangleCount * 3] =
+{
+     0,  2,  1,   0,  3,  2,
+     4,  6,  5,   4,  7,  6,
+     8, 10,  9,   8, 11, 10,
+    12, 14, 13,  12, 15, 14,
+    16, 18, 17,  16, 19, 18,
+    20, 22, 21,  20, 23, 22,
 };
 
 Ray BuildPickRayFromNdc(float ndcX, float ndcY, const Matrix& view, const Matrix& projection)
@@ -44,15 +68,18 @@ uint32_t PickGameObject(float ndcX, float ndcY, const Camera& camera, float aspe
     {
         Matrix worldMatrix = BuildWorld(gameObject.transform);
 
-        Vector3 v0 = Vector3::Transform(kTriangleVertices[0], worldMatrix);
-        Vector3 v1 = Vector3::Transform(kTriangleVertices[1], worldMatrix);
-        Vector3 v2 = Vector3::Transform(kTriangleVertices[2], worldMatrix);
-
-        float distance = 0.0f;
-        if (ray.Intersects(v0, v1, v2, distance) && distance < closestT)
+        for (int i = 0; i < kCubeTriangleCount; ++i)
         {
-            closestT = distance;
-            hitId = gameObject.id;
+            Vector3 v0 = Vector3::Transform(kCubePositions[kCubeIndices[i * 3 + 0]], worldMatrix);
+            Vector3 v1 = Vector3::Transform(kCubePositions[kCubeIndices[i * 3 + 1]], worldMatrix);
+            Vector3 v2 = Vector3::Transform(kCubePositions[kCubeIndices[i * 3 + 2]], worldMatrix);
+
+            float distance = 0.0f;
+            if (ray.Intersects(v0, v1, v2, distance) && distance < closestT)
+            {
+                closestT = distance;
+                hitId = gameObject.id;
+            }
         }
     }
 

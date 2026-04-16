@@ -17,6 +17,8 @@ void SceneViewport::Initialize()
 
 void SceneViewport::Shutdown()
 {
+    m_dsv.Reset();
+    m_depthTexture.Reset();
     m_srv.Reset();
     m_rtv.Reset();
     m_texture.Reset();
@@ -39,6 +41,8 @@ void SceneViewport::Resize(UINT width, UINT height)
     m_srv.Reset();
     m_rtv.Reset();
     m_texture.Reset();
+    m_dsv.Reset();
+    m_depthTexture.Reset();
 
     D3D11_TEXTURE2D_DESC texDesc = {
         .Width = width,
@@ -69,6 +73,29 @@ void SceneViewport::Resize(UINT width, UINT height)
         m_srv.GetAddressOf()
     ));
 
+    D3D11_TEXTURE2D_DESC depthDesc = {
+        .Width = width,
+        .Height = height,
+        .MipLevels = 1,
+        .ArraySize = 1,
+        .Format = DXGI_FORMAT_D24_UNORM_S8_UINT,
+        .SampleDesc = {.Count = 1, .Quality = 0},
+        .Usage = D3D11_USAGE_DEFAULT,
+        .BindFlags = D3D11_BIND_DEPTH_STENCIL,
+    };
+
+    BA_CRASH_IF_FAILED(m_device->CreateTexture2D(
+        &depthDesc,
+        nullptr,
+        m_depthTexture.GetAddressOf()
+    ));
+
+    BA_CRASH_IF_FAILED(m_device->CreateDepthStencilView(
+        m_depthTexture.Get(),
+        nullptr,
+        m_dsv.GetAddressOf()
+    ));
+
     m_width = width;
     m_height = height;
 }
@@ -78,7 +105,8 @@ void SceneViewport::Clear()
     static constexpr FLOAT kSceneClearColor[4] = {0.392f, 0.584f, 0.929f, 1.0f};
 
     m_deviceContext->ClearRenderTargetView(m_rtv.Get(), kSceneClearColor);
-    m_deviceContext->OMSetRenderTargets(1, m_rtv.GetAddressOf(), nullptr);
+    m_deviceContext->ClearDepthStencilView(m_dsv.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    m_deviceContext->OMSetRenderTargets(1, m_rtv.GetAddressOf(), m_dsv.Get());
 
     D3D11_VIEWPORT vp = {
         .TopLeftX = 0,

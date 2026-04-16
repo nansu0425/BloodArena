@@ -9,12 +9,14 @@ cbuffer ObjectConstants : register(b0)
 struct VSInput
 {
     float3 position : POSITION;
+    float3 normal : NORMAL;
 };
 
 struct VSOutput
 {
     float4 position : SV_POSITION;
     float4 color : COLOR;
+    float3 normal : NORMAL;
 };
 
 VSOutput main(VSInput input)
@@ -24,5 +26,7 @@ VSOutput main(VSInput input)
     VSOutput output;
     output.position = mul(viewPos, projectionMatrix);
     output.color = objectColor;
+    // Pass through without inverse-transpose; correct transform needed for non-uniform scale (Task 6)
+    output.normal = input.normal;
     return output;
 }

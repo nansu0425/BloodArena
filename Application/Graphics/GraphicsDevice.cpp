@@ -25,6 +25,7 @@ void GraphicsDevice::Initialize(HWND window)
     SetFactory();
     CreateSwapChain();
     CreateBackBufferRTV();
+    CreateDepthBuffer();
     SetViewports();
 
     BA_LOG_INFO("GraphicsDevice initialized.");
@@ -32,6 +33,8 @@ void GraphicsDevice::Initialize(HWND window)
 
 void GraphicsDevice::Shutdown()
 {
+    m_dsv.Reset();
+    m_depthTexture.Reset();
     m_backBufferRTV.Reset();
     m_swapChain.Reset();
     m_factory.Reset();
@@ -44,7 +47,8 @@ void GraphicsDevice::Shutdown()
 void GraphicsDevice::BeginFrame()
 {
     m_deviceContext->ClearRenderTargetView(m_backBufferRTV.Get(), kBackgroundColor);
-    m_deviceContext->OMSetRenderTargets(1, m_backBufferRTV.GetAddressOf(), nullptr);
+    m_deviceContext->ClearDepthStencilView(m_dsv.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    m_deviceContext->OMSetRenderTargets(1, m_backBufferRTV.GetAddressOf(), m_dsv.Get());
 
 #ifndef BA_EDITOR
     SetViewports();
@@ -68,15 +72,18 @@ void GraphicsDevice::Resize(UINT width, UINT height)
 
     m_deviceContext->OMSetRenderTargets(0, nullptr, nullptr);
     m_backBufferRTV.Reset();
+    m_dsv.Reset();
+    m_depthTexture.Reset();
     BA_CRASH_IF_FAILED(m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0));
     CreateBackBufferRTV();
+    CreateDepthBuffer();
     SetViewports();
 }
 
 #ifdef BA_EDITOR
 void GraphicsDevice::RestoreBackBuffer()
 {
-    m_deviceContext->OMSetRenderTargets(1, m_backBufferRTV.GetAddressOf(), nullptr);
+    m_deviceContext->OMSetRenderTargets(1, m_backBufferRTV.GetAddressOf(), m_dsv.Get());
     SetViewports();
 }
 #endif // BA_EDITOR
@@ -180,6 +187,37 @@ void GraphicsDevice::CreateBackBufferRTV()
         backBuffer.Get(),
         nullptr,
         m_backBufferRTV.GetAddressOf()
+    ));
+}
+
+void GraphicsDevice::CreateDepthBuffer()
+{
+    BA_ASSERT(m_swapChain.Get());
+
+    DXGI_SWAP_CHAIN_DESC1 desc = {};
+    m_swapChain->GetDesc1(&desc);
+
+    D3D11_TEXTURE2D_DESC depthDesc = {
+        .Width = desc.Width,
+        .Height = desc.Height,
+        .MipLevels = 1,
+        .ArraySize = 1,
+        .Format = DXGI_FORMAT_D24_UNORM_S8_UINT,
+        .SampleDesc = {.Count = 1, .Quality = 0},
+        .Usage = D3D11_USAGE_DEFAULT,
+        .BindFlags = D3D11_BIND_DEPTH_STENCIL,
+    };
+
+    BA_CRASH_IF_FAILED(m_device->CreateTexture2D(
+        &depthDesc,
+        nullptr,
+        m_depthTexture.GetAddressOf()
+    ));
+
+    BA_CRASH_IF_FAILED(m_device->CreateDepthStencilView(
+        m_depthTexture.Get(),
+        nullptr,
+        m_dsv.GetAddressOf()
     ));
 }
 

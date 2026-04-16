@@ -27,6 +27,7 @@ private:
     void SetFactory();
     void CreateSwapChain();
     void CreateBackBufferRTV();
+    void CreateDepthBuffer();
     void SetViewports();
 
 private:
@@ -37,6 +38,9 @@ private:
     Microsoft::WRL::ComPtr<IDXGIFactory3> m_factory;
     Microsoft::WRL::ComPtr<IDXGISwapChain1> m_swapChain;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_backBufferRTV;
+
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depthTexture;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_dsv;
 };
 
 extern std::unique_ptr<GraphicsDevice> g_graphicsDevice;

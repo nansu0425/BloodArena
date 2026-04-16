@@ -13,6 +13,7 @@ using namespace Microsoft::WRL;
 struct Vertex
 {
     Vector3 position;
+    Vector3 normal;
 };
 
 struct ObjectConstants
@@ -33,16 +34,21 @@ void SceneRenderer::Initialize()
     CreateSharedMesh();
     CompileShaders();
     CreateConstantBuffer();
+    CreateRasterizerState();
+    CreateDepthStencilState();
 
     BA_LOG_INFO("SceneRenderer initialized.");
 }
 
 void SceneRenderer::Shutdown()
 {
+    m_depthStencilState.Reset();
+    m_rasterizerState.Reset();
     m_constantBuffer.Reset();
     m_inputLayout.Reset();
     m_pixelShader.Reset();
     m_vertexShader.Reset();
+    m_indexBuffer.Reset();
     m_vertexBuffer.Reset();
     m_deviceContext = nullptr;
     m_device = nullptr;
@@ -55,8 +61,11 @@ void SceneRenderer::Render(float aspect)
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
     m_deviceContext->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
+    m_deviceContext->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_deviceContext->IASetInputLayout(m_inputLayout.Get());
+    m_deviceContext->RSSetState(m_rasterizerState.Get());
+    m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
     m_deviceContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     m_deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
     m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
@@ -79,7 +88,7 @@ void SceneRenderer::Render(float aspect)
         constants->color[3] = gameObject.color[3];
 
         m_deviceContext->Unmap(m_constantBuffer.Get(), 0);
-        m_deviceContext->Draw(3, 0);
+        m_deviceContext->DrawIndexed(m_indexCount, 0, 0);
     }
 }
 
@@ -87,28 +96,94 @@ void SceneRenderer::CreateSharedMesh()
 {
     BA_ASSERT(m_device);
 
+    // Unit cube [-0.5, 0.5]^3, 24 vertices (4 per face, each with face normal), CW winding (LH)
     Vertex vertices[] =
     {
-        {{ 0.0f,   0.06f, 0.0f}},
-        {{ 0.06f, -0.04f, 0.0f}},
-        {{-0.06f, -0.04f, 0.0f}},
-    };
-    static_assert(sizeof(Vertex) == sizeof(float) * 3);
+        // +Z face (front)
+        {{-0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}},
+        {{-0.5f, -0.5f,  0.5f}, { 0.0f,  0.0f,  1.0f}},
 
-    D3D11_BUFFER_DESC bufferDesc = {
+        // -Z face (back)
+        {{ 0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}},
+        {{-0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}},
+        {{-0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}},
+
+        // +Y face (top)
+        {{-0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, { 0.0f,  1.0f,  0.0f}},
+        {{ 0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}},
+        {{-0.5f,  0.5f,  0.5f}, { 0.0f,  1.0f,  0.0f}},
+
+        // -Y face (bottom)
+        {{-0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, { 0.0f, -1.0f,  0.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}},
+        {{-0.5f, -0.5f, -0.5f}, { 0.0f, -1.0f,  0.0f}},
+
+        // +X face (right)
+        {{ 0.5f,  0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, { 1.0f,  0.0f,  0.0f}},
+        {{ 0.5f, -0.5f,  0.5f}, { 1.0f,  0.0f,  0.0f}},
+
+        // -X face (left)
+        {{-0.5f,  0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}},
+        {{-0.5f,  0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}},
+        {{-0.5f, -0.5f,  0.5f}, {-1.0f,  0.0f,  0.0f}},
+        {{-0.5f, -0.5f, -0.5f}, {-1.0f,  0.0f,  0.0f}},
+    };
+    static_assert(sizeof(Vertex) == sizeof(float) * 6);
+
+    uint16_t indices[] =
+    {
+        // +Z
+         0,  2,  1,   0,  3,  2,
+        // -Z
+         4,  6,  5,   4,  7,  6,
+        // +Y
+         8, 10,  9,   8, 11, 10,
+        // -Y
+        12, 14, 13,  12, 15, 14,
+        // +X
+        16, 18, 17,  16, 19, 18,
+        // -X
+        20, 22, 21,  20, 23, 22,
+    };
+    m_indexCount = _countof(indices);
+
+    D3D11_BUFFER_DESC vbDesc = {
         .ByteWidth = sizeof(vertices),
         .Usage = D3D11_USAGE_IMMUTABLE,
         .BindFlags = D3D11_BIND_VERTEX_BUFFER,
     };
 
-    D3D11_SUBRESOURCE_DATA initData = {
+    D3D11_SUBRESOURCE_DATA vbData = {
         .pSysMem = vertices,
     };
 
     BA_CRASH_IF_FAILED(m_device->CreateBuffer(
-        &bufferDesc,
-        &initData,
+        &vbDesc,
+        &vbData,
         m_vertexBuffer.GetAddressOf()
+    ));
+
+    D3D11_BUFFER_DESC ibDesc = {
+        .ByteWidth = sizeof(indices),
+        .Usage = D3D11_USAGE_IMMUTABLE,
+        .BindFlags = D3D11_BIND_INDEX_BUFFER,
+    };
+
+    D3D11_SUBRESOURCE_DATA ibData = {
+        .pSysMem = indices,
+    };
+
+    BA_CRASH_IF_FAILED(m_device->CreateBuffer(
+        &ibDesc,
+        &ibData,
+        m_indexBuffer.GetAddressOf()
     ));
 }
 
@@ -216,7 +291,8 @@ void SceneRenderer::CreateInputLayout(ID3DBlob* vsBlob)
 
     D3D11_INPUT_ELEMENT_DESC inputElements[] =
     {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"NORMAL",   0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
     };
 
     BA_CRASH_IF_FAILED(m_device->CreateInputLayout(
@@ -225,6 +301,40 @@ void SceneRenderer::CreateInputLayout(ID3DBlob* vsBlob)
         vsBlob->GetBufferPointer(),
         vsBlob->GetBufferSize(),
         m_inputLayout.GetAddressOf()
+    ));
+}
+
+void SceneRenderer::CreateRasterizerState()
+{
+    BA_ASSERT(m_device);
+
+    D3D11_RASTERIZER_DESC desc = {
+        .FillMode = D3D11_FILL_SOLID,
+        .CullMode = D3D11_CULL_BACK,
+        .FrontCounterClockwise = FALSE,
+        .DepthClipEnable = TRUE,
+    };
+
+    BA_CRASH_IF_FAILED(m_device->CreateRasterizerState(
+        &desc,
+        m_rasterizerState.GetAddressOf()
+    ));
+}
+
+void SceneRenderer::CreateDepthStencilState()
+{
+    BA_ASSERT(m_device);
+
+    D3D11_DEPTH_STENCIL_DESC desc = {
+        .DepthEnable = TRUE,
+        .DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL,
+        .DepthFunc = D3D11_COMPARISON_LESS,
+        .StencilEnable = FALSE,
+    };
+
+    BA_CRASH_IF_FAILED(m_device->CreateDepthStencilState(
+        &desc,
+        m_depthStencilState.GetAddressOf()
     ));
 }
 

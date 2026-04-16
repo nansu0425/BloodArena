@@ -26,6 +26,9 @@ private:
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_rtv;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_srv;
 
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depthTexture;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_dsv;
+
     UINT m_width = 0;
     UINT m_height = 0;
 };

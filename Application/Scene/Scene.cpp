@@ -18,9 +18,9 @@ constexpr float kPalette[][4] =
 
 constexpr uint32_t kPaletteSize = _countof(kPalette);
 constexpr uint32_t kGridColumns = 5;
-constexpr float kGridStartX = -0.7f;
-constexpr float kGridStartY = 0.5f;
-constexpr float kGridSpacing = 0.35f;
+constexpr float kGridStartX = -4.0f;
+constexpr float kGridStartY = 3.0f;
+constexpr float kGridSpacing = 2.0f;
 
 void Scene::Initialize()
 {
