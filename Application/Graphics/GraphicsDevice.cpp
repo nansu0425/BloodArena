@@ -109,6 +109,50 @@ float GraphicsDevice::GetAspectRatio() const
     return static_cast<float>(desc.Width) / static_cast<float>(desc.Height);
 }
 
+ComPtr<ID3D11Buffer> GraphicsDevice::CreateVertexBuffer(const void* data, UINT byteWidth)
+{
+    BA_ASSERT(m_device.Get());
+    BA_ASSERT(data);
+    BA_ASSERT(byteWidth > 0);
+
+    D3D11_BUFFER_DESC desc = {
+        .ByteWidth = byteWidth,
+        .Usage = D3D11_USAGE_IMMUTABLE,
+        .BindFlags = D3D11_BIND_VERTEX_BUFFER,
+    };
+
+    D3D11_SUBRESOURCE_DATA initData = {
+        .pSysMem = data,
+    };
+
+    ComPtr<ID3D11Buffer> buffer;
+    BA_CRASH_IF_FAILED(m_device->CreateBuffer(&desc, &initData, buffer.GetAddressOf()));
+
+    return buffer;
+}
+
+ComPtr<ID3D11Buffer> GraphicsDevice::CreateIndexBuffer(const void* data, UINT byteWidth)
+{
+    BA_ASSERT(m_device.Get());
+    BA_ASSERT(data);
+    BA_ASSERT(byteWidth > 0);
+
+    D3D11_BUFFER_DESC desc = {
+        .ByteWidth = byteWidth,
+        .Usage = D3D11_USAGE_IMMUTABLE,
+        .BindFlags = D3D11_BIND_INDEX_BUFFER,
+    };
+
+    D3D11_SUBRESOURCE_DATA initData = {
+        .pSysMem = data,
+    };
+
+    ComPtr<ID3D11Buffer> buffer;
+    BA_CRASH_IF_FAILED(m_device->CreateBuffer(&desc, &initData, buffer.GetAddressOf()));
+
+    return buffer;
+}
+
 void GraphicsDevice::CreateDevice()
 {
     D3D_FEATURE_LEVEL featureLevels[] = {D3D_FEATURE_LEVEL_11_0};

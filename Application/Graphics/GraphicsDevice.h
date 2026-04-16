@@ -22,6 +22,9 @@ public:
     ID3D11DeviceContext* GetDeviceContext() const;
     float GetAspectRatio() const;
 
+    Microsoft::WRL::ComPtr<ID3D11Buffer> CreateVertexBuffer(const void* data, UINT byteWidth);
+    Microsoft::WRL::ComPtr<ID3D11Buffer> CreateIndexBuffer(const void* data, UINT byteWidth);
+
 private:
     void CreateDevice();
     void SetFactory();

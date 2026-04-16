@@ -12,7 +12,6 @@ public:
     void Render(float aspect);
 
 private:
-    void CreateSharedMesh();
     void CompileShaders();
     Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const wchar_t* filePath, const char* target);
     void CreateInputLayout(ID3DBlob* vsBlob);
@@ -23,10 +22,6 @@ private:
 private:
     ID3D11Device* m_device = nullptr;
     ID3D11DeviceContext* m_deviceContext = nullptr;
-
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
-    UINT m_indexCount = 0;
 
     Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
     Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;

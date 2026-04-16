@@ -6,6 +6,7 @@
 #include "Core/Input.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/SceneRenderer.h"
+#include "Graphics/MeshLibrary.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
 
@@ -66,6 +67,9 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 
     g_graphicsDevice = std::make_unique<GraphicsDevice>();
     g_graphicsDevice->Initialize(g_window->GetHandle());
+
+    g_meshLibrary = std::make_unique<MeshLibrary>();
+    g_meshLibrary->Initialize();
 
     g_scene = std::make_unique<Scene>();
     g_scene->Initialize();
@@ -146,6 +150,9 @@ void Shutdown()
 
     g_scene->Shutdown();
     g_scene.reset();
+
+    g_meshLibrary->Shutdown();
+    g_meshLibrary.reset();
 
     g_graphicsDevice->Shutdown();
     g_graphicsDevice.reset();

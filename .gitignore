@@ -61,3 +61,15 @@ imgui.ini
 
 # Settings
 settings.json
+
+# =============================================================================
+# 3D Model Assets
+# =============================================================================
+# Exclude binary model files by default (game-final assets should not bloat git history).
+# Allowlist specific Khronos sample assets used for validation.
+Application/Assets/Models/*.glb
+Application/Assets/Models/*.gltf
+Application/Assets/Models/*.fbx
+Application/Assets/Models/*.bin
+!Application/Assets/Models/Duck.glb
+!Application/Assets/Models/BoxVertexColors.glb

@@ -109,7 +109,7 @@
       <AdditionalDependencies>d3d11.lib;dxgi.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /I /E "$(ProjectDir)Shaders" "$(OutDir)Shaders"</Command>
+      <Command>xcopy /Y /I /E "$(ProjectDir)Assets" "$(OutDir)Assets"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_Game|x64'">
@@ -131,7 +131,7 @@
       <AdditionalDependencies>d3d11.lib;dxgi.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /I /E "$(ProjectDir)Shaders" "$(OutDir)Shaders"</Command>
+      <Command>xcopy /Y /I /E "$(ProjectDir)Assets" "$(OutDir)Assets"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Editor|x64'">
@@ -155,7 +155,7 @@
       <AdditionalDependencies>d3d11.lib;dxgi.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /I /E "$(ProjectDir)Shaders" "$(OutDir)Shaders"</Command>
+      <Command>xcopy /Y /I /E "$(ProjectDir)Assets" "$(OutDir)Assets"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_Game|x64'">
@@ -179,7 +179,7 @@
       <AdditionalDependencies>d3d11.lib;dxgi.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /I /E "$(ProjectDir)Shaders" "$(OutDir)Shaders"</Command>
+      <Command>xcopy /Y /I /E "$(ProjectDir)Assets" "$(OutDir)Assets"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -192,7 +192,12 @@
     <ClInclude Include="Core\Time.h" />
     <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="Editor\EditorConsoleSink.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
+    <ClInclude Include="Core\PathUtils.h" />
     <ClInclude Include="Graphics\GraphicsDevice.h" />
+    <ClInclude Include="Graphics\Vertex.h" />
+    <ClInclude Include="Graphics\Mesh.h" />
+    <ClInclude Include="Graphics\ModelLoader.h" />
+    <ClInclude Include="Graphics\MeshLibrary.h" />
     <ClInclude Include="Graphics\SceneRenderer.h" />
     <ClInclude Include="Core\Window.h" />
     <ClInclude Include="Core\Lifecycle.h" />
@@ -216,6 +221,8 @@
     <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="Editor\EditorConsoleSink.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Graphics\GraphicsDevice.cpp" />
+    <ClCompile Include="Graphics\ModelLoader.cpp" />
+    <ClCompile Include="Graphics\MeshLibrary.cpp" />
     <ClCompile Include="Graphics\SceneRenderer.cpp" />
     <ClCompile Include="Core\Window.cpp" />
     <ClCompile Include="Core\WinMain.cpp" />
