@@ -14,23 +14,6 @@ namespace BA
 namespace
 {
 
-struct LoadedTextureData
-{
-    bool hasTexture = false;
-    std::vector<uint8_t> rgba;
-    uint32_t width = 0;
-    uint32_t height = 0;
-};
-
-struct ExtractionContext
-{
-    std::vector<Vertex> allVertices;
-    std::vector<uint32_t> allIndices;
-    int firstMaterialIndex = -1;
-    bool hasAnyNormals = false;
-    bool hasMultipleMaterials = false;
-};
-
 const float* GetAttributeData(const tinygltf::Model& model, const tinygltf::Primitive& primitive, const char* attribute)
 {
     auto it = primitive.attributes.find(attribute);
@@ -132,6 +115,19 @@ Matrix ComputeNodeLocalTransform(const tinygltf::Node& node)
          * Matrix::CreateTranslation(translation);
 }
 
+Matrix ConvertNodeTransformRhToLh(Matrix m)
+{
+    // Z-axis reflection F = diag(1,1,-1,1). Applied as M_LH = F * M_RH * F, which
+    // flips the four Z off-diagonals of the rotation/scale basis plus the Z translation.
+    // The Z-diagonal (_33) and non-Z translation components stay as-is.
+    m._13 = -m._13;
+    m._23 = -m._23;
+    m._31 = -m._31;
+    m._32 = -m._32;
+    m._43 = -m._43;
+    return m;
+}
+
 std::vector<Vertex> ExtractVertices(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
 {
     int vertexCount = GetAttributeCount(model, primitive, "POSITION");
@@ -151,8 +147,7 @@ std::vector<Vertex> ExtractVertices(const tinygltf::Model& model, const tinygltf
     {
         Vertex& v = vertices[i];
 
-        // Raw glTF (right-handed) values. Handedness conversion is deferred to ConvertRhToLh,
-        // after node transforms are applied in glTF's native RH space.
+        // Raw glTF (right-handed) values; ConvertRhToLh flips Z after normals are resolved.
         v.position.x = positions[i * posStride + 0];
         v.position.y = positions[i * posStride + 1];
         v.position.z = positions[i * posStride + 2];
@@ -183,7 +178,7 @@ std::vector<Vertex> ExtractVertices(const tinygltf::Model& model, const tinygltf
     return vertices;
 }
 
-std::vector<uint32_t> ExtractIndices(const tinygltf::Model& model, const tinygltf::Primitive& primitive, uint32_t baseVertex)
+std::vector<uint32_t> ExtractIndices(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
 {
     BA_ASSERT(primitive.indices >= 0);
 
@@ -217,179 +212,10 @@ std::vector<uint32_t> ExtractIndices(const tinygltf::Model& model, const tinyglt
             break;
         }
 
-        indices[i] = index + baseVertex;
+        indices[i] = index;
     }
 
     return indices;
-}
-
-void ApplyNodeTransform(std::vector<Vertex>& vertices, size_t firstVertexIndex, const Matrix& worldTransform, bool hasNormals)
-{
-    Matrix normalMatrix = worldTransform.Invert().Transpose();
-
-    for (size_t i = firstVertexIndex; i < vertices.size(); ++i)
-    {
-        Vertex& v = vertices[i];
-        v.position = Vector3::Transform(v.position, worldTransform);
-
-        if (hasNormals)
-        {
-            v.normal = Vector3::TransformNormal(v.normal, normalMatrix);
-            v.normal.Normalize();
-        }
-    }
-}
-
-void ExtractMeshWithTransform(
-    const tinygltf::Model& model,
-    const tinygltf::Mesh& mesh,
-    const Matrix& worldTransform,
-    ExtractionContext& ctx)
-{
-    for (const tinygltf::Primitive& primitive : mesh.primitives)
-    {
-        if (primitive.mode != TINYGLTF_MODE_TRIANGLES && primitive.mode != -1)
-        {
-            BA_LOG_WARN("Skipping non-triangle primitive (mode={})", primitive.mode);
-            continue;
-        }
-
-        if (primitive.attributes.find("POSITION") == primitive.attributes.end())
-        {
-            BA_LOG_WARN("Skipping primitive without POSITION attribute");
-            continue;
-        }
-
-        if (primitive.indices < 0)
-        {
-            BA_LOG_WARN("Skipping non-indexed primitive");
-            continue;
-        }
-
-        if (ctx.firstMaterialIndex < 0)
-        {
-            ctx.firstMaterialIndex = primitive.material;
-        }
-        else if (primitive.material != ctx.firstMaterialIndex)
-        {
-            ctx.hasMultipleMaterials = true;
-        }
-
-        uint32_t baseVertex = static_cast<uint32_t>(ctx.allVertices.size());
-
-        bool hasNormals = primitive.attributes.find("NORMAL") != primitive.attributes.end();
-        ctx.hasAnyNormals = ctx.hasAnyNormals || hasNormals;
-
-        std::vector<Vertex> primVertices = ExtractVertices(model, primitive);
-        std::vector<uint32_t> primIndices = ExtractIndices(model, primitive, baseVertex);
-
-        size_t firstVertexIndex = ctx.allVertices.size();
-
-        ctx.allVertices.insert(
-            ctx.allVertices.end(),
-            std::make_move_iterator(primVertices.begin()),
-            std::make_move_iterator(primVertices.end())
-        );
-        ctx.allIndices.insert(
-            ctx.allIndices.end(),
-            std::make_move_iterator(primIndices.begin()),
-            std::make_move_iterator(primIndices.end())
-        );
-
-        ApplyNodeTransform(ctx.allVertices, firstVertexIndex, worldTransform, hasNormals);
-    }
-}
-
-void WalkNode(
-    const tinygltf::Model& model,
-    int nodeIndex,
-    const Matrix& parentWorldTransform,
-    ExtractionContext& ctx)
-{
-    BA_ASSERT(nodeIndex >= 0 && nodeIndex < static_cast<int>(model.nodes.size()));
-
-    const tinygltf::Node& node = model.nodes[nodeIndex];
-    Matrix localTransform = ComputeNodeLocalTransform(node);
-
-    // Row-vector convention: v' = v * (local * parent) applies local first, then parent.
-    Matrix worldTransform = localTransform * parentWorldTransform;
-
-    if (node.mesh >= 0 && node.mesh < static_cast<int>(model.meshes.size()))
-    {
-        ExtractMeshWithTransform(model, model.meshes[node.mesh], worldTransform, ctx);
-    }
-
-    for (int childIndex : node.children)
-    {
-        WalkNode(model, childIndex, worldTransform, ctx);
-    }
-}
-
-std::vector<uint8_t> PadRgbToRgba(const std::vector<uint8_t>& rgb)
-{
-    BA_ASSERT(rgb.size() % 3 == 0);
-
-    size_t pixelCount = rgb.size() / 3;
-    std::vector<uint8_t> rgba(pixelCount * 4);
-
-    for (size_t i = 0; i < pixelCount; ++i)
-    {
-        rgba[i * 4 + 0] = rgb[i * 3 + 0];
-        rgba[i * 4 + 1] = rgb[i * 3 + 1];
-        rgba[i * 4 + 2] = rgb[i * 3 + 2];
-        rgba[i * 4 + 3] = 255;
-    }
-
-    return rgba;
-}
-
-LoadedTextureData ExtractBaseColorTexture(const tinygltf::Model& model, int materialIndex)
-{
-    if (materialIndex < 0 || materialIndex >= static_cast<int>(model.materials.size()))
-    {
-        return {};
-    }
-
-    const tinygltf::Material& material = model.materials[materialIndex];
-    int textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
-    if (textureIndex < 0 || textureIndex >= static_cast<int>(model.textures.size()))
-    {
-        return {};
-    }
-
-    int imageIndex = model.textures[textureIndex].source;
-    if (imageIndex < 0 || imageIndex >= static_cast<int>(model.images.size()))
-    {
-        return {};
-    }
-
-    const tinygltf::Image& image = model.images[imageIndex];
-    if (image.image.empty() || image.width <= 0 || image.height <= 0)
-    {
-        BA_LOG_WARN("baseColorTexture image is empty or invalid");
-        return {};
-    }
-
-    LoadedTextureData result;
-    result.width = static_cast<uint32_t>(image.width);
-    result.height = static_cast<uint32_t>(image.height);
-
-    if (image.component == 4)
-    {
-        result.rgba = image.image;
-    }
-    else if (image.component == 3)
-    {
-        result.rgba = PadRgbToRgba(image.image);
-    }
-    else
-    {
-        BA_LOG_WARN("Unsupported baseColorTexture channel count: {}", image.component);
-        return {};
-    }
-
-    result.hasTexture = true;
-    return result;
 }
 
 std::vector<Vertex> ComputeFlatNormals(std::vector<Vertex> vertices, const std::vector<uint32_t>& indices)
@@ -437,9 +263,115 @@ void ConvertRhToLh(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices
     }
 }
 
+bool IsExtractablePrimitive(const tinygltf::Primitive& primitive)
+{
+    if (primitive.mode != TINYGLTF_MODE_TRIANGLES && primitive.mode != -1)
+    {
+        BA_LOG_WARN("Skipping non-triangle primitive (mode={})", primitive.mode);
+        return false;
+    }
+
+    if (primitive.attributes.find("POSITION") == primitive.attributes.end())
+    {
+        BA_LOG_WARN("Skipping primitive without POSITION attribute");
+        return false;
+    }
+
+    if (primitive.indices < 0)
+    {
+        BA_LOG_WARN("Skipping non-indexed primitive");
+        return false;
+    }
+
+    return true;
+}
+
+LoadedPrimitiveData ExtractPrimitive(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
+{
+    LoadedPrimitiveData result;
+    result.materialIndex = primitive.material;
+
+    result.vertices = ExtractVertices(model, primitive);
+    result.indices  = ExtractIndices(model, primitive);
+
+    bool hasNormals = primitive.attributes.find("NORMAL") != primitive.attributes.end();
+    if (!hasNormals)
+    {
+        result.vertices = ComputeFlatNormals(std::move(result.vertices), result.indices);
+    }
+
+    ConvertRhToLh(result.vertices, result.indices);
+    return result;
+}
+
+std::vector<uint8_t> PadRgbToRgba(const std::vector<uint8_t>& rgb)
+{
+    BA_ASSERT(rgb.size() % 3 == 0);
+
+    size_t pixelCount = rgb.size() / 3;
+    std::vector<uint8_t> rgba(pixelCount * 4);
+
+    constexpr uint8_t kOpaqueAlpha = 255;
+    for (size_t i = 0; i < pixelCount; ++i)
+    {
+        rgba[i * 4 + 0] = rgb[i * 3 + 0];
+        rgba[i * 4 + 1] = rgb[i * 3 + 1];
+        rgba[i * 4 + 2] = rgb[i * 3 + 2];
+        rgba[i * 4 + 3] = kOpaqueAlpha;
+    }
+
+    return rgba;
+}
+
+LoadedMaterialData ExtractMaterial(const tinygltf::Model& model, const tinygltf::Material& material)
+{
+    LoadedMaterialData result;
+
+    int textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+    if (textureIndex < 0 || textureIndex >= static_cast<int>(model.textures.size()))
+    {
+        return result;
+    }
+
+    int imageIndex = model.textures[textureIndex].source;
+    if (imageIndex < 0 || imageIndex >= static_cast<int>(model.images.size()))
+    {
+        return result;
+    }
+
+    const tinygltf::Image& image = model.images[imageIndex];
+    if (image.image.empty() || image.width <= 0 || image.height <= 0)
+    {
+        BA_LOG_WARN("baseColorTexture image is empty or invalid");
+        return result;
+    }
+
+    result.diffuseWidth = static_cast<uint32_t>(image.width);
+    result.diffuseHeight = static_cast<uint32_t>(image.height);
+
+    constexpr int kRgbChannelCount = 3;
+    constexpr int kRgbaChannelCount = 4;
+    if (image.component == kRgbaChannelCount)
+    {
+        result.diffuseRgba8 = image.image;
+    }
+    else if (image.component == kRgbChannelCount)
+    {
+        result.diffuseRgba8 = PadRgbToRgba(image.image);
+    }
+    else
+    {
+        BA_LOG_WARN("Unsupported baseColorTexture channel count: {}", image.component);
+        return result;
+    }
+
+    result.hasDiffuseTexture = true;
+    return result;
+}
+
 } // namespace
 
-LoadedMeshData LoadModelFromFile(const std::string& filePath)
+LoadedModelData LoadModelFromFile(const std::string& filePath)
 {
     tinygltf::Model model;
     tinygltf::TinyGLTF loader;
@@ -448,8 +380,9 @@ LoadedMeshData LoadModelFromFile(const std::string& filePath)
 
     bool isLoaded = false;
 
-    // Determine file type by extension
-    if (filePath.size() >= 4 && filePath.substr(filePath.size() - 4) == ".glb")
+    constexpr std::string_view kGlbExtension = ".glb";
+    if (filePath.size() >= kGlbExtension.size()
+        && filePath.compare(filePath.size() - kGlbExtension.size(), kGlbExtension.size(), kGlbExtension) == 0)
     {
         isLoaded = loader.LoadBinaryFromFile(&model, &err, &warn, filePath);
     }
@@ -469,54 +402,66 @@ LoadedMeshData LoadModelFromFile(const std::string& filePath)
         return {.isLoaded = false};
     }
 
-    ExtractionContext ctx;
+    LoadedModelData out;
+    out.isLoaded = true;
 
-    if (model.scenes.empty())
+    out.materials.reserve(model.materials.size());
+    for (const tinygltf::Material& material : model.materials)
     {
-        // glTF library file with no scene metadata — fall back to flat mesh iteration.
-        for (const tinygltf::Mesh& mesh : model.meshes)
+        out.materials.push_back(ExtractMaterial(model, material));
+    }
+
+    out.meshes.reserve(model.meshes.size());
+    for (const tinygltf::Mesh& mesh : model.meshes)
+    {
+        LoadedMeshData meshOut;
+        for (const tinygltf::Primitive& primitive : mesh.primitives)
         {
-            ExtractMeshWithTransform(model, mesh, Matrix::Identity, ctx);
+            if (!IsExtractablePrimitive(primitive))
+            {
+                continue;
+            }
+            meshOut.primitives.push_back(ExtractPrimitive(model, primitive));
         }
+        out.meshes.push_back(std::move(meshOut));
+    }
+
+    out.nodes.reserve(model.nodes.size());
+    for (const tinygltf::Node& node : model.nodes)
+    {
+        LoadedNodeData nodeOut;
+        nodeOut.localTransform = ConvertNodeTransformRhToLh(ComputeNodeLocalTransform(node));
+        nodeOut.meshIndex = node.mesh;
+        nodeOut.childIndices.assign(node.children.begin(), node.children.end());
+        out.nodes.push_back(std::move(nodeOut));
+    }
+
+    if (!model.scenes.empty())
+    {
+        int sceneIndex = (model.defaultScene >= 0) ? model.defaultScene : 0;
+        out.rootNodeIndices.assign(
+            model.scenes[sceneIndex].nodes.begin(),
+            model.scenes[sceneIndex].nodes.end());
     }
     else
     {
-        int sceneIndex = (model.defaultScene >= 0) ? model.defaultScene : 0;
-        for (int rootNodeIndex : model.scenes[sceneIndex].nodes)
+        // Library-style glTF file with no scene metadata: wrap each mesh in a synthetic identity node.
+        for (size_t meshIdx = 0; meshIdx < out.meshes.size(); ++meshIdx)
         {
-            WalkNode(model, rootNodeIndex, Matrix::Identity, ctx);
+            LoadedNodeData nodeOut;
+            nodeOut.meshIndex = static_cast<int>(meshIdx);
+            out.nodes.push_back(std::move(nodeOut));
+            out.rootNodeIndices.push_back(static_cast<int>(out.nodes.size() - 1));
         }
     }
 
-    if (ctx.allVertices.empty())
+    if (out.meshes.empty() || out.rootNodeIndices.empty())
     {
         BA_LOG_ERROR("No valid mesh data found in '{}'", filePath);
         return {.isLoaded = false};
     }
 
-    if (!ctx.hasAnyNormals)
-    {
-        ctx.allVertices = ComputeFlatNormals(std::move(ctx.allVertices), ctx.allIndices);
-    }
-
-    ConvertRhToLh(ctx.allVertices, ctx.allIndices);
-
-    if (ctx.hasMultipleMaterials)
-    {
-        BA_LOG_WARN("glTF '{}' uses multiple materials; only the first is applied", filePath);
-    }
-
-    LoadedTextureData texture = ExtractBaseColorTexture(model, ctx.firstMaterialIndex);
-
-    return {
-        .isLoaded = true,
-        .vertices = std::move(ctx.allVertices),
-        .indices  = std::move(ctx.allIndices),
-        .hasTexture = texture.hasTexture,
-        .textureRgba8 = std::move(texture.rgba),
-        .textureWidth = texture.width,
-        .textureHeight = texture.height,
-    };
+    return out;
 }
 
 } // namespace BA

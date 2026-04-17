@@ -2,7 +2,7 @@
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/Vertex.h"
-#include "Graphics/MeshLibrary.h"
+#include "Graphics/ModelLibrary.h"
 #include "Graphics/TextureLibrary.h"
 #include "Core/PathUtils.h"
 #include "Math/MathUtils.h"
@@ -21,6 +21,78 @@ struct ObjectConstants
     Matrix projectionMatrix;
     float color[4];
 };
+
+namespace
+{
+
+void DrawNode(
+    ID3D11DeviceContext* ctx,
+    const Model& model,
+    int nodeIndex,
+    const Matrix& parentAccumulated,
+    const Matrix& objectWorld,
+    const Matrix& viewMatrix,
+    const Matrix& projectionMatrix,
+    const float color[4],
+    ID3D11Buffer* constantBuffer)
+{
+    // Row-vector convention (see ModelLoader.cpp ComputeNodeLocalTransform): v' = v * (local * parent).
+    const Node& node = model.nodes[nodeIndex];
+    Matrix accumulated = node.localTransform * parentAccumulated;
+
+    if (node.meshIndex >= 0)
+    {
+        Matrix finalWorld = accumulated * objectWorld;
+        const Mesh& mesh = model.meshes[node.meshIndex];
+
+        for (const Primitive& prim : mesh.primitives)
+        {
+            const Texture* texture = nullptr;
+            if (prim.materialIndex >= 0 && prim.materialIndex < static_cast<int>(model.materials.size()))
+            {
+                const std::string& texName = model.materials[prim.materialIndex].diffuseTextureName;
+                texture = texName.empty()
+                    ? g_textureLibrary->GetDefaultTexture()
+                    : g_textureLibrary->FindTexture(texName);
+            }
+            if (!texture)
+            {
+                texture = g_textureLibrary->GetDefaultTexture();
+            }
+            BA_ASSERT(texture);
+
+            UINT stride = sizeof(Vertex);
+            UINT offset = 0;
+            ctx->IASetVertexBuffers(0, 1, prim.vertexBuffer.GetAddressOf(), &stride, &offset);
+            DXGI_FORMAT indexFormat = prim.isIndex32Bit ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT;
+            ctx->IASetIndexBuffer(prim.indexBuffer.Get(), indexFormat, 0);
+            ctx->PSSetShaderResources(0, 1, texture->srv.GetAddressOf());
+
+            D3D11_MAPPED_SUBRESOURCE mapped = {};
+            BA_CRASH_IF_FAILED(ctx->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
+
+            ObjectConstants* constants = static_cast<ObjectConstants*>(mapped.pData);
+            constants->worldMatrix = finalWorld;
+            constants->viewMatrix = viewMatrix;
+            constants->projectionMatrix = projectionMatrix;
+            constants->color[0] = color[0];
+            constants->color[1] = color[1];
+            constants->color[2] = color[2];
+            constants->color[3] = color[3];
+
+            ctx->Unmap(constantBuffer, 0);
+            ctx->DrawIndexed(prim.indexCount, 0, 0);
+        }
+    }
+
+    for (int childIndex : node.childIndices)
+    {
+        DrawNode(ctx, model, childIndex, accumulated, objectWorld,
+                 viewMatrix, projectionMatrix, color, constantBuffer);
+    }
+}
+
+} // namespace
 
 void SceneRenderer::Initialize()
 {
@@ -70,43 +142,21 @@ void SceneRenderer::Render(float aspect)
 
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
-        const Mesh* mesh = g_meshLibrary->FindMesh(gameObject.meshName);
-        if (!mesh)
+        const Model* model = g_modelLibrary->FindModel(gameObject.modelName);
+        if (!model)
         {
-            mesh = g_meshLibrary->GetDefaultMesh();
+            model = g_modelLibrary->GetDefaultModel();
         }
-        BA_ASSERT(mesh);
+        BA_ASSERT(model);
 
-        UINT stride = sizeof(Vertex);
-        UINT offset = 0;
-        m_deviceContext->IASetVertexBuffers(0, 1, mesh->vertexBuffer.GetAddressOf(), &stride, &offset);
-        DXGI_FORMAT indexFormat = mesh->isIndex32Bit ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT;
-        m_deviceContext->IASetIndexBuffer(mesh->indexBuffer.Get(), indexFormat, 0);
-
-        const Texture* texture = mesh->textureName.empty()
-            ? g_textureLibrary->GetDefaultTexture()
-            : g_textureLibrary->FindTexture(mesh->textureName);
-        if (!texture)
+        Matrix objectWorld = BuildWorld(gameObject.transform);
+        for (int rootIndex : model->rootNodeIndices)
         {
-            texture = g_textureLibrary->GetDefaultTexture();
+            DrawNode(m_deviceContext, *model, rootIndex,
+                     Matrix::Identity, objectWorld,
+                     viewMatrix, projectionMatrix,
+                     gameObject.color, m_constantBuffer.Get());
         }
-        BA_ASSERT(texture);
-        m_deviceContext->PSSetShaderResources(0, 1, texture->srv.GetAddressOf());
-
-        D3D11_MAPPED_SUBRESOURCE mapped = {};
-        BA_CRASH_IF_FAILED(m_deviceContext->Map(m_constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
-
-        ObjectConstants* constants = static_cast<ObjectConstants*>(mapped.pData);
-        constants->worldMatrix = BuildWorld(gameObject.transform);
-        constants->viewMatrix = viewMatrix;
-        constants->projectionMatrix = projectionMatrix;
-        constants->color[0] = gameObject.color[0];
-        constants->color[1] = gameObject.color[1];
-        constants->color[2] = gameObject.color[2];
-        constants->color[3] = gameObject.color[3];
-
-        m_deviceContext->Unmap(m_constantBuffer.Get(), 0);
-        m_deviceContext->DrawIndexed(mesh->indexCount, 0, 0);
     }
 }
 

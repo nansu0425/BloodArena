@@ -10,7 +10,7 @@ struct GameObject
     uint32_t id = 0;
     float color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
     Transform transform;
-    std::string meshName;
+    std::string modelName;
 };
 
 } // namespace BA

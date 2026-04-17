@@ -1,7 +1,7 @@
 #include "Core/PCH.h"
 #include "Graphics/EditorRenderer.h"
 #include "Graphics/GraphicsDevice.h"
-#include "Graphics/MeshLibrary.h"
+#include "Graphics/ModelLibrary.h"
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/SceneViewport.h"
 #include "Editor/EditorUI.h"
@@ -47,7 +47,7 @@ ImVec4 GetLogLevelColor(LogLevel level)
 
 const char* kLogLevelNames[] = { "Trace", "Debug", "Info", "Warn", "Error", "Critical" };
 
-constexpr const char* kUnsetMeshLabel = "<none>";
+constexpr const char* kUnsetModelLabel = "<none>";
 
 } // namespace
 
@@ -292,29 +292,29 @@ void EditorRenderer::RenderInspector()
 
     ImGui::Separator();
 
-    RenderMeshPicker(*selected);
+    RenderModelPicker(*selected);
 
     ImGui::End();
 }
 
-void EditorRenderer::RenderMeshPicker(GameObject& gameObject)
+void EditorRenderer::RenderModelPicker(GameObject& gameObject)
 {
-    std::vector<std::string> names = g_meshLibrary->GetMeshNames();
+    std::vector<std::string> names = g_modelLibrary->GetModelNames();
 
     std::vector<const char*> items;
     items.reserve(names.size() + 1);
-    items.push_back(kUnsetMeshLabel);
+    items.push_back(kUnsetModelLabel);
     for (const std::string& name : names)
     {
         items.push_back(name.c_str());
     }
 
     int currentIndex = 0;
-    if (!gameObject.meshName.empty())
+    if (!gameObject.modelName.empty())
     {
         for (size_t i = 0; i < names.size(); ++i)
         {
-            if (names[i] == gameObject.meshName)
+            if (names[i] == gameObject.modelName)
             {
                 currentIndex = static_cast<int>(i) + 1;
                 break;
@@ -322,21 +322,28 @@ void EditorRenderer::RenderMeshPicker(GameObject& gameObject)
         }
     }
 
-    if (ImGui::Combo("Mesh", &currentIndex, items.data(), static_cast<int>(items.size())))
+    if (ImGui::Combo("Model", &currentIndex, items.data(), static_cast<int>(items.size())))
     {
-        gameObject.meshName = (currentIndex == 0) ? std::string{} : names[currentIndex - 1];
+        gameObject.modelName = (currentIndex == 0) ? std::string{} : names[currentIndex - 1];
     }
 
-    const Mesh* mesh = g_meshLibrary->FindMesh(gameObject.meshName);
-    if (mesh == nullptr)
+    const Model* model = g_modelLibrary->FindModel(gameObject.modelName);
+    if (model == nullptr)
     {
         ImGui::TextDisabled("(using default cube fallback)");
         return;
     }
 
-    ImGui::Text("Index count: %u", mesh->indexCount);
-    ImGui::Text("Index format: %s", mesh->isIndex32Bit ? "32-bit" : "16-bit");
-    ImGui::Text("Texture: %s", mesh->textureName.empty() ? "(none)" : mesh->textureName.c_str());
+    size_t primitiveCount = 0;
+    for (const Mesh& mesh : model->meshes)
+    {
+        primitiveCount += mesh.primitives.size();
+    }
+
+    ImGui::Text("Nodes: %zu", model->nodes.size());
+    ImGui::Text("Meshes: %zu", model->meshes.size());
+    ImGui::Text("Primitives: %zu", primitiveCount);
+    ImGui::Text("Materials: %zu", model->materials.size());
 }
 
 void EditorRenderer::RenderConsole()
