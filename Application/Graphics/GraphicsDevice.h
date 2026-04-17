@@ -24,6 +24,8 @@ public:
 
     Microsoft::WRL::ComPtr<ID3D11Buffer> CreateVertexBuffer(const void* data, UINT byteWidth);
     Microsoft::WRL::ComPtr<ID3D11Buffer> CreateIndexBuffer(const void* data, UINT byteWidth);
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> CreateTextureRgba8SRV(const void* pixels, UINT width, UINT height);
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> CreateLinearWrapSampler();
 
 private:
     void CreateDevice();

@@ -29,6 +29,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
     Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerState;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthStencilState;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> m_linearWrapSampler;
 };
 
 extern std::unique_ptr<SceneRenderer> g_sceneRenderer;

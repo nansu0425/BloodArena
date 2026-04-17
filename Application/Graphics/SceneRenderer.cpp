@@ -3,6 +3,7 @@
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/Vertex.h"
 #include "Graphics/MeshLibrary.h"
+#include "Graphics/TextureLibrary.h"
 #include "Core/PathUtils.h"
 #include "Math/MathUtils.h"
 #include "Scene/Scene.h"
@@ -33,11 +34,14 @@ void SceneRenderer::Initialize()
     CreateRasterizerState();
     CreateDepthStencilState();
 
+    m_linearWrapSampler = g_graphicsDevice->CreateLinearWrapSampler();
+
     BA_LOG_INFO("SceneRenderer initialized.");
 }
 
 void SceneRenderer::Shutdown()
 {
+    m_linearWrapSampler.Reset();
     m_depthStencilState.Reset();
     m_rasterizerState.Reset();
     m_constantBuffer.Reset();
@@ -59,6 +63,7 @@ void SceneRenderer::Render(float aspect)
     m_deviceContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     m_deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
     m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+    m_deviceContext->PSSetSamplers(0, 1, m_linearWrapSampler.GetAddressOf());
 
     Matrix viewMatrix = g_camera->GetViewMatrix();
     Matrix projectionMatrix = g_camera->GetProjectionMatrix(aspect);
@@ -77,6 +82,16 @@ void SceneRenderer::Render(float aspect)
         m_deviceContext->IASetVertexBuffers(0, 1, mesh->vertexBuffer.GetAddressOf(), &stride, &offset);
         DXGI_FORMAT indexFormat = mesh->isIndex32Bit ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT;
         m_deviceContext->IASetIndexBuffer(mesh->indexBuffer.Get(), indexFormat, 0);
+
+        const Texture* texture = mesh->textureName.empty()
+            ? g_textureLibrary->GetDefaultTexture()
+            : g_textureLibrary->FindTexture(mesh->textureName);
+        if (!texture)
+        {
+            texture = g_textureLibrary->GetDefaultTexture();
+        }
+        BA_ASSERT(texture);
+        m_deviceContext->PSSetShaderResources(0, 1, texture->srv.GetAddressOf());
 
         D3D11_MAPPED_SUBRESOURCE mapped = {};
         BA_CRASH_IF_FAILED(m_deviceContext->Map(m_constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));

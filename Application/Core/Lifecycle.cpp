@@ -7,6 +7,7 @@
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/MeshLibrary.h"
+#include "Graphics/TextureLibrary.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
 
@@ -21,6 +22,40 @@ namespace BA
 
 namespace
 {
+
+void LoadTestScene()
+{
+    g_meshLibrary->LoadMesh("duck", "Assets/Models/Duck.glb");
+    g_meshLibrary->LoadMesh("box_vertex_colors", "Assets/Models/BoxVertexColors.glb");
+
+    uint32_t cubeId = g_scene->CreateGameObject();
+    GameObject* cube = g_scene->FindGameObject(cubeId);
+    cube->meshName = "cube";
+    cube->transform.position = {-3.0f, 0.0f, 0.0f};
+    cube->color[0] = 1.0f;
+    cube->color[1] = 0.3f;
+    cube->color[2] = 0.3f;
+    cube->color[3] = 1.0f;
+
+    uint32_t duckId = g_scene->CreateGameObject();
+    GameObject* duck = g_scene->FindGameObject(duckId);
+    duck->meshName = "duck";
+    duck->transform.position = {0.0f, 0.0f, 0.0f};
+    duck->transform.scale = {0.02f, 0.02f, 0.02f};
+    duck->color[0] = 1.0f;
+    duck->color[1] = 1.0f;
+    duck->color[2] = 1.0f;
+    duck->color[3] = 1.0f;
+
+    uint32_t boxId = g_scene->CreateGameObject();
+    GameObject* box = g_scene->FindGameObject(boxId);
+    box->meshName = "box_vertex_colors";
+    box->transform.position = {3.0f, 0.0f, 0.0f};
+    box->color[0] = 0.3f;
+    box->color[1] = 1.0f;
+    box->color[2] = 0.3f;
+    box->color[3] = 1.0f;
+}
 
 void RenderFrame()
 {
@@ -68,11 +103,16 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_graphicsDevice = std::make_unique<GraphicsDevice>();
     g_graphicsDevice->Initialize(g_window->GetHandle());
 
+    g_textureLibrary = std::make_unique<TextureLibrary>();
+    g_textureLibrary->Initialize();
+
     g_meshLibrary = std::make_unique<MeshLibrary>();
     g_meshLibrary->Initialize();
 
     g_scene = std::make_unique<Scene>();
     g_scene->Initialize();
+
+    LoadTestScene();
 
     g_camera = std::make_unique<Camera>();
     g_camera->Initialize(appSettings.camera);
@@ -153,6 +193,9 @@ void Shutdown()
 
     g_meshLibrary->Shutdown();
     g_meshLibrary.reset();
+
+    g_textureLibrary->Shutdown();
+    g_textureLibrary.reset();
 
     g_graphicsDevice->Shutdown();
     g_graphicsDevice.reset();

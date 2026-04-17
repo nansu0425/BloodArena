@@ -14,6 +14,14 @@ namespace BA
 namespace
 {
 
+struct LoadedTextureData
+{
+    bool hasTexture = false;
+    std::vector<uint8_t> rgba;
+    uint32_t width = 0;
+    uint32_t height = 0;
+};
+
 const float* GetAttributeData(const tinygltf::Model& model, const tinygltf::Primitive& primitive, const char* attribute)
 {
     auto it = primitive.attributes.find(attribute);
@@ -63,8 +71,7 @@ int GetAttributeByteStride(const tinygltf::Model& model, const tinygltf::Primiti
     return stride;
 }
 
-void ExtractVertices(const tinygltf::Model& model, const tinygltf::Primitive& primitive,
-                     std::vector<Vertex>& outVertices, uint32_t baseVertex)
+std::vector<Vertex> ExtractVertices(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
 {
     int vertexCount = GetAttributeCount(model, primitive, "POSITION");
     BA_ASSERT(vertexCount > 0);
@@ -77,11 +84,11 @@ void ExtractVertices(const tinygltf::Model& model, const tinygltf::Primitive& pr
     int normStride = normals ? GetAttributeByteStride(model, primitive, "NORMAL") / sizeof(float) : 0;
     int uvStride = texcoords ? GetAttributeByteStride(model, primitive, "TEXCOORD_0") / sizeof(float) : 0;
 
-    outVertices.resize(baseVertex + vertexCount);
+    std::vector<Vertex> vertices(vertexCount);
 
     for (int i = 0; i < vertexCount; ++i)
     {
-        Vertex& v = outVertices[baseVertex + i];
+        Vertex& v = vertices[i];
 
         // Position: negate Z for RH -> LH conversion
         v.position.x =  positions[i * posStride + 0];
@@ -111,10 +118,11 @@ void ExtractVertices(const tinygltf::Model& model, const tinygltf::Primitive& pr
             v.uv = {0.0f, 0.0f};
         }
     }
+
+    return vertices;
 }
 
-void ExtractIndices(const tinygltf::Model& model, const tinygltf::Primitive& primitive,
-                    std::vector<uint32_t>& outIndices, uint32_t baseVertex, uint32_t baseIndex)
+std::vector<uint32_t> ExtractIndices(const tinygltf::Model& model, const tinygltf::Primitive& primitive, uint32_t baseVertex)
 {
     BA_ASSERT(primitive.indices >= 0);
 
@@ -124,9 +132,10 @@ void ExtractIndices(const tinygltf::Model& model, const tinygltf::Primitive& pri
     const uint8_t* rawData = &buf.data[view.byteOffset + accessor.byteOffset];
 
     int indexCount = static_cast<int>(accessor.count);
-    outIndices.resize(baseIndex + indexCount);
+    BA_ASSERT(indexCount % 3 == 0);
 
-    // Read indices based on component type
+    std::vector<uint32_t> indices(indexCount);
+
     for (int i = 0; i < indexCount; ++i)
     {
         uint32_t index = 0;
@@ -147,18 +156,86 @@ void ExtractIndices(const tinygltf::Model& model, const tinygltf::Primitive& pri
             break;
         }
 
-        outIndices[baseIndex + i] = index + baseVertex;
+        indices[i] = index + baseVertex;
     }
 
     // Reverse winding order for RH -> LH conversion (swap i1 and i2 per triangle)
-    BA_ASSERT(indexCount % 3 == 0);
-    for (uint32_t i = baseIndex; i < baseIndex + indexCount; i += 3)
+    for (size_t i = 0; i < indices.size(); i += 3)
     {
-        std::swap(outIndices[i + 1], outIndices[i + 2]);
+        std::swap(indices[i + 1], indices[i + 2]);
     }
+
+    return indices;
 }
 
-void ComputeFlatNormals(std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+std::vector<uint8_t> PadRgbToRgba(const std::vector<uint8_t>& rgb)
+{
+    BA_ASSERT(rgb.size() % 3 == 0);
+
+    size_t pixelCount = rgb.size() / 3;
+    std::vector<uint8_t> rgba(pixelCount * 4);
+
+    for (size_t i = 0; i < pixelCount; ++i)
+    {
+        rgba[i * 4 + 0] = rgb[i * 3 + 0];
+        rgba[i * 4 + 1] = rgb[i * 3 + 1];
+        rgba[i * 4 + 2] = rgb[i * 3 + 2];
+        rgba[i * 4 + 3] = 255;
+    }
+
+    return rgba;
+}
+
+LoadedTextureData ExtractBaseColorTexture(const tinygltf::Model& model, int materialIndex)
+{
+    if (materialIndex < 0 || materialIndex >= static_cast<int>(model.materials.size()))
+    {
+        return {};
+    }
+
+    const tinygltf::Material& material = model.materials[materialIndex];
+    int textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+    if (textureIndex < 0 || textureIndex >= static_cast<int>(model.textures.size()))
+    {
+        return {};
+    }
+
+    int imageIndex = model.textures[textureIndex].source;
+    if (imageIndex < 0 || imageIndex >= static_cast<int>(model.images.size()))
+    {
+        return {};
+    }
+
+    const tinygltf::Image& image = model.images[imageIndex];
+    if (image.image.empty() || image.width <= 0 || image.height <= 0)
+    {
+        BA_LOG_WARN("baseColorTexture image is empty or invalid");
+        return {};
+    }
+
+    LoadedTextureData result;
+    result.width = static_cast<uint32_t>(image.width);
+    result.height = static_cast<uint32_t>(image.height);
+
+    if (image.component == 4)
+    {
+        result.rgba = image.image;
+    }
+    else if (image.component == 3)
+    {
+        result.rgba = PadRgbToRgba(image.image);
+    }
+    else
+    {
+        BA_LOG_WARN("Unsupported baseColorTexture channel count: {}", image.component);
+        return {};
+    }
+
+    result.hasTexture = true;
+    return result;
+}
+
+std::vector<Vertex> ComputeFlatNormals(std::vector<Vertex> vertices, const std::vector<uint32_t>& indices)
 {
     for (auto& v : vertices)
     {
@@ -184,6 +261,8 @@ void ComputeFlatNormals(std::vector<Vertex>& vertices, const std::vector<uint32_
     {
         v.normal.Normalize();
     }
+
+    return vertices;
 }
 
 } // namespace
@@ -222,6 +301,8 @@ LoadedMeshData LoadModelFromFile(const std::string& filePath)
     std::vector<uint32_t> allIndices;
 
     bool hasAnyNormals = false;
+    int firstMaterialIndex = -1;
+    bool hasMultipleMaterials = false;
 
     for (const tinygltf::Mesh& mesh : model.meshes)
     {
@@ -245,14 +326,33 @@ LoadedMeshData LoadModelFromFile(const std::string& filePath)
                 continue;
             }
 
+            if (firstMaterialIndex < 0)
+            {
+                firstMaterialIndex = primitive.material;
+            }
+            else if (primitive.material != firstMaterialIndex)
+            {
+                hasMultipleMaterials = true;
+            }
+
             uint32_t baseVertex = static_cast<uint32_t>(allVertices.size());
-            uint32_t baseIndex = static_cast<uint32_t>(allIndices.size());
 
             bool hasNormals = primitive.attributes.find("NORMAL") != primitive.attributes.end();
             hasAnyNormals = hasAnyNormals || hasNormals;
 
-            ExtractVertices(model, primitive, allVertices, baseVertex);
-            ExtractIndices(model, primitive, allIndices, baseVertex, baseIndex);
+            std::vector<Vertex> primVertices = ExtractVertices(model, primitive);
+            std::vector<uint32_t> primIndices = ExtractIndices(model, primitive, baseVertex);
+
+            allVertices.insert(
+                allVertices.end(),
+                std::make_move_iterator(primVertices.begin()),
+                std::make_move_iterator(primVertices.end())
+            );
+            allIndices.insert(
+                allIndices.end(),
+                std::make_move_iterator(primIndices.begin()),
+                std::make_move_iterator(primIndices.end())
+            );
         }
     }
 
@@ -264,13 +364,24 @@ LoadedMeshData LoadModelFromFile(const std::string& filePath)
 
     if (!hasAnyNormals)
     {
-        ComputeFlatNormals(allVertices, allIndices);
+        allVertices = ComputeFlatNormals(std::move(allVertices), allIndices);
     }
+
+    if (hasMultipleMaterials)
+    {
+        BA_LOG_WARN("glTF '{}' uses multiple materials; only the first is applied", filePath);
+    }
+
+    LoadedTextureData texture = ExtractBaseColorTexture(model, firstMaterialIndex);
 
     return {
         .isLoaded = true,
         .vertices = std::move(allVertices),
         .indices  = std::move(allIndices),
+        .hasTexture = texture.hasTexture,
+        .textureRgba8 = std::move(texture.rgba),
+        .textureWidth = texture.width,
+        .textureHeight = texture.height,
     };
 }
 

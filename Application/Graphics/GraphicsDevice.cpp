@@ -153,6 +153,60 @@ ComPtr<ID3D11Buffer> GraphicsDevice::CreateIndexBuffer(const void* data, UINT by
     return buffer;
 }
 
+ComPtr<ID3D11ShaderResourceView> GraphicsDevice::CreateTextureRgba8SRV(const void* pixels, UINT width, UINT height)
+{
+    BA_ASSERT(m_device.Get());
+    BA_ASSERT(pixels);
+    BA_ASSERT(width > 0 && height > 0);
+
+    D3D11_TEXTURE2D_DESC texDesc = {
+        .Width = width,
+        .Height = height,
+        .MipLevels = 1,
+        .ArraySize = 1,
+        .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+        .SampleDesc = {.Count = 1, .Quality = 0},
+        .Usage = D3D11_USAGE_IMMUTABLE,
+        .BindFlags = D3D11_BIND_SHADER_RESOURCE,
+    };
+
+    constexpr UINT kBytesPerPixel = 4;
+    D3D11_SUBRESOURCE_DATA initData = {
+        .pSysMem = pixels,
+        .SysMemPitch = width * kBytesPerPixel,
+    };
+
+    ComPtr<ID3D11Texture2D> texture;
+    BA_CRASH_IF_FAILED(m_device->CreateTexture2D(&texDesc, &initData, texture.GetAddressOf()));
+
+    ComPtr<ID3D11ShaderResourceView> srv;
+    BA_CRASH_IF_FAILED(m_device->CreateShaderResourceView(texture.Get(), nullptr, srv.GetAddressOf()));
+
+    return srv;
+}
+
+ComPtr<ID3D11SamplerState> GraphicsDevice::CreateLinearWrapSampler()
+{
+    BA_ASSERT(m_device.Get());
+
+    D3D11_SAMPLER_DESC desc = {
+        .Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+        .AddressU = D3D11_TEXTURE_ADDRESS_WRAP,
+        .AddressV = D3D11_TEXTURE_ADDRESS_WRAP,
+        .AddressW = D3D11_TEXTURE_ADDRESS_WRAP,
+        .MipLODBias = 0.0f,
+        .MaxAnisotropy = 1,
+        .ComparisonFunc = D3D11_COMPARISON_NEVER,
+        .MinLOD = 0.0f,
+        .MaxLOD = D3D11_FLOAT32_MAX,
+    };
+
+    ComPtr<ID3D11SamplerState> sampler;
+    BA_CRASH_IF_FAILED(m_device->CreateSamplerState(&desc, sampler.GetAddressOf()));
+
+    return sampler;
+}
+
 void GraphicsDevice::CreateDevice()
 {
     D3D_FEATURE_LEVEL featureLevels[] = {D3D_FEATURE_LEVEL_11_0};
