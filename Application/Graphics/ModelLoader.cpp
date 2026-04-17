@@ -22,6 +22,15 @@ struct LoadedTextureData
     uint32_t height = 0;
 };
 
+struct ExtractionContext
+{
+    std::vector<Vertex> allVertices;
+    std::vector<uint32_t> allIndices;
+    int firstMaterialIndex = -1;
+    bool hasAnyNormals = false;
+    bool hasMultipleMaterials = false;
+};
+
 const float* GetAttributeData(const tinygltf::Model& model, const tinygltf::Primitive& primitive, const char* attribute)
 {
     auto it = primitive.attributes.find(attribute);
@@ -71,6 +80,58 @@ int GetAttributeByteStride(const tinygltf::Model& model, const tinygltf::Primiti
     return stride;
 }
 
+Matrix LoadColumnMajorMatrix(const std::vector<double>& m)
+{
+    // glTF stores `matrix` as 16 floats in column-major order (first 4 values = column 0).
+    // SimpleMath::Matrix takes a row-major 4x4 constructor, so transpose while loading.
+    return Matrix(
+        static_cast<float>(m[0]),  static_cast<float>(m[4]),  static_cast<float>(m[8]),  static_cast<float>(m[12]),
+        static_cast<float>(m[1]),  static_cast<float>(m[5]),  static_cast<float>(m[9]),  static_cast<float>(m[13]),
+        static_cast<float>(m[2]),  static_cast<float>(m[6]),  static_cast<float>(m[10]), static_cast<float>(m[14]),
+        static_cast<float>(m[3]),  static_cast<float>(m[7]),  static_cast<float>(m[11]), static_cast<float>(m[15])
+    );
+}
+
+Matrix ComputeNodeLocalTransform(const tinygltf::Node& node)
+{
+    constexpr size_t kMat4ElementCount = 16;
+
+    if (node.matrix.size() == kMat4ElementCount)
+    {
+        return LoadColumnMajorMatrix(node.matrix);
+    }
+
+    Vector3 translation = {0.0f, 0.0f, 0.0f};
+    if (node.translation.size() == 3)
+    {
+        translation.x = static_cast<float>(node.translation[0]);
+        translation.y = static_cast<float>(node.translation[1]);
+        translation.z = static_cast<float>(node.translation[2]);
+    }
+
+    Quaternion rotation = Quaternion::Identity;
+    if (node.rotation.size() == 4)
+    {
+        // glTF rotation is stored as xyzw; SimpleMath::Quaternion uses the same order.
+        rotation.x = static_cast<float>(node.rotation[0]);
+        rotation.y = static_cast<float>(node.rotation[1]);
+        rotation.z = static_cast<float>(node.rotation[2]);
+        rotation.w = static_cast<float>(node.rotation[3]);
+    }
+
+    Vector3 scale = {1.0f, 1.0f, 1.0f};
+    if (node.scale.size() == 3)
+    {
+        scale.x = static_cast<float>(node.scale[0]);
+        scale.y = static_cast<float>(node.scale[1]);
+        scale.z = static_cast<float>(node.scale[2]);
+    }
+
+    return Matrix::CreateScale(scale)
+         * Matrix::CreateFromQuaternion(rotation)
+         * Matrix::CreateTranslation(translation);
+}
+
 std::vector<Vertex> ExtractVertices(const tinygltf::Model& model, const tinygltf::Primitive& primitive)
 {
     int vertexCount = GetAttributeCount(model, primitive, "POSITION");
@@ -90,17 +151,17 @@ std::vector<Vertex> ExtractVertices(const tinygltf::Model& model, const tinygltf
     {
         Vertex& v = vertices[i];
 
-        // Position: negate Z for RH -> LH conversion
-        v.position.x =  positions[i * posStride + 0];
-        v.position.y =  positions[i * posStride + 1];
-        v.position.z = -positions[i * posStride + 2];
+        // Raw glTF (right-handed) values. Handedness conversion is deferred to ConvertRhToLh,
+        // after node transforms are applied in glTF's native RH space.
+        v.position.x = positions[i * posStride + 0];
+        v.position.y = positions[i * posStride + 1];
+        v.position.z = positions[i * posStride + 2];
 
-        // Normal: negate Z for RH -> LH conversion
         if (normals)
         {
-            v.normal.x =  normals[i * normStride + 0];
-            v.normal.y =  normals[i * normStride + 1];
-            v.normal.z = -normals[i * normStride + 2];
+            v.normal.x = normals[i * normStride + 0];
+            v.normal.y = normals[i * normStride + 1];
+            v.normal.z = normals[i * normStride + 2];
         }
         else
         {
@@ -159,13 +220,109 @@ std::vector<uint32_t> ExtractIndices(const tinygltf::Model& model, const tinyglt
         indices[i] = index + baseVertex;
     }
 
-    // Reverse winding order for RH -> LH conversion (swap i1 and i2 per triangle)
-    for (size_t i = 0; i < indices.size(); i += 3)
+    return indices;
+}
+
+void ApplyNodeTransform(std::vector<Vertex>& vertices, size_t firstVertexIndex, const Matrix& worldTransform, bool hasNormals)
+{
+    Matrix normalMatrix = worldTransform.Invert().Transpose();
+
+    for (size_t i = firstVertexIndex; i < vertices.size(); ++i)
     {
-        std::swap(indices[i + 1], indices[i + 2]);
+        Vertex& v = vertices[i];
+        v.position = Vector3::Transform(v.position, worldTransform);
+
+        if (hasNormals)
+        {
+            v.normal = Vector3::TransformNormal(v.normal, normalMatrix);
+            v.normal.Normalize();
+        }
+    }
+}
+
+void ExtractMeshWithTransform(
+    const tinygltf::Model& model,
+    const tinygltf::Mesh& mesh,
+    const Matrix& worldTransform,
+    ExtractionContext& ctx)
+{
+    for (const tinygltf::Primitive& primitive : mesh.primitives)
+    {
+        if (primitive.mode != TINYGLTF_MODE_TRIANGLES && primitive.mode != -1)
+        {
+            BA_LOG_WARN("Skipping non-triangle primitive (mode={})", primitive.mode);
+            continue;
+        }
+
+        if (primitive.attributes.find("POSITION") == primitive.attributes.end())
+        {
+            BA_LOG_WARN("Skipping primitive without POSITION attribute");
+            continue;
+        }
+
+        if (primitive.indices < 0)
+        {
+            BA_LOG_WARN("Skipping non-indexed primitive");
+            continue;
+        }
+
+        if (ctx.firstMaterialIndex < 0)
+        {
+            ctx.firstMaterialIndex = primitive.material;
+        }
+        else if (primitive.material != ctx.firstMaterialIndex)
+        {
+            ctx.hasMultipleMaterials = true;
+        }
+
+        uint32_t baseVertex = static_cast<uint32_t>(ctx.allVertices.size());
+
+        bool hasNormals = primitive.attributes.find("NORMAL") != primitive.attributes.end();
+        ctx.hasAnyNormals = ctx.hasAnyNormals || hasNormals;
+
+        std::vector<Vertex> primVertices = ExtractVertices(model, primitive);
+        std::vector<uint32_t> primIndices = ExtractIndices(model, primitive, baseVertex);
+
+        size_t firstVertexIndex = ctx.allVertices.size();
+
+        ctx.allVertices.insert(
+            ctx.allVertices.end(),
+            std::make_move_iterator(primVertices.begin()),
+            std::make_move_iterator(primVertices.end())
+        );
+        ctx.allIndices.insert(
+            ctx.allIndices.end(),
+            std::make_move_iterator(primIndices.begin()),
+            std::make_move_iterator(primIndices.end())
+        );
+
+        ApplyNodeTransform(ctx.allVertices, firstVertexIndex, worldTransform, hasNormals);
+    }
+}
+
+void WalkNode(
+    const tinygltf::Model& model,
+    int nodeIndex,
+    const Matrix& parentWorldTransform,
+    ExtractionContext& ctx)
+{
+    BA_ASSERT(nodeIndex >= 0 && nodeIndex < static_cast<int>(model.nodes.size()));
+
+    const tinygltf::Node& node = model.nodes[nodeIndex];
+    Matrix localTransform = ComputeNodeLocalTransform(node);
+
+    // Row-vector convention: v' = v * (local * parent) applies local first, then parent.
+    Matrix worldTransform = localTransform * parentWorldTransform;
+
+    if (node.mesh >= 0 && node.mesh < static_cast<int>(model.meshes.size()))
+    {
+        ExtractMeshWithTransform(model, model.meshes[node.mesh], worldTransform, ctx);
     }
 
-    return indices;
+    for (int childIndex : node.children)
+    {
+        WalkNode(model, childIndex, worldTransform, ctx);
+    }
 }
 
 std::vector<uint8_t> PadRgbToRgba(const std::vector<uint8_t>& rgb)
@@ -265,6 +422,21 @@ std::vector<Vertex> ComputeFlatNormals(std::vector<Vertex> vertices, const std::
     return vertices;
 }
 
+void ConvertRhToLh(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
+{
+    for (Vertex& v : vertices)
+    {
+        v.position.z = -v.position.z;
+        v.normal.z   = -v.normal.z;
+    }
+
+    BA_ASSERT(indices.size() % 3 == 0);
+    for (size_t i = 0; i < indices.size(); i += 3)
+    {
+        std::swap(indices[i + 1], indices[i + 2]);
+    }
+}
+
 } // namespace
 
 LoadedMeshData LoadModelFromFile(const std::string& filePath)
@@ -297,87 +469,49 @@ LoadedMeshData LoadModelFromFile(const std::string& filePath)
         return {.isLoaded = false};
     }
 
-    std::vector<Vertex> allVertices;
-    std::vector<uint32_t> allIndices;
+    ExtractionContext ctx;
 
-    bool hasAnyNormals = false;
-    int firstMaterialIndex = -1;
-    bool hasMultipleMaterials = false;
-
-    for (const tinygltf::Mesh& mesh : model.meshes)
+    if (model.scenes.empty())
     {
-        for (const tinygltf::Primitive& primitive : mesh.primitives)
+        // glTF library file with no scene metadata — fall back to flat mesh iteration.
+        for (const tinygltf::Mesh& mesh : model.meshes)
         {
-            if (primitive.mode != TINYGLTF_MODE_TRIANGLES && primitive.mode != -1)
-            {
-                BA_LOG_WARN("Skipping non-triangle primitive (mode={})", primitive.mode);
-                continue;
-            }
-
-            if (primitive.attributes.find("POSITION") == primitive.attributes.end())
-            {
-                BA_LOG_WARN("Skipping primitive without POSITION attribute");
-                continue;
-            }
-
-            if (primitive.indices < 0)
-            {
-                BA_LOG_WARN("Skipping non-indexed primitive");
-                continue;
-            }
-
-            if (firstMaterialIndex < 0)
-            {
-                firstMaterialIndex = primitive.material;
-            }
-            else if (primitive.material != firstMaterialIndex)
-            {
-                hasMultipleMaterials = true;
-            }
-
-            uint32_t baseVertex = static_cast<uint32_t>(allVertices.size());
-
-            bool hasNormals = primitive.attributes.find("NORMAL") != primitive.attributes.end();
-            hasAnyNormals = hasAnyNormals || hasNormals;
-
-            std::vector<Vertex> primVertices = ExtractVertices(model, primitive);
-            std::vector<uint32_t> primIndices = ExtractIndices(model, primitive, baseVertex);
-
-            allVertices.insert(
-                allVertices.end(),
-                std::make_move_iterator(primVertices.begin()),
-                std::make_move_iterator(primVertices.end())
-            );
-            allIndices.insert(
-                allIndices.end(),
-                std::make_move_iterator(primIndices.begin()),
-                std::make_move_iterator(primIndices.end())
-            );
+            ExtractMeshWithTransform(model, mesh, Matrix::Identity, ctx);
+        }
+    }
+    else
+    {
+        int sceneIndex = (model.defaultScene >= 0) ? model.defaultScene : 0;
+        for (int rootNodeIndex : model.scenes[sceneIndex].nodes)
+        {
+            WalkNode(model, rootNodeIndex, Matrix::Identity, ctx);
         }
     }
 
-    if (allVertices.empty())
+    if (ctx.allVertices.empty())
     {
         BA_LOG_ERROR("No valid mesh data found in '{}'", filePath);
         return {.isLoaded = false};
     }
 
-    if (!hasAnyNormals)
+    if (!ctx.hasAnyNormals)
     {
-        allVertices = ComputeFlatNormals(std::move(allVertices), allIndices);
+        ctx.allVertices = ComputeFlatNormals(std::move(ctx.allVertices), ctx.allIndices);
     }
 
-    if (hasMultipleMaterials)
+    ConvertRhToLh(ctx.allVertices, ctx.allIndices);
+
+    if (ctx.hasMultipleMaterials)
     {
         BA_LOG_WARN("glTF '{}' uses multiple materials; only the first is applied", filePath);
     }
 
-    LoadedTextureData texture = ExtractBaseColorTexture(model, firstMaterialIndex);
+    LoadedTextureData texture = ExtractBaseColorTexture(model, ctx.firstMaterialIndex);
 
     return {
         .isLoaded = true,
-        .vertices = std::move(allVertices),
-        .indices  = std::move(allIndices),
+        .vertices = std::move(ctx.allVertices),
+        .indices  = std::move(ctx.allIndices),
         .hasTexture = texture.hasTexture,
         .textureRgba8 = std::move(texture.rgba),
         .textureWidth = texture.width,

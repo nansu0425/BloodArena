@@ -6,6 +6,7 @@
 #include "Graphics/TextureLibrary.h"
 #include "Core/PathUtils.h"
 
+#include <cctype>
 #include <filesystem>
 
 namespace BA
@@ -15,12 +16,23 @@ namespace
 {
 
 constexpr const char* kDefaultMeshName = "cube";
+constexpr const char* kModelsDirectoryRelative = "Assets/Models";
+constexpr std::string_view kGlbExtension = ".glb";
+constexpr std::string_view kGltfExtension = ".gltf";
+
+std::string ToLower(std::string value)
+{
+    std::transform(value.begin(), value.end(), value.begin(),
+        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return value;
+}
 
 } // namespace
 
 void MeshLibrary::Initialize()
 {
     CreateBuiltInCube();
+    LoadModelsFromAssetsDirectory();
 
     BA_LOG_INFO("MeshLibrary initialized.");
 }
@@ -46,6 +58,18 @@ const Mesh* MeshLibrary::FindMesh(const std::string& name) const
 const Mesh* MeshLibrary::GetDefaultMesh() const
 {
     return FindMesh(kDefaultMeshName);
+}
+
+std::vector<std::string> MeshLibrary::GetMeshNames() const
+{
+    std::vector<std::string> names;
+    names.reserve(m_meshes.size());
+    for (const auto& entry : m_meshes)
+    {
+        names.push_back(entry.first);
+    }
+    std::sort(names.begin(), names.end());
+    return names;
 }
 
 bool MeshLibrary::LoadMesh(const std::string& name, const std::string& filePath)
@@ -182,6 +206,51 @@ void MeshLibrary::CreateBuiltInCube()
     mesh.isIndex32Bit = false;
 
     m_meshes[kDefaultMeshName] = std::move(mesh);
+}
+
+void MeshLibrary::LoadModelsFromAssetsDirectory()
+{
+    std::string_view relativeDir = kModelsDirectoryRelative;
+    std::wstring wideRelativeDir(relativeDir.begin(), relativeDir.end());
+    std::wstring resolvedDirW = ResolveAssetPath(wideRelativeDir.c_str());
+    std::filesystem::path dirPath(resolvedDirW);
+
+    if (!std::filesystem::exists(dirPath))
+    {
+        BA_LOG_WARN("Assets/Models directory not found at '{}', skipping auto-load", dirPath.string());
+        return;
+    }
+
+    try
+    {
+        for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(dirPath))
+        {
+            if (!entry.is_regular_file())
+            {
+                continue;
+            }
+
+            std::string extension = ToLower(entry.path().extension().string());
+            if (extension != kGlbExtension && extension != kGltfExtension)
+            {
+                continue;
+            }
+
+            std::string meshName = entry.path().stem().string();
+            if (meshName == kDefaultMeshName)
+            {
+                BA_LOG_WARN("Skipping '{}' — name collides with built-in mesh", entry.path().string());
+                continue;
+            }
+
+            std::string relativePath = std::string(kModelsDirectoryRelative) + "/" + entry.path().filename().string();
+            LoadMesh(meshName, relativePath);
+        }
+    }
+    catch (const std::filesystem::filesystem_error& error)
+    {
+        BA_LOG_ERROR("Failed to scan models directory: {}", error.what());
+    }
 }
 
 std::unique_ptr<MeshLibrary> g_meshLibrary;

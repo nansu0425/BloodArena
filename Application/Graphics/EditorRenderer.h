@@ -3,6 +3,8 @@
 namespace BA
 {
 
+struct GameObject;
+
 class EditorRenderer
 {
 public:
@@ -16,6 +18,7 @@ private:
     void RenderCameraSettingsMenu();
     void RenderHierarchy();
     void RenderInspector();
+    void RenderMeshPicker(GameObject& gameObject);
     void RenderConsole();
 
     char m_consoleInputBuffer[256] = {};

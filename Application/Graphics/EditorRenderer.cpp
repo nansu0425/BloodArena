@@ -1,6 +1,7 @@
 #include "Core/PCH.h"
 #include "Graphics/EditorRenderer.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Graphics/MeshLibrary.h"
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/SceneViewport.h"
 #include "Editor/EditorUI.h"
@@ -8,6 +9,7 @@
 #include "Core/Window.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
+#include "Scene/GameObject.h"
 #include "Math/MathUtils.h"
 
 #pragma warning(push, 0)
@@ -44,6 +46,8 @@ ImVec4 GetLogLevelColor(LogLevel level)
 }
 
 const char* kLogLevelNames[] = { "Trace", "Debug", "Info", "Warn", "Error", "Critical" };
+
+constexpr const char* kUnsetMeshLabel = "<none>";
 
 } // namespace
 
@@ -216,6 +220,27 @@ void EditorRenderer::RenderHierarchy()
 
     uint32_t selectedId = g_editorUI->GetSelectedGameObjectId();
 
+    if (ImGui::Button("Create"))
+    {
+        uint32_t newId = g_scene->CreateGameObject();
+        g_editorUI->SetSelectedGameObjectId(newId);
+        selectedId = newId;
+    }
+
+    ImGui::SameLine();
+
+    const bool hasSelection = (selectedId != 0) && (g_scene->FindGameObject(selectedId) != nullptr);
+    ImGui::BeginDisabled(!hasSelection);
+    if (ImGui::Button("Remove"))
+    {
+        g_scene->DestroyGameObject(selectedId);
+        g_editorUI->SetSelectedGameObjectId(0);
+        selectedId = 0;
+    }
+    ImGui::EndDisabled();
+
+    ImGui::Separator();
+
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
         bool isSelected = (selectedId == gameObject.id);
@@ -246,7 +271,13 @@ void EditorRenderer::RenderInspector()
     }
 
     GameObject* selected = g_scene->FindGameObject(selectedId);
-    BA_ASSERT(selected != nullptr);
+    if (selected == nullptr)
+    {
+        g_editorUI->SetSelectedGameObjectId(0);
+        ImGui::TextDisabled("No object selected");
+        ImGui::End();
+        return;
+    }
 
     ImGui::Text("ID: %u", selected->id);
     ImGui::Separator();
@@ -259,7 +290,53 @@ void EditorRenderer::RenderInspector()
 
     ImGui::ColorEdit4("Color", selected->color);
 
+    ImGui::Separator();
+
+    RenderMeshPicker(*selected);
+
     ImGui::End();
+}
+
+void EditorRenderer::RenderMeshPicker(GameObject& gameObject)
+{
+    std::vector<std::string> names = g_meshLibrary->GetMeshNames();
+
+    std::vector<const char*> items;
+    items.reserve(names.size() + 1);
+    items.push_back(kUnsetMeshLabel);
+    for (const std::string& name : names)
+    {
+        items.push_back(name.c_str());
+    }
+
+    int currentIndex = 0;
+    if (!gameObject.meshName.empty())
+    {
+        for (size_t i = 0; i < names.size(); ++i)
+        {
+            if (names[i] == gameObject.meshName)
+            {
+                currentIndex = static_cast<int>(i) + 1;
+                break;
+            }
+        }
+    }
+
+    if (ImGui::Combo("Mesh", &currentIndex, items.data(), static_cast<int>(items.size())))
+    {
+        gameObject.meshName = (currentIndex == 0) ? std::string{} : names[currentIndex - 1];
+    }
+
+    const Mesh* mesh = g_meshLibrary->FindMesh(gameObject.meshName);
+    if (mesh == nullptr)
+    {
+        ImGui::TextDisabled("(using default cube fallback)");
+        return;
+    }
+
+    ImGui::Text("Index count: %u", mesh->indexCount);
+    ImGui::Text("Index format: %s", mesh->isIndex32Bit ? "32-bit" : "16-bit");
+    ImGui::Text("Texture: %s", mesh->textureName.empty() ? "(none)" : mesh->textureName.c_str());
 }
 
 void EditorRenderer::RenderConsole()
