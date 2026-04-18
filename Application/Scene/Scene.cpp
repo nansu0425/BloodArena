@@ -168,6 +168,7 @@ GameObject ReadGameObject(const json& j)
 
 void Scene::Initialize()
 {
+    LoadFromFile("default");
     BA_LOG_INFO("Scene initialized.");
 }
 

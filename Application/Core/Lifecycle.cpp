@@ -75,11 +75,11 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_modelLibrary = std::make_unique<ModelLibrary>();
     g_modelLibrary->Initialize();
 
-    g_scene = std::make_unique<Scene>();
-    g_scene->Initialize();
-
     g_camera = std::make_unique<Camera>();
     g_camera->Initialize();
+
+    g_scene = std::make_unique<Scene>();
+    g_scene->Initialize();
 
     g_sceneRenderer = std::make_unique<SceneRenderer>();
     g_sceneRenderer->Initialize();
@@ -148,11 +148,11 @@ void Shutdown()
     g_sceneRenderer->Shutdown();
     g_sceneRenderer.reset();
 
-    g_camera->Shutdown();
-    g_camera.reset();
-
     g_scene->Shutdown();
     g_scene.reset();
+
+    g_camera->Shutdown();
+    g_camera.reset();
 
     g_modelLibrary->Shutdown();
     g_modelLibrary.reset();
