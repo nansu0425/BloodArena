@@ -17,10 +17,8 @@ Matrix BuildCameraOrientation(float yaw, float pitch)
 
 } // namespace
 
-void Camera::Initialize(const CameraSettings& settings)
+void Camera::Initialize()
 {
-    m_settings = settings;
-
     BA_LOG_INFO("Camera initialized.");
 }
 

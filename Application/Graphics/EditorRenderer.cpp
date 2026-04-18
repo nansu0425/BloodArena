@@ -7,10 +7,13 @@
 #include "Editor/EditorUI.h"
 #include "Editor/ViewportPicking.h"
 #include "Core/Window.h"
+#include "Core/PathUtils.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
 #include "Scene/GameObject.h"
 #include "Math/MathUtils.h"
+
+#include <filesystem>
 
 #pragma warning(push, 0)
 #include <imgui.h>
@@ -238,6 +241,104 @@ void EditorRenderer::RenderHierarchy()
         selectedId = 0;
     }
     ImGui::EndDisabled();
+
+    ImGui::Separator();
+
+    if (ImGui::Button("New Scene"))
+    {
+        g_scene->Clear();
+        g_camera->ResetToDefaults();
+        g_editorUI->SetSelectedGameObjectId(0);
+        selectedId = 0;
+        m_sceneNameBuffer[0] = '\0';
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Save Scene"))
+    {
+        ImGui::OpenPopup("SaveScenePopup");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Load Scene"))
+    {
+        ImGui::OpenPopup("LoadScenePopup");
+    }
+
+    if (ImGui::BeginPopup("SaveScenePopup"))
+    {
+        ImGui::InputText("Name", m_sceneNameBuffer, sizeof(m_sceneNameBuffer));
+
+        const bool hasSceneName = (m_sceneNameBuffer[0] != '\0');
+        ImGui::BeginDisabled(!hasSceneName);
+        if (ImGui::Button("Save"))
+        {
+            g_scene->SaveToFile(m_sceneNameBuffer);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndDisabled();
+
+        ImGui::Separator();
+        ImGui::TextDisabled("Overwrite existing:");
+
+        std::wstring scenesDir = ResolveAssetPath(L"Assets/Scenes");
+        std::error_code ec;
+        for (const auto& entry : std::filesystem::directory_iterator(scenesDir, ec))
+        {
+            if (!entry.is_regular_file())
+            {
+                continue;
+            }
+            if (entry.path().extension() != ".json")
+            {
+                continue;
+            }
+
+            std::string stem = entry.path().stem().string();
+            if (ImGui::Selectable(stem.c_str()))
+            {
+                g_scene->SaveToFile(stem);
+                snprintf(m_sceneNameBuffer, sizeof(m_sceneNameBuffer), "%s", stem.c_str());
+                ImGui::CloseCurrentPopup();
+            }
+        }
+
+        ImGui::EndPopup();
+    }
+
+    if (ImGui::BeginPopup("LoadScenePopup"))
+    {
+        std::wstring scenesDir = ResolveAssetPath(L"Assets/Scenes");
+        std::error_code ec;
+        bool hasAnyScene = false;
+        for (const auto& entry : std::filesystem::directory_iterator(scenesDir, ec))
+        {
+            if (!entry.is_regular_file())
+            {
+                continue;
+            }
+            if (entry.path().extension() != ".json")
+            {
+                continue;
+            }
+            hasAnyScene = true;
+
+            std::string stem = entry.path().stem().string();
+            if (ImGui::Selectable(stem.c_str()))
+            {
+                if (g_scene->LoadFromFile(stem))
+                {
+                    snprintf(m_sceneNameBuffer, sizeof(m_sceneNameBuffer), "%s", stem.c_str());
+                    g_editorUI->SetSelectedGameObjectId(0);
+                    selectedId = 0;
+                }
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        if (!hasAnyScene)
+        {
+            ImGui::TextDisabled("No scenes found");
+        }
+        ImGui::EndPopup();
+    }
 
     ImGui::Separator();
 

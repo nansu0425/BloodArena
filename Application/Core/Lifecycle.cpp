@@ -79,7 +79,7 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_scene->Initialize();
 
     g_camera = std::make_unique<Camera>();
-    g_camera->Initialize(appSettings.camera);
+    g_camera->Initialize();
 
     g_sceneRenderer = std::make_unique<SceneRenderer>();
     g_sceneRenderer->Initialize();
@@ -129,7 +129,6 @@ void Shutdown()
 {
     AppSettings appSettings;
     appSettings.window = g_window->GetSettings();
-    appSettings.camera = g_camera->GetSettings();
 #ifdef BA_EDITOR
     appSettings.editor = g_editorUI->GetEditorSettings();
 #endif // BA_EDITOR

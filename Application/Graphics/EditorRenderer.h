@@ -22,6 +22,7 @@ private:
     void RenderConsole();
 
     char m_consoleInputBuffer[256] = {};
+    char m_sceneNameBuffer[64] = {};
 };
 
 extern std::unique_ptr<EditorRenderer> g_editorRenderer;

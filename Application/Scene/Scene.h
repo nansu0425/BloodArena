@@ -13,9 +13,13 @@ public:
 
     uint32_t CreateGameObject();
     void DestroyGameObject(uint32_t id);
+    void Clear();
 
     std::span<const GameObject> GetGameObjects() const;
     GameObject* FindGameObject(uint32_t id);
+
+    bool SaveToFile(const std::string& name) const;
+    bool LoadFromFile(const std::string& name);
 
 private:
     std::vector<GameObject> m_gameObjects;

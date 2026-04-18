@@ -20,7 +20,7 @@ struct CameraSettings
 class Camera
 {
 public:
-    void Initialize(const CameraSettings& settings);
+    void Initialize();
     void Shutdown();
 
     void Update(float deltaSeconds);

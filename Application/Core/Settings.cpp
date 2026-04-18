@@ -37,28 +37,6 @@ WindowSettings ReadWindowSettings(const json& j)
     return settings;
 }
 
-CameraSettings ReadCameraSettings(const json& j)
-{
-    CameraSettings settings;
-
-    if (j.contains("camera") && j["camera"].is_object())
-    {
-        const json& c = j["camera"];
-        settings.position.x = c.value("positionX", settings.position.x);
-        settings.position.y = c.value("positionY", settings.position.y);
-        settings.position.z = c.value("positionZ", settings.position.z);
-        settings.yaw = c.value("yaw", settings.yaw);
-        settings.pitch = c.value("pitch", settings.pitch);
-        settings.fovY = c.value("fovY", settings.fovY);
-        settings.nearZ = c.value("nearZ", settings.nearZ);
-        settings.farZ = c.value("farZ", settings.farZ);
-        settings.moveSpeed = c.value("moveSpeed", settings.moveSpeed);
-        settings.mouseSensitivity = c.value("mouseSensitivity", settings.mouseSensitivity);
-    }
-
-    return settings;
-}
-
 #ifdef BA_EDITOR
 EditorSettings ReadEditorSettings(const json& j)
 {
@@ -84,22 +62,6 @@ json WriteWindowSettings(const WindowSettings& settings)
         {"clientWidth", settings.clientWidth},
         {"clientHeight", settings.clientHeight},
         {"isMaximized", settings.isMaximized}
-    };
-}
-
-json WriteCameraSettings(const CameraSettings& settings)
-{
-    return json{
-        {"positionX", settings.position.x},
-        {"positionY", settings.position.y},
-        {"positionZ", settings.position.z},
-        {"yaw", settings.yaw},
-        {"pitch", settings.pitch},
-        {"fovY", settings.fovY},
-        {"nearZ", settings.nearZ},
-        {"farZ", settings.farZ},
-        {"moveSpeed", settings.moveSpeed},
-        {"mouseSensitivity", settings.mouseSensitivity}
     };
 }
 
@@ -136,7 +98,6 @@ AppSettings LoadSettings()
     }
 
     appSettings.window = ReadWindowSettings(j);
-    appSettings.camera = ReadCameraSettings(j);
 #ifdef BA_EDITOR
     appSettings.editor = ReadEditorSettings(j);
 #endif // BA_EDITOR
@@ -149,7 +110,6 @@ void SaveSettings(const AppSettings& settings)
 {
     json j;
     j["window"] = WriteWindowSettings(settings.window);
-    j["camera"] = WriteCameraSettings(settings.camera);
 #ifdef BA_EDITOR
     j["editor"] = WriteEditorSettings(settings.editor);
 #endif // BA_EDITOR
