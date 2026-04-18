@@ -5,6 +5,8 @@
 namespace BA
 {
 
+constexpr const char* kDefaultModelName = "cube";
+
 class ModelLibrary
 {
 public:
@@ -12,7 +14,6 @@ public:
     void Shutdown();
 
     const Model* FindModel(const std::string& name) const;
-    const Model* GetDefaultModel() const;
     bool LoadModel(const std::string& name, const std::string& filePath);
     std::vector<std::string> GetModelNames() const;
 

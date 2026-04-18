@@ -15,7 +15,6 @@ namespace BA
 namespace
 {
 
-constexpr const char* kDefaultModelName = "cube";
 constexpr const char* kModelsDirectoryRelative = "Assets/Models";
 constexpr std::string_view kGlbExtension = ".glb";
 constexpr std::string_view kGltfExtension = ".gltf";
@@ -94,11 +93,6 @@ const Model* ModelLibrary::FindModel(const std::string& name) const
     }
 
     return &it->second;
-}
-
-const Model* ModelLibrary::GetDefaultModel() const
-{
-    return FindModel(kDefaultModelName);
 }
 
 std::vector<std::string> ModelLibrary::GetModelNames() const

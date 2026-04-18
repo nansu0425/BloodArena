@@ -1,6 +1,7 @@
 #include "Core/PCH.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
+#include "Graphics/ModelLibrary.h"
 #include "Core/PathUtils.h"
 
 #include <nlohmann/json.hpp>
@@ -33,7 +34,7 @@ constexpr float kGridStartX = -4.0f;
 constexpr float kGridStartY = 3.0f;
 constexpr float kGridSpacing = 2.0f;
 
-constexpr uint32_t kSceneSchemaVersion = 1;
+constexpr uint32_t kSceneSchemaVersion = 2;
 
 std::filesystem::path GetScenePath(const std::string& name)
 {
@@ -120,19 +121,22 @@ CameraSettings ReadCamera(const json& j)
 
 json WriteGameObject(const GameObject& obj)
 {
-    return json{
+    json result{
         {"id", obj.id},
-        {"modelName", obj.modelName},
         {"color", json::array({obj.color[0], obj.color[1], obj.color[2], obj.color[3]})},
         {"transform", WriteTransform(obj.transform)}
     };
+    if (obj.modelComponent)
+    {
+        result["modelComponent"] = json{{"modelName", obj.modelComponent->modelName}};
+    }
+    return result;
 }
 
 GameObject ReadGameObject(const json& j)
 {
     GameObject obj;
     obj.id = j.value("id", obj.id);
-    obj.modelName = j.value("modelName", obj.modelName);
 
     if (j.contains("color") && j["color"].is_array() && j["color"].size() == 4)
     {
@@ -146,6 +150,15 @@ GameObject ReadGameObject(const json& j)
     if (j.contains("transform"))
     {
         obj.transform = ReadTransform(j["transform"]);
+    }
+
+    if (j.contains("modelComponent") && j["modelComponent"].is_object())
+    {
+        const json& mc = j["modelComponent"];
+        std::string name = mc.value("modelName", std::string{});
+        BA_ASSERT(!name.empty());
+        BA_ASSERT(g_modelLibrary->FindModel(name));
+        obj.modelComponent = std::make_unique<ModelComponent>(ModelComponent{std::move(name)});
     }
 
     return obj;
@@ -181,7 +194,7 @@ uint32_t Scene::CreateGameObject()
     gameObject.transform.position.x = kGridStartX + static_cast<float>(index % kGridColumns) * kGridSpacing;
     gameObject.transform.position.y = kGridStartY - static_cast<float>(index / kGridColumns) * kGridSpacing;
 
-    m_gameObjects.push_back(gameObject);
+    m_gameObjects.push_back(std::move(gameObject));
 
     BA_LOG_INFO("Created GameObject (ID: {})", id);
     return id;

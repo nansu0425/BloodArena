@@ -142,11 +142,11 @@ void SceneRenderer::Render(float aspect)
 
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
-        const Model* model = g_modelLibrary->FindModel(gameObject.modelName);
-        if (!model)
+        if (!gameObject.modelComponent)
         {
-            model = g_modelLibrary->GetDefaultModel();
+            continue;
         }
+        const Model* model = g_modelLibrary->FindModel(gameObject.modelComponent->modelName);
         BA_ASSERT(model);
 
         Matrix objectWorld = BuildWorld(gameObject.transform);

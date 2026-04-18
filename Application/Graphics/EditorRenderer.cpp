@@ -50,7 +50,29 @@ ImVec4 GetLogLevelColor(LogLevel level)
 
 const char* kLogLevelNames[] = { "Trace", "Debug", "Info", "Warn", "Error", "Critical" };
 
-constexpr const char* kUnsetModelLabel = "<none>";
+bool HasModelComponent(const GameObject& gameObject)
+{
+    return (gameObject.modelComponent != nullptr);
+}
+
+void AddModelComponent(GameObject& gameObject)
+{
+    BA_ASSERT(g_modelLibrary->FindModel(kDefaultModelName));
+    gameObject.modelComponent = std::make_unique<ModelComponent>(ModelComponent{kDefaultModelName});
+}
+
+struct ComponentAddEntry
+{
+    const char* displayName;
+    bool (*isPresent)(const GameObject&);
+    void (*add)(GameObject&);
+};
+
+constexpr ComponentAddEntry kComponentAddEntries[] = {
+    { "Model", &HasModelComponent, &AddModelComponent },
+};
+
+constexpr const char* kAddComponentPopupId = "AddComponentPopup";
 
 } // namespace
 
@@ -393,47 +415,51 @@ void EditorRenderer::RenderInspector()
 
     ImGui::Separator();
 
-    RenderModelPicker(*selected);
+    RenderModelComponent(*selected);
+
+    RenderAddComponentMenu(*selected);
 
     ImGui::End();
 }
 
-void EditorRenderer::RenderModelPicker(GameObject& gameObject)
+void EditorRenderer::RenderModelComponent(GameObject& gameObject)
 {
+    if (!gameObject.modelComponent)
+    {
+        return;
+    }
+
+    ImGui::Text("Model Component");
+
     std::vector<std::string> names = g_modelLibrary->GetModelNames();
 
     std::vector<const char*> items;
-    items.reserve(names.size() + 1);
-    items.push_back(kUnsetModelLabel);
+    items.reserve(names.size());
     for (const std::string& name : names)
     {
         items.push_back(name.c_str());
     }
 
-    int currentIndex = 0;
-    if (!gameObject.modelName.empty())
+    int currentIndex = -1;
+    for (size_t i = 0; i < names.size(); ++i)
     {
-        for (size_t i = 0; i < names.size(); ++i)
+        if (names[i] == gameObject.modelComponent->modelName)
         {
-            if (names[i] == gameObject.modelName)
-            {
-                currentIndex = static_cast<int>(i) + 1;
-                break;
-            }
+            currentIndex = static_cast<int>(i);
+            break;
         }
     }
+    BA_ASSERT(currentIndex >= 0);
 
     if (ImGui::Combo("Model", &currentIndex, items.data(), static_cast<int>(items.size())))
     {
-        gameObject.modelName = (currentIndex == 0) ? std::string{} : names[currentIndex - 1];
+        const std::string& selectedName = names[currentIndex];
+        BA_ASSERT(g_modelLibrary->FindModel(selectedName));
+        gameObject.modelComponent->modelName = selectedName;
     }
 
-    const Model* model = g_modelLibrary->FindModel(gameObject.modelName);
-    if (model == nullptr)
-    {
-        ImGui::TextDisabled("(using default cube fallback)");
-        return;
-    }
+    const Model* model = g_modelLibrary->FindModel(gameObject.modelComponent->modelName);
+    BA_ASSERT(model);
 
     size_t primitiveCount = 0;
     for (const Mesh& mesh : model->meshes)
@@ -445,6 +471,45 @@ void EditorRenderer::RenderModelPicker(GameObject& gameObject)
     ImGui::Text("Meshes: %zu", model->meshes.size());
     ImGui::Text("Primitives: %zu", primitiveCount);
     ImGui::Text("Materials: %zu", model->materials.size());
+
+    if (ImGui::Button("Remove"))
+    {
+        gameObject.modelComponent.reset();
+    }
+}
+
+void EditorRenderer::RenderAddComponentMenu(GameObject& gameObject)
+{
+    if (ImGui::Button("Add Component"))
+    {
+        ImGui::OpenPopup(kAddComponentPopupId);
+    }
+
+    if (!ImGui::BeginPopup(kAddComponentPopupId))
+    {
+        return;
+    }
+
+    bool hasAnyAddable = false;
+    for (const ComponentAddEntry& entry : kComponentAddEntries)
+    {
+        if (entry.isPresent(gameObject))
+        {
+            continue;
+        }
+        hasAnyAddable = true;
+        if (ImGui::MenuItem(entry.displayName))
+        {
+            entry.add(gameObject);
+        }
+    }
+
+    if (!hasAnyAddable)
+    {
+        ImGui::TextDisabled("(no more components to add)");
+    }
+
+    ImGui::EndPopup();
 }
 
 void EditorRenderer::RenderConsole()

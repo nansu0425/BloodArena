@@ -211,6 +211,7 @@
     <ClInclude Include="Math\MathTypes.h" />
     <ClInclude Include="Math\MathUtils.h" />
     <ClInclude Include="Scene\GameObject.h" />
+    <ClInclude Include="Scene\ModelComponent.h" />
     <ClInclude Include="Scene\Scene.h" />
     <ClInclude Include="Editor\EditorUI.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Editor\ViewportPicking.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />

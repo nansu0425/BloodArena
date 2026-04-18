@@ -18,7 +18,8 @@ private:
     void RenderCameraSettingsMenu();
     void RenderHierarchy();
     void RenderInspector();
-    void RenderModelPicker(GameObject& gameObject);
+    void RenderModelComponent(GameObject& gameObject);
+    void RenderAddComponentMenu(GameObject& gameObject);
     void RenderConsole();
 
     char m_consoleInputBuffer[256] = {};
