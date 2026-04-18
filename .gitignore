@@ -59,8 +59,9 @@ vcpkg_installed/
 # ImGui
 imgui.ini
 
-# Settings
-settings.json
+# Claude Code settings
+# settings.json is shared via the repo; settings.local.json holds per-user overrides and must not be tracked.
+.claude/settings.local.json
 
 # =============================================================================
 # 3D Model Assets

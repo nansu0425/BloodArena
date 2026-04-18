@@ -23,6 +23,23 @@ This is why no existing game engine is used — engines impose their own archite
 - Dear ImGui (editor UI primitives)
 - Third-party libraries for subsystem internals, managed via `vcpkg` manifest mode
 
+## Environment Setup
+
+Dependencies are managed via vcpkg manifest mode. On a fresh machine, run the one-time setup below before the first build.
+
+From the repository root in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File Scripts\setup-env.ps1
+```
+
+The script idempotently performs: vcpkg clone → bootstrap → `integrate install` → `VCPKG_ROOT` user environment variable registration. Override the install path with `-VcpkgRoot C:\other\path` if needed.
+
+- `vcpkg integrate install`: applies user-wide MSBuild integration.
+- `VCPKG_ROOT`: referenced by Visual Studio's MSBuild vcpkg integration for automatic manifest restore. Visual Studio must be fully restarted after the variable is set.
+- The custom triplet `x64-windows-noexcept` is applied automatically via the `vcpkg-custom-triplets/` overlay declared in `vcpkg-configuration.json` — no manual configuration required.
+- The first build downloads and compiles `directxtk`, `spdlog`, `tinygltf`, `nlohmann-json`, and `imgui`, which can take several minutes. Subsequent builds reuse the `vcpkg_installed/` cache.
+
 ## Build Configuration
 
 Single-project (Application) structure. Two build variants are supported via preprocessor macros:
