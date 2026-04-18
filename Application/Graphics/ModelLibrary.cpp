@@ -64,6 +64,13 @@ Primitive CreatePrimitiveFromLoaded(const LoadedPrimitiveData& src)
         );
     }
 
+    p.pickingPositions.reserve(src.vertices.size());
+    for (const Vertex& v : src.vertices)
+    {
+        p.pickingPositions.push_back(v.position);
+    }
+    p.pickingIndices = src.indices;
+
     return p;
 }
 
@@ -252,6 +259,17 @@ void ModelLibrary::CreateBuiltInCube()
     prim.indexCount = _countof(indices);
     prim.isIndex32Bit = false;
     prim.materialIndex = -1;
+
+    prim.pickingPositions.reserve(_countof(vertices));
+    for (const Vertex& v : vertices)
+    {
+        prim.pickingPositions.push_back(v.position);
+    }
+    prim.pickingIndices.reserve(_countof(indices));
+    for (uint16_t idx : indices)
+    {
+        prim.pickingIndices.push_back(static_cast<uint32_t>(idx));
+    }
 
     Mesh mesh;
     mesh.primitives.push_back(std::move(prim));

@@ -3,6 +3,7 @@
 #include "Editor/ViewportPicking.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
+#include "Graphics/ModelLibrary.h"
 #include "Math/MathUtils.h"
 
 namespace BA
@@ -11,35 +12,11 @@ namespace BA
 namespace
 {
 
-constexpr int kTrianglesPerFace = 2;
-constexpr int kVerticesPerFace = 4;
-constexpr int kFaceCount = 6;
-constexpr int kCubeTriangleCount = kFaceCount * kTrianglesPerFace;
-
-const Vector3 kCubePositions[kFaceCount * kVerticesPerFace] =
+struct PickResult
 {
-    // +Z
-    {-0.5f,  0.5f,  0.5f}, { 0.5f,  0.5f,  0.5f}, { 0.5f, -0.5f,  0.5f}, {-0.5f, -0.5f,  0.5f},
-    // -Z
-    { 0.5f,  0.5f, -0.5f}, {-0.5f,  0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, { 0.5f, -0.5f, -0.5f},
-    // +Y
-    {-0.5f,  0.5f, -0.5f}, { 0.5f,  0.5f, -0.5f}, { 0.5f,  0.5f,  0.5f}, {-0.5f,  0.5f,  0.5f},
-    // -Y
-    {-0.5f, -0.5f,  0.5f}, { 0.5f, -0.5f,  0.5f}, { 0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f},
-    // +X
-    { 0.5f,  0.5f,  0.5f}, { 0.5f,  0.5f, -0.5f}, { 0.5f, -0.5f, -0.5f}, { 0.5f, -0.5f,  0.5f},
-    // -X
-    {-0.5f,  0.5f, -0.5f}, {-0.5f,  0.5f,  0.5f}, {-0.5f, -0.5f,  0.5f}, {-0.5f, -0.5f, -0.5f},
-};
-
-const uint16_t kCubeIndices[kCubeTriangleCount * 3] =
-{
-     0,  2,  1,   0,  3,  2,
-     4,  6,  5,   4,  7,  6,
-     8, 10,  9,   8, 11, 10,
-    12, 14, 13,  12, 15, 14,
-    16, 18, 17,  16, 19, 18,
-    20, 22, 21,  20, 23, 22,
+    bool isHit = false;
+    uint32_t hitId = 0;
+    float closestT = FLT_MAX;
 };
 
 Ray BuildPickRayFromNdc(float ndcX, float ndcY, const Matrix& view, const Matrix& projection)
@@ -55,6 +32,63 @@ Ray BuildPickRayFromNdc(float ndcX, float ndcY, const Matrix& view, const Matrix
     return Ray(nearPoint, direction);
 }
 
+PickResult PickNode(
+    const Ray& ray,
+    const Model& model,
+    int nodeIndex,
+    const Matrix& parentAccumulated,
+    const Matrix& objectWorld,
+    uint32_t gameObjectId)
+{
+    // Row-vector convention, mirroring SceneRenderer::DrawNode: v' = v * (local * parent) * objectWorld.
+    const Node& node = model.nodes[nodeIndex];
+    Matrix accumulated = node.localTransform * parentAccumulated;
+
+    PickResult best;
+
+    if (node.meshIndex >= 0)
+    {
+        constexpr int kIndicesPerTriangle = 3;
+
+        Matrix finalWorld = accumulated * objectWorld;
+        const Mesh& mesh = model.meshes[node.meshIndex];
+
+        for (const Primitive& prim : mesh.primitives)
+        {
+            const size_t triangleCount = prim.pickingIndices.size() / kIndicesPerTriangle;
+            for (size_t t = 0; t < triangleCount; ++t)
+            {
+                const uint32_t i0 = prim.pickingIndices[t * kIndicesPerTriangle + 0];
+                const uint32_t i1 = prim.pickingIndices[t * kIndicesPerTriangle + 1];
+                const uint32_t i2 = prim.pickingIndices[t * kIndicesPerTriangle + 2];
+
+                Vector3 v0 = Vector3::Transform(prim.pickingPositions[i0], finalWorld);
+                Vector3 v1 = Vector3::Transform(prim.pickingPositions[i1], finalWorld);
+                Vector3 v2 = Vector3::Transform(prim.pickingPositions[i2], finalWorld);
+
+                float distance = 0.0f;
+                if (ray.Intersects(v0, v1, v2, distance) && distance < best.closestT)
+                {
+                    best.isHit = true;
+                    best.hitId = gameObjectId;
+                    best.closestT = distance;
+                }
+            }
+        }
+    }
+
+    for (int childIndex : node.childIndices)
+    {
+        PickResult child = PickNode(ray, model, childIndex, accumulated, objectWorld, gameObjectId);
+        if (child.isHit && child.closestT < best.closestT)
+        {
+            best = child;
+        }
+    }
+
+    return best;
+}
+
 } // namespace
 
 uint32_t PickGameObject(float ndcX, float ndcY, const Camera& camera, float aspect)
@@ -66,19 +100,21 @@ uint32_t PickGameObject(float ndcX, float ndcY, const Camera& camera, float aspe
 
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
-        Matrix worldMatrix = BuildWorld(gameObject.transform);
-
-        for (int i = 0; i < kCubeTriangleCount; ++i)
+        if (!gameObject.modelComponent)
         {
-            Vector3 v0 = Vector3::Transform(kCubePositions[kCubeIndices[i * 3 + 0]], worldMatrix);
-            Vector3 v1 = Vector3::Transform(kCubePositions[kCubeIndices[i * 3 + 1]], worldMatrix);
-            Vector3 v2 = Vector3::Transform(kCubePositions[kCubeIndices[i * 3 + 2]], worldMatrix);
+            continue;
+        }
+        const Model* model = g_modelLibrary->FindModel(gameObject.modelComponent->modelName);
+        BA_ASSERT(model);
 
-            float distance = 0.0f;
-            if (ray.Intersects(v0, v1, v2, distance) && distance < closestT)
+        Matrix objectWorld = BuildWorld(gameObject.transform);
+        for (int rootIndex : model->rootNodeIndices)
+        {
+            PickResult result = PickNode(ray, *model, rootIndex, Matrix::Identity, objectWorld, gameObject.id);
+            if (result.isHit && result.closestT < closestT)
             {
-                closestT = distance;
-                hitId = gameObject.id;
+                closestT = result.closestT;
+                hitId = result.hitId;
             }
         }
     }

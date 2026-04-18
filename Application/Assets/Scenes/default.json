@@ -1,0 +1,134 @@
+{
+    "camera": {
+        "farZ": 1000.0,
+        "fovY": 1.0471975803375244,
+        "mouseSensitivity": 0.003000000026077032,
+        "moveSpeed": 5.0,
+        "nearZ": 0.10000000149011612,
+        "pitch": 0.3479998707771301,
+        "positionX": -1.8223252296447754,
+        "positionY": 5.320367336273193,
+        "positionZ": -4.059744358062744,
+        "yaw": 0.009000036865472794
+    },
+    "gameObjects": [
+        {
+            "color": [
+                1.0,
+                0.20000000298023224,
+                0.20000000298023224,
+                1.0
+            ],
+            "id": 1,
+            "modelComponent": {
+                "modelName": "Duck"
+            },
+            "transform": {
+                "position": [
+                    -4.0,
+                    3.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "color": [
+                0.20000000298023224,
+                1.0,
+                0.20000000298023224,
+                1.0
+            ],
+            "id": 2,
+            "modelComponent": {
+                "modelName": "cube"
+            },
+            "transform": {
+                "position": [
+                    -2.0,
+                    3.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "color": [
+                0.20000000298023224,
+                0.4000000059604645,
+                1.0,
+                1.0
+            ],
+            "id": 3,
+            "modelComponent": {
+                "modelName": "BoxVertexColors"
+            },
+            "transform": {
+                "position": [
+                    0.0,
+                    3.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "color": [
+                1.0,
+                1.0,
+                0.20000000298023224,
+                1.0
+            ],
+            "id": 4,
+            "modelComponent": {
+                "modelName": "Duck"
+            },
+            "transform": {
+                "position": [
+                    2.0,
+                    3.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        }
+    ],
+    "nextId": 5,
+    "version": 2
+}
