@@ -28,7 +28,11 @@ void RenderFrame()
     g_graphicsDevice->BeginFrame();
 
 #ifdef BA_EDITOR
-    g_editorRenderer->Render();
+    g_editorRenderer->BeginImGuiFrame();
+    g_editorRenderer->ResolveViewportInput();
+    g_editorRenderer->UpdateInputCapture();
+    g_editorRenderer->RenderPanels();
+    g_editorRenderer->EndImGuiFrame();
 #else
     // TODO: When game modes are added, the game build will be locked to gameplay state
     g_sceneRenderer->Render(g_graphicsDevice->GetAspectRatio());
@@ -118,8 +122,25 @@ int Run()
         }
 
         g_time->Tick();
+
+#ifdef BA_EDITOR
+        g_editorRenderer->BeginImGuiFrame();
+        g_editorRenderer->ResolveViewportInput();
+        g_editorRenderer->UpdateInputCapture();
+#endif // BA_EDITOR
+
         g_camera->Update(g_time->GetDeltaSeconds());
-        RenderFrame();
+
+        g_graphicsDevice->BeginFrame();
+
+#ifdef BA_EDITOR
+        g_editorRenderer->RenderPanels();
+        g_editorRenderer->EndImGuiFrame();
+#else
+        g_sceneRenderer->Render(g_graphicsDevice->GetAspectRatio());
+#endif // BA_EDITOR
+
+        g_graphicsDevice->EndFrame();
     }
 
     return static_cast<int>(msg.wParam);

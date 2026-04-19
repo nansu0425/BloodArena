@@ -60,6 +60,30 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
     BA_ASSERT(g_window);
     BA_ASSERT(g_input);
 
+    switch (uMsg)
+    {
+    case WM_MOUSEMOVE:
+        g_input->OnMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        break;
+    case WM_RBUTTONDOWN:
+        g_input->OnRightMouseDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+        SetCapture(hWnd);
+        break;
+    case WM_RBUTTONUP:
+        g_input->OnRightMouseUp();
+        ReleaseCapture();
+        break;
+    case WM_KEYUP:
+        g_input->OnKeyUp(static_cast<uint32_t>(wParam));
+        break;
+    case WM_KEYDOWN:
+        if (((lParam >> 30) & 1) == 0)
+        {
+            g_input->OnKeyDown(static_cast<uint32_t>(wParam));
+        }
+        break;
+    }
+
 #ifdef BA_EDITOR
     WndProcCallback editorWndProc = g_window->m_editorWndProc;
     if (editorWndProc && editorWndProc(hWnd, uMsg, wParam, lParam))
@@ -105,27 +129,10 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         return 0;
     }
     case WM_MOUSEMOVE:
-    {
-        g_input->OnMouseMove(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-        return 0;
-    }
     case WM_RBUTTONDOWN:
-    {
-        g_input->OnRightMouseDown(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-        SetCapture(hWnd);
-        return 0;
-    }
     case WM_RBUTTONUP:
-    {
-        g_input->OnRightMouseUp();
-        ReleaseCapture();
-        return 0;
-    }
     case WM_KEYUP:
-    {
-        g_input->OnKeyUp(static_cast<uint32_t>(wParam));
         return 0;
-    }
     case WM_KEYDOWN:
     {
         bool wasAlreadyDown = (lParam >> 30) & 1;
@@ -133,8 +140,6 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         {
             break;
         }
-
-        g_input->OnKeyDown(static_cast<uint32_t>(wParam));
 
         if (wParam == '1')
         {

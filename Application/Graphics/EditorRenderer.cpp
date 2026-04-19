@@ -7,6 +7,7 @@
 #include "Editor/EditorUI.h"
 #include "Editor/ViewportPicking.h"
 #include "Core/Window.h"
+#include "Core/Input.h"
 #include "Core/PathUtils.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
@@ -110,21 +111,81 @@ void EditorRenderer::Shutdown()
     BA_LOG_INFO("EditorRenderer shutdown.");
 }
 
-void EditorRenderer::Render()
+void EditorRenderer::BeginImGuiFrame()
 {
+    BA_ASSERT(m_framePhase == FramePhase::Idle);
+
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_None);
 
+    m_framePhase = FramePhase::ImGuiFrameBegun;
+}
+
+void EditorRenderer::ResolveViewportInput()
+{
+    BA_ASSERT(m_framePhase == FramePhase::ImGuiFrameBegun);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar);
+    ImGui::PopStyleVar();
+
+    bool isViewportHovered = ImGui::IsWindowHovered();
+    if (isViewportHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+    {
+        m_isViewportFlying = true;
+    }
+    if (!ImGui::IsMouseDown(ImGuiMouseButton_Right))
+    {
+        m_isViewportFlying = false;
+    }
+
+    ImGui::End();
+
+    m_framePhase = FramePhase::ViewportInputResolved;
+}
+
+void EditorRenderer::UpdateInputCapture()
+{
+    BA_ASSERT(m_framePhase == FramePhase::ViewportInputResolved);
+
+    if (m_isViewportFlying)
+    {
+        g_input->SetKeyboardCaptured(false);
+        g_input->SetMouseCaptured(false);
+    }
+    else
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        g_input->SetKeyboardCaptured(true);
+        g_input->SetMouseCaptured(io.WantCaptureMouse);
+    }
+
+    m_framePhase = FramePhase::InputCaptureUpdated;
+}
+
+void EditorRenderer::RenderPanels()
+{
+    BA_ASSERT(m_framePhase == FramePhase::InputCaptureUpdated);
+
     RenderViewport();
     RenderHierarchy();
     RenderInspector();
     RenderConsole();
 
+    m_framePhase = FramePhase::PanelsRendered;
+}
+
+void EditorRenderer::EndImGuiFrame()
+{
+    BA_ASSERT(m_framePhase == FramePhase::PanelsRendered);
+
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+    m_framePhase = FramePhase::Idle;
 }
 
 void EditorRenderer::RenderViewport()

@@ -23,6 +23,9 @@ public:
     Vector2 GetMouseDelta() const;
     bool IsRightMouseDown() const;
 
+    void SetKeyboardCaptured(bool isCaptured);
+    void SetMouseCaptured(bool isCaptured);
+
 private:
     static constexpr uint32_t kKeyCount = 256;
 
@@ -31,6 +34,8 @@ private:
     int32_t m_lastMouseX = 0;
     int32_t m_lastMouseY = 0;
     bool m_rightMouseDown = false;
+    bool m_isKeyboardCaptured = false;
+    bool m_isMouseCaptured = false;
 };
 
 extern std::unique_ptr<Input> g_input;

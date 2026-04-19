@@ -44,12 +44,30 @@ void Camera::Update(float deltaSeconds)
     Vector3 right = Vector3::TransformNormal(kAxisRight, orientation);
 
     Vector3 move = {};
-    if (g_input->IsKeyDown('W')) move += forward;
-    if (g_input->IsKeyDown('S')) move -= forward;
-    if (g_input->IsKeyDown('D')) move += right;
-    if (g_input->IsKeyDown('A')) move -= right;
-    if (g_input->IsKeyDown('E')) move += kAxisUp;
-    if (g_input->IsKeyDown('Q')) move -= kAxisUp;
+    if (g_input->IsKeyDown('W'))
+    {
+        move += forward;
+    }
+    if (g_input->IsKeyDown('S'))
+    {
+        move -= forward;
+    }
+    if (g_input->IsKeyDown('D'))
+    {
+        move += right;
+    }
+    if (g_input->IsKeyDown('A'))
+    {
+        move -= right;
+    }
+    if (g_input->IsKeyDown('E'))
+    {
+        move += kAxisUp;
+    }
+    if (g_input->IsKeyDown('Q'))
+    {
+        move -= kAxisUp;
+    }
 
     if (move.LengthSquared() > 0.0f)
     {
