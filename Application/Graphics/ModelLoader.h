@@ -23,6 +23,7 @@ struct LoadedMaterialData
     std::vector<uint8_t> diffuseRgba8;
     uint32_t diffuseWidth = 0;
     uint32_t diffuseHeight = 0;
+    float baseColorFactor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 };
 
 struct LoadedNodeData

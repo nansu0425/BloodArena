@@ -8,6 +8,7 @@ namespace BA
 struct Material
 {
     std::string diffuseTextureName;
+    float baseColorFactor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 };
 
 struct Primitive

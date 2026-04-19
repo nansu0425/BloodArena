@@ -327,6 +327,16 @@ LoadedMaterialData ExtractMaterial(const tinygltf::Model& model, const tinygltf:
 {
     LoadedMaterialData result;
 
+    constexpr size_t kBaseColorFactorComponentCount = 4;
+    const std::vector<double>& factor = material.pbrMetallicRoughness.baseColorFactor;
+    if (factor.size() == kBaseColorFactorComponentCount)
+    {
+        for (size_t i = 0; i < kBaseColorFactorComponentCount; ++i)
+        {
+            result.baseColorFactor[i] = static_cast<float>(factor[i]);
+        }
+    }
+
     int textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
     if (textureIndex < 0 || textureIndex >= static_cast<int>(model.textures.size()))
     {

@@ -152,6 +152,7 @@ bool ModelLibrary::LoadModel(const std::string& name, const std::string& filePat
             );
             mat.diffuseTextureName = std::move(textureName);
         }
+        std::copy(std::begin(src.baseColorFactor), std::end(src.baseColorFactor), std::begin(mat.baseColorFactor));
         model.materials.push_back(std::move(mat));
     }
 

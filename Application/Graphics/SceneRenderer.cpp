@@ -20,6 +20,7 @@ struct ObjectConstants
     Matrix viewMatrix;
     Matrix projectionMatrix;
     float color[4];
+    float baseColorFactor[4];
 };
 
 namespace
@@ -48,12 +49,15 @@ void DrawNode(
         for (const Primitive& prim : mesh.primitives)
         {
             const Texture* texture = nullptr;
+            constexpr float kIdentityFactor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+            const float* baseColorFactor = kIdentityFactor;
             if (prim.materialIndex >= 0 && prim.materialIndex < static_cast<int>(model.materials.size()))
             {
-                const std::string& texName = model.materials[prim.materialIndex].diffuseTextureName;
-                texture = texName.empty()
+                const Material& material = model.materials[prim.materialIndex];
+                texture = material.diffuseTextureName.empty()
                     ? g_textureLibrary->GetDefaultTexture()
-                    : g_textureLibrary->FindTexture(texName);
+                    : g_textureLibrary->FindTexture(material.diffuseTextureName);
+                baseColorFactor = material.baseColorFactor;
             }
             if (!texture)
             {
@@ -79,6 +83,10 @@ void DrawNode(
             constants->color[1] = color[1];
             constants->color[2] = color[2];
             constants->color[3] = color[3];
+            constants->baseColorFactor[0] = baseColorFactor[0];
+            constants->baseColorFactor[1] = baseColorFactor[1];
+            constants->baseColorFactor[2] = baseColorFactor[2];
+            constants->baseColorFactor[3] = baseColorFactor[3];
 
             ctx->Unmap(constantBuffer, 0);
             ctx->DrawIndexed(prim.indexCount, 0, 0);
@@ -135,6 +143,7 @@ void SceneRenderer::Render(float aspect)
     m_deviceContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     m_deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
     m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+    m_deviceContext->PSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_linearWrapSampler.GetAddressOf());
 
     Matrix viewMatrix = g_camera->GetViewMatrix();
