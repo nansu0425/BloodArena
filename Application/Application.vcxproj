@@ -236,6 +236,7 @@
     <ClCompile Include="Core\WinMain.cpp" />
     <ClCompile Include="Core\Lifecycle.cpp" />
     <ClCompile Include="Graphics\SceneViewport.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
+    <ClCompile Include="Math\MathUtils.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
     <ClCompile Include="Editor\EditorUI.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Editor\ViewportPicking.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />

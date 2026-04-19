@@ -34,7 +34,7 @@ constexpr float kGridStartX = -4.0f;
 constexpr float kGridStartY = 3.0f;
 constexpr float kGridSpacing = 2.0f;
 
-constexpr uint32_t kSceneSchemaVersion = 2;
+constexpr uint32_t kSceneSchemaVersion = 3;
 
 std::filesystem::path GetScenePath(const std::string& name)
 {
@@ -61,11 +61,30 @@ Vector3 ReadVector3(const json& j, const Vector3& fallback)
     };
 }
 
+json WriteQuaternion(const Quaternion& q)
+{
+    return json::array({q.x, q.y, q.z, q.w});
+}
+
+Quaternion ReadQuaternion(const json& j, const Quaternion& fallback)
+{
+    if (!j.is_array() || j.size() != 4)
+    {
+        return fallback;
+    }
+    return Quaternion{
+        j[0].get<float>(),
+        j[1].get<float>(),
+        j[2].get<float>(),
+        j[3].get<float>()
+    };
+}
+
 json WriteTransform(const Transform& t)
 {
     return json{
         {"position", WriteVector3(t.position)},
-        {"rotation", WriteVector3(t.rotation)},
+        {"rotation", WriteQuaternion(t.rotation)},
         {"scale",    WriteVector3(t.scale)}
     };
 }
@@ -78,7 +97,7 @@ Transform ReadTransform(const json& j)
         return t;
     }
     t.position = ReadVector3(j.value("position", json{}), t.position);
-    t.rotation = ReadVector3(j.value("rotation", json{}), t.rotation);
+    t.rotation = ReadQuaternion(j.value("rotation", json{}), t.rotation);
     t.scale    = ReadVector3(j.value("scale",    json{}), t.scale);
     return t;
 }
@@ -288,6 +307,16 @@ bool Scene::LoadFromFile(const std::string& name)
     if (j.is_discarded())
     {
         BA_LOG_WARN("Failed to parse scene file: {}", filePath.string());
+        return false;
+    }
+
+    uint32_t fileVersion = j.value("version", static_cast<uint32_t>(0));
+    if (fileVersion != kSceneSchemaVersion)
+    {
+        BA_LOG_WARN(
+            "Scene schema version mismatch (file: {}, expected: {}): {}",
+            fileVersion, kSceneSchemaVersion, filePath.string()
+        );
         return false;
     }
 

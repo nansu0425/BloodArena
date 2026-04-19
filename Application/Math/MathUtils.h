@@ -54,18 +54,16 @@ inline Matrix BuildOrthographic(float width, float height, float nearZ, float fa
 
 struct Transform
 {
-    Vector3 position = {0.0f, 0.0f, 0.0f};
-    Vector3 rotation = {0.0f, 0.0f, 0.0f};
-    Vector3 scale    = {1.0f, 1.0f, 1.0f};
+    Vector3    position = {0.0f, 0.0f, 0.0f};
+    Quaternion rotation = Quaternion::Identity;
+    Vector3    scale    = {1.0f, 1.0f, 1.0f};
 };
 
-inline Matrix BuildWorld(const Transform& transform)
-{
-    return Matrix::CreateScale(transform.scale)
-         * Matrix::CreateRotationZ(transform.rotation.z)
-         * Matrix::CreateRotationX(transform.rotation.x)
-         * Matrix::CreateRotationY(transform.rotation.y)
-         * Matrix::CreateTranslation(transform.position);
-}
+Matrix BuildWorld(const Transform& transform);
+
+// Inverse of Quaternion::CreateFromYawPitchRoll(yaw=y, pitch=x, roll=z):
+// decompose q into Euler radians (x=pitch, y=yaw, z=roll) such that
+// q == CreateFromYawPitchRoll(result.y, result.x, result.z).
+Vector3 QuaternionToEulerZXY(const Quaternion& q);
 
 } // namespace BA

@@ -75,6 +75,8 @@ constexpr ComponentAddEntry kComponentAddEntries[] = {
 
 constexpr const char* kAddComponentPopupId = "AddComponentPopup";
 
+constexpr float kInspectorRotationDragSpeedDeg = 0.1f;
+
 } // namespace
 
 void EditorRenderer::Initialize()
@@ -449,6 +451,7 @@ void EditorRenderer::RenderInspector()
 
     if (selectedId == 0)
     {
+        m_inspectorCachedObjectId = 0;
         ImGui::TextDisabled("No object selected");
         ImGui::End();
         return;
@@ -458,6 +461,7 @@ void EditorRenderer::RenderInspector()
     if (selected == nullptr)
     {
         g_editorUI->SetSelectedGameObjectId(0);
+        m_inspectorCachedObjectId = 0;
         ImGui::TextDisabled("No object selected");
         ImGui::End();
         return;
@@ -467,7 +471,23 @@ void EditorRenderer::RenderInspector()
     ImGui::Separator();
 
     ImGui::DragFloat3("Position", &selected->transform.position.x, 0.01f);
-    ImGui::DragFloat3("Rotation", &selected->transform.rotation.x, 0.1f);
+
+    if (selected->id != m_inspectorCachedObjectId)
+    {
+        Vector3 eulerRad = QuaternionToEulerZXY(selected->transform.rotation);
+        m_inspectorEulerDegrees.x = RadToDeg(eulerRad.x);
+        m_inspectorEulerDegrees.y = RadToDeg(eulerRad.y);
+        m_inspectorEulerDegrees.z = RadToDeg(eulerRad.z);
+        m_inspectorCachedObjectId = selected->id;
+    }
+
+    ImGui::DragFloat3("Rotation", &m_inspectorEulerDegrees.x, kInspectorRotationDragSpeedDeg);
+
+    const float pitchRad = DegToRad(m_inspectorEulerDegrees.x);
+    const float yawRad   = DegToRad(m_inspectorEulerDegrees.y);
+    const float rollRad  = DegToRad(m_inspectorEulerDegrees.z);
+    selected->transform.rotation = Quaternion::CreateFromYawPitchRoll(yawRad, pitchRad, rollRad);
+
     ImGui::DragFloat3("Scale", &selected->transform.scale.x, 0.01f);
 
     ImGui::Separator();
