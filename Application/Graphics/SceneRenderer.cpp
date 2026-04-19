@@ -227,7 +227,7 @@ ComPtr<ID3DBlob> SceneRenderer::CompileShader(const wchar_t* filePath, const cha
     HRESULT hr = D3DCompileFromFile(
         resolvedPath.c_str(),
         nullptr,
-        nullptr,
+        D3D_COMPILE_STANDARD_FILE_INCLUDE,
         "main",
         target,
         compileFlags,
