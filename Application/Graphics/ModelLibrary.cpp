@@ -301,14 +301,14 @@ void ModelLibrary::LoadModelsFromAssetsDirectory()
     }
 
     std::error_code iterErr;
-    std::filesystem::directory_iterator it(dirPath, iterErr);
+    std::filesystem::recursive_directory_iterator it(dirPath, iterErr);
     if (iterErr)
     {
         BA_LOG_ERROR("Failed to open models directory '{}': {}", dirPath.string(), iterErr.message());
         return;
     }
 
-    for (; it != std::filesystem::directory_iterator(); it.increment(iterErr))
+    for (; it != std::filesystem::recursive_directory_iterator(); it.increment(iterErr))
     {
         if (iterErr)
         {
@@ -335,7 +335,15 @@ void ModelLibrary::LoadModelsFromAssetsDirectory()
             continue;
         }
 
-        std::string relativePath = std::string(kModelsDirectoryRelative) + "/" + entry.path().filename().string();
+        std::error_code relErr;
+        std::filesystem::path relativeToDir = std::filesystem::relative(entry.path(), dirPath, relErr);
+        if (relErr)
+        {
+            BA_LOG_ERROR("Failed to resolve relative path for '{}': {}", entry.path().string(), relErr.message());
+            continue;
+        }
+
+        std::string relativePath = std::string(kModelsDirectoryRelative) + "/" + relativeToDir.generic_string();
         LoadModel(modelName, relativePath);
     }
 }
