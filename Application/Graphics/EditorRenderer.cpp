@@ -134,6 +134,7 @@ void EditorRenderer::ResolveViewportInput()
     ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar);
     ImGui::PopStyleVar();
 
+    bool wasViewportFlying = m_isViewportFlying;
     bool isViewportHovered = ImGui::IsWindowHovered();
     if (isViewportHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
     {
@@ -142,6 +143,11 @@ void EditorRenderer::ResolveViewportInput()
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Right))
     {
         m_isViewportFlying = false;
+    }
+
+    if (!wasViewportFlying && m_isViewportFlying)
+    {
+        ImGui::SetWindowFocus();
     }
 
     ImGui::End();
