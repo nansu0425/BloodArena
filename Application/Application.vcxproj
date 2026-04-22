@@ -194,6 +194,7 @@
     <ClInclude Include="Core\Logger.h" />
     <ClInclude Include="Core\Settings.h" />
     <ClInclude Include="Core\Time.h" />
+    <ClInclude Include="Graphics\Gizmo\Gizmo.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="Editor\EditorConsoleSink.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Core\PathUtils.h" />
@@ -225,6 +226,7 @@
     <ClCompile Include="Core\Logger.cpp" />
     <ClCompile Include="Core\Settings.cpp" />
     <ClCompile Include="Core\Time.cpp" />
+    <ClCompile Include="Graphics\Gizmo\Gizmo.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="Editor\EditorConsoleSink.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Graphics\GraphicsDevice.cpp" />
