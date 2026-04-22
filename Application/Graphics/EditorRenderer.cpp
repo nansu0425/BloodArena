@@ -451,7 +451,6 @@ void EditorRenderer::RenderInspector()
 
     if (selectedId == 0)
     {
-        m_inspectorCachedObjectId = 0;
         ImGui::TextDisabled("No object selected");
         ImGui::End();
         return;
@@ -461,7 +460,6 @@ void EditorRenderer::RenderInspector()
     if (selected == nullptr)
     {
         g_editorUI->SetSelectedGameObjectId(0);
-        m_inspectorCachedObjectId = 0;
         ImGui::TextDisabled("No object selected");
         ImGui::End();
         return;
@@ -472,21 +470,31 @@ void EditorRenderer::RenderInspector()
 
     ImGui::DragFloat3("Position", &selected->transform.position.x, 0.01f);
 
-    if (selected->id != m_inspectorCachedObjectId)
+    const Vector3 eulerRad = QuaternionToEulerZXY(selected->transform.rotation);
+    Vector3 eulerDeg = {RadToDeg(eulerRad.x), RadToDeg(eulerRad.y), RadToDeg(eulerRad.z)};
+    const Vector3 previousDeg = eulerDeg;
+
+    ImGui::DragFloat3("Rotation", &eulerDeg.x, kInspectorRotationDragSpeedDeg);
+
+    const Vector3 deltaDeg = eulerDeg - previousDeg;
+    const bool hasRotationDelta = (deltaDeg.x != 0.0f) || (deltaDeg.y != 0.0f) || (deltaDeg.z != 0.0f);
+    if (hasRotationDelta)
     {
-        Vector3 eulerRad = QuaternionToEulerZXY(selected->transform.rotation);
-        m_inspectorEulerDegrees.x = RadToDeg(eulerRad.x);
-        m_inspectorEulerDegrees.y = RadToDeg(eulerRad.y);
-        m_inspectorEulerDegrees.z = RadToDeg(eulerRad.z);
-        m_inspectorCachedObjectId = selected->id;
+        Quaternion& rotation = selected->transform.rotation;
+        if (deltaDeg.x != 0.0f)
+        {
+            rotation = rotation * Quaternion::CreateFromAxisAngle(kAxisRight, DegToRad(deltaDeg.x));
+        }
+        if (deltaDeg.y != 0.0f)
+        {
+            rotation = rotation * Quaternion::CreateFromAxisAngle(kAxisUp, DegToRad(deltaDeg.y));
+        }
+        if (deltaDeg.z != 0.0f)
+        {
+            rotation = rotation * Quaternion::CreateFromAxisAngle(kAxisForward, DegToRad(deltaDeg.z));
+        }
+        rotation.Normalize();
     }
-
-    ImGui::DragFloat3("Rotation", &m_inspectorEulerDegrees.x, kInspectorRotationDragSpeedDeg);
-
-    const float pitchRad = DegToRad(m_inspectorEulerDegrees.x);
-    const float yawRad   = DegToRad(m_inspectorEulerDegrees.y);
-    const float rollRad  = DegToRad(m_inspectorEulerDegrees.z);
-    selected->transform.rotation = Quaternion::CreateFromYawPitchRoll(yawRad, pitchRad, rollRad);
 
     ImGui::DragFloat3("Scale", &selected->transform.scale.x, 0.01f);
 

@@ -41,9 +41,6 @@ private:
     char m_sceneNameBuffer[64] = {};
     bool m_isViewportFlying = false;
     FramePhase m_framePhase = FramePhase::Idle;
-
-    uint32_t m_inspectorCachedObjectId = 0;
-    Vector3  m_inspectorEulerDegrees   = {0.0f, 0.0f, 0.0f};
 };
 
 extern std::unique_ptr<EditorRenderer> g_editorRenderer;
