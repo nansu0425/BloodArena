@@ -6,6 +6,7 @@
 #include "Graphics/SceneViewport.h"
 #include "Editor/EditorUI.h"
 #include "Editor/ViewportPicking.h"
+#include "Graphics/Gizmo/Gizmo.h"
 #include "Core/Window.h"
 #include "Core/Input.h"
 #include "Core/PathUtils.h"
@@ -120,6 +121,8 @@ void EditorRenderer::BeginImGuiFrame()
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
+
+    Gizmo::BeginFrame();
 
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_None);
 

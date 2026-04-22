@@ -15,6 +15,7 @@
 #include "Graphics/SceneViewport.h"
 #include "Editor/EditorUI.h"
 #include "Graphics/EditorRenderer.h"
+#include "Graphics/Gizmo/Gizmo.h"
 #endif // BA_EDITOR
 
 namespace BA
@@ -98,6 +99,8 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 
     g_editorRenderer = std::make_unique<EditorRenderer>();
     g_editorRenderer->Initialize();
+
+    Gizmo::Initialize();
 #endif // BA_EDITOR
 
     g_window->SetResizeCallback(OnResize);
@@ -156,6 +159,8 @@ void Shutdown()
     SaveSettings(appSettings);
 
 #ifdef BA_EDITOR
+    Gizmo::Shutdown();
+
     g_editorRenderer->Shutdown();
     g_editorRenderer.reset();
 
