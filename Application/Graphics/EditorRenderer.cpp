@@ -78,6 +78,8 @@ constexpr const char* kAddComponentPopupId = "AddComponentPopup";
 
 constexpr float kInspectorRotationDragSpeedDeg = 0.1f;
 
+Gizmo::Mode s_gizmoMode = Gizmo::Mode::Translate;
+
 } // namespace
 
 void EditorRenderer::Initialize()
@@ -249,7 +251,37 @@ void EditorRenderer::RenderViewport()
             size
         );
 
-        if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+        if (!ImGui::IsMouseDown(ImGuiMouseButton_Right))
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey_W, false)) s_gizmoMode = Gizmo::Mode::Translate;
+            if (ImGui::IsKeyPressed(ImGuiKey_E, false)) s_gizmoMode = Gizmo::Mode::Rotate;
+            if (ImGui::IsKeyPressed(ImGuiKey_R, false)) s_gizmoMode = Gizmo::Mode::Scale;
+            if (ImGui::IsKeyPressed(ImGuiKey_Q, false)) s_gizmoMode = Gizmo::Mode::None;
+        }
+
+        GameObject* selected = g_scene->FindGameObject(g_editorUI->GetSelectedGameObjectId());
+        if (selected != nullptr && s_gizmoMode != Gizmo::Mode::None)
+        {
+            ImVec2 rectMin = ImGui::GetItemRectMin();
+            ImVec2 rectSize = ImGui::GetItemRectSize();
+            Gizmo::SetViewportRect(rectMin.x, rectMin.y, rectSize.x, rectSize.y);
+
+            Matrix view = g_camera->GetViewMatrix();
+            Matrix proj = g_camera->GetProjectionMatrix(aspect);
+            Gizmo::ManipulateResult result = Gizmo::Manipulate(
+                selected->transform,
+                s_gizmoMode,
+                Gizmo::Space::World,
+                view,
+                proj
+            );
+            if (result.isChanged)
+            {
+                selected->transform = result.transform;
+            }
+        }
+
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && !Gizmo::IsUsingMouse())
         {
             ImVec2 imageMin = ImGui::GetItemRectMin();
             ImVec2 mousePos = ImGui::GetMousePos();
