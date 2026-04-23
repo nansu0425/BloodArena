@@ -81,6 +81,48 @@ constexpr float kInspectorRotationDragSpeedDeg = 0.1f;
 Gizmo::Mode s_gizmoMode = Gizmo::Mode::Translate;
 Gizmo::Space s_gizmoSpace = Gizmo::Space::World;
 
+const char* GizmoModeToLabel(Gizmo::Mode mode)
+{
+    switch (mode)
+    {
+    case Gizmo::Mode::None:
+    {
+        return "None";
+    }
+    case Gizmo::Mode::Translate:
+    {
+        return "Translate";
+    }
+    case Gizmo::Mode::Rotate:
+    {
+        return "Rotate";
+    }
+    case Gizmo::Mode::Scale:
+    {
+        return "Scale";
+    }
+    }
+    BA_ASSERT(false);
+    return "Unknown";
+}
+
+const char* GizmoSpaceToLabel(Gizmo::Space space)
+{
+    switch (space)
+    {
+    case Gizmo::Space::World:
+    {
+        return "World";
+    }
+    case Gizmo::Space::Local:
+    {
+        return "Local";
+    }
+    }
+    BA_ASSERT(false);
+    return "Unknown";
+}
+
 struct InspectorAxisDrag
 {
     bool    isDragging;
@@ -235,8 +277,11 @@ void EditorRenderer::RenderViewport()
 
     if (ImGui::BeginMenuBar())
     {
-        const char* kSpaceLabel = (s_gizmoSpace == Gizmo::Space::Local) ? "Local" : "World";
-        ImGui::TextUnformatted(kSpaceLabel);
+        ImGui::TextUnformatted(GizmoModeToLabel(s_gizmoMode));
+        ImGui::SameLine();
+        ImGui::TextUnformatted("|");
+        ImGui::SameLine();
+        ImGui::TextUnformatted(GizmoSpaceToLabel(s_gizmoSpace));
         ImGui::SameLine();
 
         const char* kCameraLabel = "Camera";
