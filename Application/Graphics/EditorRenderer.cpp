@@ -1,4 +1,4 @@
-#include "Core/PCH.h"
+﻿#include "Core/PCH.h"
 #include "Graphics/EditorRenderer.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/ModelLibrary.h"
@@ -79,6 +79,32 @@ constexpr const char* kAddComponentPopupId = "AddComponentPopup";
 constexpr float kInspectorRotationDragSpeedDeg = 0.1f;
 
 Gizmo::Mode s_gizmoMode = Gizmo::Mode::Translate;
+Gizmo::Space s_gizmoSpace = Gizmo::Space::World;
+
+struct InspectorAxisDrag
+{
+    bool    isDragging;
+    Vector3 axis;
+    float   deltaDeg;
+};
+
+InspectorAxisDrag GetDraggedAxis(const Vector3& deltaDeg)
+{
+    if (deltaDeg.x != 0.0f)
+    {
+        return { true, kAxisRight,   deltaDeg.x };
+    }
+    if (deltaDeg.y != 0.0f)
+    {
+        return { true, kAxisUp,      deltaDeg.y };
+    }
+    if (deltaDeg.z != 0.0f)
+    {
+        return { true, kAxisForward, deltaDeg.z };
+    }
+
+    return { false, Vector3::Zero, 0.0f };
+}
 
 } // namespace
 
@@ -209,6 +235,10 @@ void EditorRenderer::RenderViewport()
 
     if (ImGui::BeginMenuBar())
     {
+        const char* kSpaceLabel = (s_gizmoSpace == Gizmo::Space::Local) ? "Local" : "World";
+        ImGui::TextUnformatted(kSpaceLabel);
+        ImGui::SameLine();
+
         const char* kCameraLabel = "Camera";
         float buttonWidth = ImGui::CalcTextSize(kCameraLabel).x + ImGui::GetStyle().FramePadding.x * 2.0f;
         float available = ImGui::GetContentRegionAvail().x;
@@ -253,10 +283,28 @@ void EditorRenderer::RenderViewport()
 
         if (!ImGui::IsMouseDown(ImGuiMouseButton_Right))
         {
-            if (ImGui::IsKeyPressed(ImGuiKey_W, false)) s_gizmoMode = Gizmo::Mode::Translate;
-            if (ImGui::IsKeyPressed(ImGuiKey_E, false)) s_gizmoMode = Gizmo::Mode::Rotate;
-            if (ImGui::IsKeyPressed(ImGuiKey_R, false)) s_gizmoMode = Gizmo::Mode::Scale;
-            if (ImGui::IsKeyPressed(ImGuiKey_Q, false)) s_gizmoMode = Gizmo::Mode::None;
+            if (ImGui::IsKeyPressed(ImGuiKey_W, false))
+            {
+                s_gizmoMode = Gizmo::Mode::Translate;
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_E, false))
+            {
+                s_gizmoMode = Gizmo::Mode::Rotate;
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_R, false))
+            {
+                s_gizmoMode = Gizmo::Mode::Scale;
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_Q, false))
+            {
+                s_gizmoMode = Gizmo::Mode::None;
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_X, false))
+            {
+                s_gizmoSpace = (s_gizmoSpace == Gizmo::Space::World)
+                    ? Gizmo::Space::Local
+                    : Gizmo::Space::World;
+            }
         }
 
         GameObject* selected = g_scene->FindGameObject(g_editorUI->GetSelectedGameObjectId());
@@ -271,7 +319,7 @@ void EditorRenderer::RenderViewport()
             Gizmo::ManipulateResult result = Gizmo::Manipulate(
                 selected->transform,
                 s_gizmoMode,
-                Gizmo::Space::World,
+                s_gizmoSpace,
                 view,
                 proj
             );
@@ -509,7 +557,18 @@ void EditorRenderer::RenderInspector()
     ImGui::Text("ID: %u", selected->id);
     ImGui::Separator();
 
-    ImGui::DragFloat3("Position", &selected->transform.position.x, 0.01f);
+    Vector3 positionEdit = selected->transform.position;
+    ImGui::DragFloat3("Position", &positionEdit.x, 0.01f);
+    const Vector3 deltaPosition = positionEdit - selected->transform.position;
+    const bool hasPositionDelta =
+        (deltaPosition.x != 0.0f) || (deltaPosition.y != 0.0f) || (deltaPosition.z != 0.0f);
+    if (hasPositionDelta)
+    {
+        const Vector3 worldDelta = (s_gizmoSpace == Gizmo::Space::Local)
+            ? Vector3::Transform(deltaPosition, selected->transform.rotation)
+            : deltaPosition;
+        selected->transform.position += worldDelta;
+    }
 
     const Vector3 eulerRad = QuaternionToEulerZXY(selected->transform.rotation);
     Vector3 eulerDeg = {RadToDeg(eulerRad.x), RadToDeg(eulerRad.y), RadToDeg(eulerRad.z)};
@@ -518,22 +577,13 @@ void EditorRenderer::RenderInspector()
     ImGui::DragFloat3("Rotation", &eulerDeg.x, kInspectorRotationDragSpeedDeg);
 
     const Vector3 deltaDeg = eulerDeg - previousDeg;
-    const bool hasRotationDelta = (deltaDeg.x != 0.0f) || (deltaDeg.y != 0.0f) || (deltaDeg.z != 0.0f);
-    if (hasRotationDelta)
+    const InspectorAxisDrag drag = GetDraggedAxis(deltaDeg);
+    if (drag.isDragging)
     {
         Quaternion& rotation = selected->transform.rotation;
-        if (deltaDeg.x != 0.0f)
-        {
-            rotation = rotation * Quaternion::CreateFromAxisAngle(kAxisRight, DegToRad(deltaDeg.x));
-        }
-        if (deltaDeg.y != 0.0f)
-        {
-            rotation = rotation * Quaternion::CreateFromAxisAngle(kAxisUp, DegToRad(deltaDeg.y));
-        }
-        if (deltaDeg.z != 0.0f)
-        {
-            rotation = rotation * Quaternion::CreateFromAxisAngle(kAxisForward, DegToRad(deltaDeg.z));
-        }
+        const Quaternion delta = Quaternion::CreateFromAxisAngle(drag.axis, DegToRad(drag.deltaDeg));
+        const bool isLocal = (s_gizmoSpace == Gizmo::Space::Local);
+        rotation = isLocal ? (delta * rotation) : (rotation * delta);
         rotation.Normalize();
     }
 
