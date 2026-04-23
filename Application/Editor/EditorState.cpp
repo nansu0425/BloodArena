@@ -94,6 +94,61 @@ void EditorState::SetEditorSettings(const EditorSettings& settings)
     m_consoleAutoScroll = settings.isConsoleAutoScroll;
 }
 
+char* EditorState::GetConsoleInputBuffer()
+{
+    return m_consoleInputBuffer;
+}
+
+void EditorState::ClearConsoleInputBuffer()
+{
+    m_consoleInputBuffer[0] = '\0';
+}
+
+char* EditorState::GetSceneNameBuffer()
+{
+    return m_sceneNameBuffer;
+}
+
+void EditorState::ClearSceneNameBuffer()
+{
+    m_sceneNameBuffer[0] = '\0';
+}
+
+void EditorState::SetSceneNameBuffer(const char* name)
+{
+    snprintf(m_sceneNameBuffer, kEditorSceneNameBufferSize, "%s", name);
+}
+
+bool EditorState::IsViewportFlying() const
+{
+    return m_isViewportFlying;
+}
+
+void EditorState::SetViewportFlying(bool isFlying)
+{
+    m_isViewportFlying = isFlying;
+}
+
+Gizmo::Mode EditorState::GetGizmoMode() const
+{
+    return m_gizmoMode;
+}
+
+void EditorState::SetGizmoMode(Gizmo::Mode mode)
+{
+    m_gizmoMode = mode;
+}
+
+Gizmo::Space EditorState::GetGizmoSpace() const
+{
+    return m_gizmoSpace;
+}
+
+void EditorState::SetGizmoSpace(Gizmo::Space space)
+{
+    m_gizmoSpace = space;
+}
+
 std::unique_ptr<EditorState> g_editorState;
 
 } // namespace BA

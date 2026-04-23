@@ -78,9 +78,6 @@ constexpr const char* kAddComponentPopupId = "AddComponentPopup";
 
 constexpr float kInspectorRotationDragSpeedDeg = 0.1f;
 
-Gizmo::Mode s_gizmoMode = Gizmo::Mode::Translate;
-Gizmo::Space s_gizmoSpace = Gizmo::Space::World;
-
 const char* GizmoModeToLabel(Gizmo::Mode mode)
 {
     switch (mode)
@@ -207,18 +204,18 @@ void EditorRenderer::ResolveViewportInput()
     ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_MenuBar);
     ImGui::PopStyleVar();
 
-    bool wasViewportFlying = m_isViewportFlying;
-    bool isViewportHovered = ImGui::IsWindowHovered();
+    const bool wasViewportFlying = g_editorState->IsViewportFlying();
+    const bool isViewportHovered = ImGui::IsWindowHovered();
     if (isViewportHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
     {
-        m_isViewportFlying = true;
+        g_editorState->SetViewportFlying(true);
     }
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Right))
     {
-        m_isViewportFlying = false;
+        g_editorState->SetViewportFlying(false);
     }
 
-    if (!wasViewportFlying && m_isViewportFlying)
+    if (!wasViewportFlying && g_editorState->IsViewportFlying())
     {
         ImGui::SetWindowFocus();
     }
@@ -232,7 +229,7 @@ void EditorRenderer::UpdateInputCapture()
 {
     BA_ASSERT(m_framePhase == FramePhase::ViewportInputResolved);
 
-    if (m_isViewportFlying)
+    if (g_editorState->IsViewportFlying())
     {
         g_input->SetKeyboardCaptured(false);
         g_input->SetMouseCaptured(false);
@@ -277,11 +274,11 @@ void EditorRenderer::RenderViewport()
 
     if (ImGui::BeginMenuBar())
     {
-        ImGui::TextUnformatted(GizmoModeToLabel(s_gizmoMode));
+        ImGui::TextUnformatted(GizmoModeToLabel(g_editorState->GetGizmoMode()));
         ImGui::SameLine();
         ImGui::TextUnformatted("|");
         ImGui::SameLine();
-        ImGui::TextUnformatted(GizmoSpaceToLabel(s_gizmoSpace));
+        ImGui::TextUnformatted(GizmoSpaceToLabel(g_editorState->GetGizmoSpace()));
         ImGui::SameLine();
 
         const char* kCameraLabel = "Camera";
@@ -330,30 +327,32 @@ void EditorRenderer::RenderViewport()
         {
             if (ImGui::IsKeyPressed(ImGuiKey_W, false))
             {
-                s_gizmoMode = Gizmo::Mode::Translate;
+                g_editorState->SetGizmoMode(Gizmo::Mode::Translate);
             }
             if (ImGui::IsKeyPressed(ImGuiKey_E, false))
             {
-                s_gizmoMode = Gizmo::Mode::Rotate;
+                g_editorState->SetGizmoMode(Gizmo::Mode::Rotate);
             }
             if (ImGui::IsKeyPressed(ImGuiKey_R, false))
             {
-                s_gizmoMode = Gizmo::Mode::Scale;
+                g_editorState->SetGizmoMode(Gizmo::Mode::Scale);
             }
             if (ImGui::IsKeyPressed(ImGuiKey_Q, false))
             {
-                s_gizmoMode = Gizmo::Mode::None;
+                g_editorState->SetGizmoMode(Gizmo::Mode::None);
             }
             if (ImGui::IsKeyPressed(ImGuiKey_X, false))
             {
-                s_gizmoSpace = (s_gizmoSpace == Gizmo::Space::World)
+                const Gizmo::Space currentSpace = g_editorState->GetGizmoSpace();
+                const Gizmo::Space toggledSpace = (currentSpace == Gizmo::Space::World)
                     ? Gizmo::Space::Local
                     : Gizmo::Space::World;
+                g_editorState->SetGizmoSpace(toggledSpace);
             }
         }
 
         GameObject* selected = g_scene->FindGameObject(g_editorState->GetSelectedGameObjectId());
-        if (selected != nullptr && s_gizmoMode != Gizmo::Mode::None)
+        if (selected != nullptr && g_editorState->GetGizmoMode() != Gizmo::Mode::None)
         {
             ImVec2 rectMin = ImGui::GetItemRectMin();
             ImVec2 rectSize = ImGui::GetItemRectSize();
@@ -363,8 +362,8 @@ void EditorRenderer::RenderViewport()
             Matrix proj = g_camera->GetProjectionMatrix(aspect);
             Gizmo::ManipulateResult result = Gizmo::Manipulate(
                 selected->transform,
-                s_gizmoMode,
-                s_gizmoSpace,
+                g_editorState->GetGizmoMode(),
+                g_editorState->GetGizmoSpace(),
                 view,
                 proj
             );
@@ -469,7 +468,7 @@ void EditorRenderer::RenderHierarchy()
         g_camera->ResetToDefaults();
         g_editorState->SetSelectedGameObjectId(0);
         selectedId = 0;
-        m_sceneNameBuffer[0] = '\0';
+        g_editorState->ClearSceneNameBuffer();
     }
     ImGui::SameLine();
     if (ImGui::Button("Save Scene"))
@@ -484,13 +483,13 @@ void EditorRenderer::RenderHierarchy()
 
     if (ImGui::BeginPopup("SaveScenePopup"))
     {
-        ImGui::InputText("Name", m_sceneNameBuffer, sizeof(m_sceneNameBuffer));
+        ImGui::InputText("Name", g_editorState->GetSceneNameBuffer(), kEditorSceneNameBufferSize);
 
-        const bool hasSceneName = (m_sceneNameBuffer[0] != '\0');
+        const bool hasSceneName = (g_editorState->GetSceneNameBuffer()[0] != '\0');
         ImGui::BeginDisabled(!hasSceneName);
         if (ImGui::Button("Save"))
         {
-            g_scene->SaveToFile(m_sceneNameBuffer);
+            g_scene->SaveToFile(g_editorState->GetSceneNameBuffer());
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndDisabled();
@@ -515,7 +514,7 @@ void EditorRenderer::RenderHierarchy()
             if (ImGui::Selectable(stem.c_str()))
             {
                 g_scene->SaveToFile(stem);
-                snprintf(m_sceneNameBuffer, sizeof(m_sceneNameBuffer), "%s", stem.c_str());
+                g_editorState->SetSceneNameBuffer(stem.c_str());
                 ImGui::CloseCurrentPopup();
             }
         }
@@ -545,7 +544,7 @@ void EditorRenderer::RenderHierarchy()
             {
                 if (g_scene->LoadFromFile(stem))
                 {
-                    snprintf(m_sceneNameBuffer, sizeof(m_sceneNameBuffer), "%s", stem.c_str());
+                    g_editorState->SetSceneNameBuffer(stem.c_str());
                     g_editorState->SetSelectedGameObjectId(0);
                     selectedId = 0;
                 }
@@ -609,7 +608,7 @@ void EditorRenderer::RenderInspector()
         (deltaPosition.x != 0.0f) || (deltaPosition.y != 0.0f) || (deltaPosition.z != 0.0f);
     if (hasPositionDelta)
     {
-        const Vector3 worldDelta = (s_gizmoSpace == Gizmo::Space::Local)
+        const Vector3 worldDelta = (g_editorState->GetGizmoSpace() == Gizmo::Space::Local)
             ? Vector3::Transform(deltaPosition, selected->transform.rotation)
             : deltaPosition;
         selected->transform.position += worldDelta;
@@ -627,7 +626,7 @@ void EditorRenderer::RenderInspector()
     {
         Quaternion& rotation = selected->transform.rotation;
         const Quaternion delta = Quaternion::CreateFromAxisAngle(drag.axis, DegToRad(drag.deltaDeg));
-        const bool isLocal = (s_gizmoSpace == Gizmo::Space::Local);
+        const bool isLocal = (g_editorState->GetGizmoSpace() == Gizmo::Space::Local);
         rotation = isLocal ? (delta * rotation) : (rotation * delta);
         rotation.Normalize();
     }
@@ -788,12 +787,12 @@ void EditorRenderer::RenderConsole()
     ImGui::EndChild();
 
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if (ImGui::InputText("##ConsoleInput", m_consoleInputBuffer, sizeof(m_consoleInputBuffer), ImGuiInputTextFlags_EnterReturnsTrue))
+    if (ImGui::InputText("##ConsoleInput", g_editorState->GetConsoleInputBuffer(), kEditorConsoleInputBufferSize, ImGuiInputTextFlags_EnterReturnsTrue))
     {
-        if (m_consoleInputBuffer[0] != '\0')
+        if (g_editorState->GetConsoleInputBuffer()[0] != '\0')
         {
-            BA_LOG_INFO("Console> {}", m_consoleInputBuffer);
-            m_consoleInputBuffer[0] = '\0';
+            BA_LOG_INFO("Console> {}", g_editorState->GetConsoleInputBuffer());
+            g_editorState->ClearConsoleInputBuffer();
         }
 
         ImGui::SetKeyboardFocusHere(-1);

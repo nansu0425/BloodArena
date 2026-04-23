@@ -37,9 +37,6 @@ private:
     void RenderAddComponentMenu(GameObject& gameObject);
     void RenderConsole();
 
-    char m_consoleInputBuffer[256] = {};
-    char m_sceneNameBuffer[64] = {};
-    bool m_isViewportFlying = false;
     FramePhase m_framePhase = FramePhase::Idle;
 };
 
