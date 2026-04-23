@@ -1,5 +1,5 @@
-﻿#include "Core/PCH.h"
-#include "Editor/EditorUI.h"
+#include "Core/PCH.h"
+#include "Editor/EditorState.h"
 #include "Editor/EditorConsoleSink.h"
 
 namespace BA
@@ -13,34 +13,34 @@ spdlog::sink_ptr s_consoleSink;
 
 } // namespace
 
-void EditorUI::Initialize()
+void EditorState::Initialize()
 {
     s_consoleSink = std::make_shared<EditorConsoleSink>();
     s_consoleSink->set_pattern("[%H:%M:%S] [%l] %v");
     g_logger->AddSink(s_consoleSink);
 
-    BA_LOG_INFO("EditorUI initialized.");
+    BA_LOG_INFO("EditorState initialized.");
 }
 
-void EditorUI::Shutdown()
+void EditorState::Shutdown()
 {
     g_logger->RemoveSink(s_consoleSink);
     s_consoleSink.reset();
 
-    BA_LOG_INFO("EditorUI shutdown.");
+    BA_LOG_INFO("EditorState shutdown.");
 }
 
-uint32_t EditorUI::GetSelectedGameObjectId() const
+uint32_t EditorState::GetSelectedGameObjectId() const
 {
     return m_selectedGameObjectId;
 }
 
-void EditorUI::SetSelectedGameObjectId(uint32_t id)
+void EditorState::SetSelectedGameObjectId(uint32_t id)
 {
     m_selectedGameObjectId = id;
 }
 
-void EditorUI::AddConsoleEntry(std::string message, LogLevel level)
+void EditorState::AddConsoleEntry(std::string message, LogLevel level)
 {
     if (m_consoleEntries.size() >= kMaxConsoleEntries)
     {
@@ -50,37 +50,37 @@ void EditorUI::AddConsoleEntry(std::string message, LogLevel level)
     m_consoleEntries.push_back({ std::move(message), level });
 }
 
-void EditorUI::ClearConsole()
+void EditorState::ClearConsole()
 {
     m_consoleEntries.clear();
 }
 
-const std::vector<ConsoleEntry>& EditorUI::GetConsoleEntries() const
+const std::vector<ConsoleEntry>& EditorState::GetConsoleEntries() const
 {
     return m_consoleEntries;
 }
 
-LogLevel EditorUI::GetConsoleFilterLevel() const
+LogLevel EditorState::GetConsoleFilterLevel() const
 {
     return m_consoleFilterLevel;
 }
 
-void EditorUI::SetConsoleFilterLevel(LogLevel level)
+void EditorState::SetConsoleFilterLevel(LogLevel level)
 {
     m_consoleFilterLevel = level;
 }
 
-bool EditorUI::GetConsoleAutoScroll() const
+bool EditorState::GetConsoleAutoScroll() const
 {
     return m_consoleAutoScroll;
 }
 
-void EditorUI::SetConsoleAutoScroll(bool autoScroll)
+void EditorState::SetConsoleAutoScroll(bool autoScroll)
 {
     m_consoleAutoScroll = autoScroll;
 }
 
-EditorSettings EditorUI::GetEditorSettings() const
+EditorSettings EditorState::GetEditorSettings() const
 {
     EditorSettings settings;
     settings.consoleFilterLevel = m_consoleFilterLevel;
@@ -88,12 +88,12 @@ EditorSettings EditorUI::GetEditorSettings() const
     return settings;
 }
 
-void EditorUI::SetEditorSettings(const EditorSettings& settings)
+void EditorState::SetEditorSettings(const EditorSettings& settings)
 {
     m_consoleFilterLevel = settings.consoleFilterLevel;
     m_consoleAutoScroll = settings.isConsoleAutoScroll;
 }
 
-std::unique_ptr<EditorUI> g_editorUI;
+std::unique_ptr<EditorState> g_editorState;
 
 } // namespace BA

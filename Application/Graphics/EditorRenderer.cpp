@@ -4,7 +4,7 @@
 #include "Graphics/ModelLibrary.h"
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/SceneViewport.h"
-#include "Editor/EditorUI.h"
+#include "Editor/EditorState.h"
 #include "Editor/ViewportPicking.h"
 #include "Graphics/Gizmo/Gizmo.h"
 #include "Core/Window.h"
@@ -352,7 +352,7 @@ void EditorRenderer::RenderViewport()
             }
         }
 
-        GameObject* selected = g_scene->FindGameObject(g_editorUI->GetSelectedGameObjectId());
+        GameObject* selected = g_scene->FindGameObject(g_editorState->GetSelectedGameObjectId());
         if (selected != nullptr && s_gizmoMode != Gizmo::Mode::None)
         {
             ImVec2 rectMin = ImGui::GetItemRectMin();
@@ -386,7 +386,7 @@ void EditorRenderer::RenderViewport()
             float ndcY = 1.0f - (pixelY / size.y) * 2.0f;
 
             uint32_t hitId = PickGameObject(ndcX, ndcY, *g_camera, aspect);
-            g_editorUI->SetSelectedGameObjectId(hitId);
+            g_editorState->SetSelectedGameObjectId(hitId);
         }
     }
 
@@ -440,12 +440,12 @@ void EditorRenderer::RenderHierarchy()
 {
     ImGui::Begin("Hierarchy");
 
-    uint32_t selectedId = g_editorUI->GetSelectedGameObjectId();
+    uint32_t selectedId = g_editorState->GetSelectedGameObjectId();
 
     if (ImGui::Button("Create"))
     {
         uint32_t newId = g_scene->CreateGameObject();
-        g_editorUI->SetSelectedGameObjectId(newId);
+        g_editorState->SetSelectedGameObjectId(newId);
         selectedId = newId;
     }
 
@@ -456,7 +456,7 @@ void EditorRenderer::RenderHierarchy()
     if (ImGui::Button("Remove"))
     {
         g_scene->DestroyGameObject(selectedId);
-        g_editorUI->SetSelectedGameObjectId(0);
+        g_editorState->SetSelectedGameObjectId(0);
         selectedId = 0;
     }
     ImGui::EndDisabled();
@@ -467,7 +467,7 @@ void EditorRenderer::RenderHierarchy()
     {
         g_scene->Clear();
         g_camera->ResetToDefaults();
-        g_editorUI->SetSelectedGameObjectId(0);
+        g_editorState->SetSelectedGameObjectId(0);
         selectedId = 0;
         m_sceneNameBuffer[0] = '\0';
     }
@@ -546,7 +546,7 @@ void EditorRenderer::RenderHierarchy()
                 if (g_scene->LoadFromFile(stem))
                 {
                     snprintf(m_sceneNameBuffer, sizeof(m_sceneNameBuffer), "%s", stem.c_str());
-                    g_editorUI->SetSelectedGameObjectId(0);
+                    g_editorState->SetSelectedGameObjectId(0);
                     selectedId = 0;
                 }
                 ImGui::CloseCurrentPopup();
@@ -570,7 +570,7 @@ void EditorRenderer::RenderHierarchy()
 
         if (ImGui::Selectable(label, isSelected))
         {
-            g_editorUI->SetSelectedGameObjectId(gameObject.id);
+            g_editorState->SetSelectedGameObjectId(gameObject.id);
         }
     }
 
@@ -581,7 +581,7 @@ void EditorRenderer::RenderInspector()
 {
     ImGui::Begin("Inspector");
 
-    uint32_t selectedId = g_editorUI->GetSelectedGameObjectId();
+    uint32_t selectedId = g_editorState->GetSelectedGameObjectId();
 
     if (selectedId == 0)
     {
@@ -593,7 +593,7 @@ void EditorRenderer::RenderInspector()
     GameObject* selected = g_scene->FindGameObject(selectedId);
     if (selected == nullptr)
     {
-        g_editorUI->SetSelectedGameObjectId(0);
+        g_editorState->SetSelectedGameObjectId(0);
         ImGui::TextDisabled("No object selected");
         ImGui::End();
         return;
@@ -743,32 +743,32 @@ void EditorRenderer::RenderConsole()
 
     if (ImGui::Button("Clear"))
     {
-        g_editorUI->ClearConsole();
+        g_editorState->ClearConsole();
     }
 
     ImGui::SameLine();
 
-    int filterLevel = static_cast<int>(g_editorUI->GetConsoleFilterLevel());
+    int filterLevel = static_cast<int>(g_editorState->GetConsoleFilterLevel());
     ImGui::SetNextItemWidth(100);
     if (ImGui::Combo("##Filter", &filterLevel, kLogLevelNames, IM_ARRAYSIZE(kLogLevelNames)))
     {
-        g_editorUI->SetConsoleFilterLevel(static_cast<LogLevel>(filterLevel));
+        g_editorState->SetConsoleFilterLevel(static_cast<LogLevel>(filterLevel));
     }
 
     ImGui::SameLine();
 
-    bool autoScroll = g_editorUI->GetConsoleAutoScroll();
+    bool autoScroll = g_editorState->GetConsoleAutoScroll();
     if (ImGui::Checkbox("AutoScroll", &autoScroll))
     {
-        g_editorUI->SetConsoleAutoScroll(autoScroll);
+        g_editorState->SetConsoleAutoScroll(autoScroll);
     }
 
     ImGui::Separator();
 
     ImGui::BeginChild("ConsoleScrollRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
 
-    LogLevel currentFilter = g_editorUI->GetConsoleFilterLevel();
-    for (const ConsoleEntry& entry : g_editorUI->GetConsoleEntries())
+    LogLevel currentFilter = g_editorState->GetConsoleFilterLevel();
+    for (const ConsoleEntry& entry : g_editorState->GetConsoleEntries())
     {
         if (entry.level < currentFilter)
         {
@@ -780,7 +780,7 @@ void EditorRenderer::RenderConsole()
         ImGui::PopStyleColor();
     }
 
-    if (g_editorUI->GetConsoleAutoScroll() && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+    if (g_editorState->GetConsoleAutoScroll() && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
     {
         ImGui::SetScrollHereY(1.0f);
     }

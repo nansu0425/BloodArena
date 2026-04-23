@@ -214,7 +214,7 @@
     <ClInclude Include="Scene\GameObject.h" />
     <ClInclude Include="Scene\ModelComponent.h" />
     <ClInclude Include="Scene\Scene.h" />
-    <ClInclude Include="Editor\EditorUI.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
+    <ClInclude Include="Editor\EditorState.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Editor\ViewportPicking.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Graphics\EditorRenderer.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
   </ItemGroup>
@@ -240,7 +240,7 @@
     <ClCompile Include="Graphics\SceneViewport.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Math\MathUtils.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
-    <ClCompile Include="Editor\EditorUI.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
+    <ClCompile Include="Editor\EditorState.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Editor\ViewportPicking.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Graphics\EditorRenderer.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
   </ItemGroup>

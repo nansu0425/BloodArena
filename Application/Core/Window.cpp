@@ -6,7 +6,7 @@
 #include <windowsx.h>
 
 #ifdef BA_EDITOR
-#include "Editor/EditorUI.h"
+#include "Editor/EditorState.h"
 #endif // BA_EDITOR
 
 namespace BA
@@ -152,9 +152,9 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             {
                 uint32_t id = gameObjects.back().id;
 #ifdef BA_EDITOR
-                if (g_editorUI->GetSelectedGameObjectId() == id)
+                if (g_editorState->GetSelectedGameObjectId() == id)
                 {
-                    g_editorUI->SetSelectedGameObjectId(0);
+                    g_editorState->SetSelectedGameObjectId(0);
                 }
 #endif // BA_EDITOR
                 g_scene->DestroyGameObject(id);

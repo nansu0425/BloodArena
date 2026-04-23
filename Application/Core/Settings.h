@@ -3,7 +3,7 @@
 #include "Core/Window.h"
 
 #ifdef BA_EDITOR
-#include "Editor/EditorUI.h"
+#include "Editor/EditorState.h"
 #endif // BA_EDITOR
 
 namespace BA

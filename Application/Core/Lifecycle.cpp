@@ -13,7 +13,7 @@
 
 #ifdef BA_EDITOR
 #include "Graphics/SceneViewport.h"
-#include "Editor/EditorUI.h"
+#include "Editor/EditorState.h"
 #include "Graphics/EditorRenderer.h"
 #include "Graphics/Gizmo/Gizmo.h"
 #endif // BA_EDITOR
@@ -93,9 +93,9 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_sceneViewport = std::make_unique<SceneViewport>();
     g_sceneViewport->Initialize();
 
-    g_editorUI = std::make_unique<EditorUI>();
-    g_editorUI->Initialize();
-    g_editorUI->SetEditorSettings(appSettings.editor);
+    g_editorState = std::make_unique<EditorState>();
+    g_editorState->Initialize();
+    g_editorState->SetEditorSettings(appSettings.editor);
 
     g_editorRenderer = std::make_unique<EditorRenderer>();
     g_editorRenderer->Initialize();
@@ -154,7 +154,7 @@ void Shutdown()
     AppSettings appSettings;
     appSettings.window = g_window->GetSettings();
 #ifdef BA_EDITOR
-    appSettings.editor = g_editorUI->GetEditorSettings();
+    appSettings.editor = g_editorState->GetEditorSettings();
 #endif // BA_EDITOR
     SaveSettings(appSettings);
 
@@ -164,8 +164,8 @@ void Shutdown()
     g_editorRenderer->Shutdown();
     g_editorRenderer.reset();
 
-    g_editorUI->Shutdown();
-    g_editorUI.reset();
+    g_editorState->Shutdown();
+    g_editorState.reset();
 
     g_sceneViewport->Shutdown();
     g_sceneViewport.reset();

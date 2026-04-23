@@ -17,7 +17,7 @@ struct ConsoleEntry
     LogLevel level;
 };
 
-class EditorUI
+class EditorState
 {
 public:
     void Initialize();
@@ -47,6 +47,6 @@ private:
     bool m_consoleAutoScroll = true;
 };
 
-extern std::unique_ptr<EditorUI> g_editorUI;
+extern std::unique_ptr<EditorState> g_editorState;
 
 } // namespace BA
