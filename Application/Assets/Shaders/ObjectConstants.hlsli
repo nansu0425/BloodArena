@@ -6,7 +6,6 @@ cbuffer ObjectConstants : register(b0)
     row_major float4x4 worldMatrix;
     row_major float4x4 viewMatrix;
     row_major float4x4 projectionMatrix;
-    float4 objectColor;
     float4 baseColorFactor;
 };
 

@@ -16,19 +16,6 @@ namespace
 
 using json = nlohmann::json;
 
-constexpr float kPalette[][4] =
-{
-    {1.0f, 0.2f, 0.2f, 1.0f},
-    {0.2f, 1.0f, 0.2f, 1.0f},
-    {0.2f, 0.4f, 1.0f, 1.0f},
-    {1.0f, 1.0f, 0.2f, 1.0f},
-    {1.0f, 0.2f, 1.0f, 1.0f},
-    {0.2f, 1.0f, 1.0f, 1.0f},
-    {1.0f, 0.6f, 0.2f, 1.0f},
-    {0.6f, 0.2f, 1.0f, 1.0f},
-};
-
-constexpr uint32_t kPaletteSize = _countof(kPalette);
 constexpr uint32_t kGridColumns = 5;
 constexpr float kGridStartX = -4.0f;
 constexpr float kGridStartY = 3.0f;
@@ -142,7 +129,6 @@ json WriteGameObject(const GameObject& obj)
 {
     json result{
         {"id", obj.id},
-        {"color", json::array({obj.color[0], obj.color[1], obj.color[2], obj.color[3]})},
         {"transform", WriteTransform(obj.transform)}
     };
     if (obj.modelComponent)
@@ -156,15 +142,6 @@ GameObject ReadGameObject(const json& j)
 {
     GameObject obj;
     obj.id = j.value("id", obj.id);
-
-    if (j.contains("color") && j["color"].is_array() && j["color"].size() == 4)
-    {
-        const json& c = j["color"];
-        obj.color[0] = c[0].get<float>();
-        obj.color[1] = c[1].get<float>();
-        obj.color[2] = c[2].get<float>();
-        obj.color[3] = c[3].get<float>();
-    }
 
     if (j.contains("transform"))
     {
@@ -204,12 +181,6 @@ uint32_t Scene::CreateGameObject()
 
     GameObject gameObject;
     gameObject.id = id;
-
-    const float* palette = kPalette[index % kPaletteSize];
-    gameObject.color[0] = palette[0];
-    gameObject.color[1] = palette[1];
-    gameObject.color[2] = palette[2];
-    gameObject.color[3] = palette[3];
 
     gameObject.transform.position.x = kGridStartX + static_cast<float>(index % kGridColumns) * kGridSpacing;
     gameObject.transform.position.y = kGridStartY - static_cast<float>(index / kGridColumns) * kGridSpacing;

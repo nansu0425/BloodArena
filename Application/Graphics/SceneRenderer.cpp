@@ -19,7 +19,6 @@ struct ObjectConstants
     Matrix worldMatrix;
     Matrix viewMatrix;
     Matrix projectionMatrix;
-    float color[4];
     float baseColorFactor[4];
 };
 
@@ -34,7 +33,6 @@ void DrawNode(
     const Matrix& objectWorld,
     const Matrix& viewMatrix,
     const Matrix& projectionMatrix,
-    const float color[4],
     ID3D11Buffer* constantBuffer)
 {
     // Row-vector convention (see ModelLoader.cpp ComputeNodeLocalTransform): v' = v * (local * parent).
@@ -79,10 +77,6 @@ void DrawNode(
             constants->worldMatrix = finalWorld;
             constants->viewMatrix = viewMatrix;
             constants->projectionMatrix = projectionMatrix;
-            constants->color[0] = color[0];
-            constants->color[1] = color[1];
-            constants->color[2] = color[2];
-            constants->color[3] = color[3];
             constants->baseColorFactor[0] = baseColorFactor[0];
             constants->baseColorFactor[1] = baseColorFactor[1];
             constants->baseColorFactor[2] = baseColorFactor[2];
@@ -96,7 +90,7 @@ void DrawNode(
     for (int childIndex : node.childIndices)
     {
         DrawNode(ctx, model, childIndex, accumulated, objectWorld,
-                 viewMatrix, projectionMatrix, color, constantBuffer);
+                 viewMatrix, projectionMatrix, constantBuffer);
     }
 }
 
@@ -164,7 +158,7 @@ void SceneRenderer::Render(float aspect)
             DrawNode(m_deviceContext, *model, rootIndex,
                      Matrix::Identity, objectWorld,
                      viewMatrix, projectionMatrix,
-                     gameObject.color, m_constantBuffer.Get());
+                     m_constantBuffer.Get());
         }
     }
 }

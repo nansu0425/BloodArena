@@ -635,10 +635,6 @@ void EditorRenderer::RenderInspector()
 
     ImGui::Separator();
 
-    ImGui::ColorEdit4("Color", selected->color);
-
-    ImGui::Separator();
-
     RenderModelComponent(*selected);
 
     RenderAddComponentMenu(*selected);
