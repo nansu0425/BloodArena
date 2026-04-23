@@ -1,13 +1,8 @@
 ﻿#include "Core/PCH.h"
 #include "Core/Window.h"
 #include "Core/Input.h"
-#include "Scene/Scene.h"
 
 #include <windowsx.h>
-
-#ifdef BA_EDITOR
-#include "Editor/EditorState.h"
-#endif // BA_EDITOR
 
 namespace BA
 {
@@ -132,36 +127,8 @@ LRESULT CALLBACK Window::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
     case WM_RBUTTONDOWN:
     case WM_RBUTTONUP:
     case WM_KEYUP:
-        return 0;
     case WM_KEYDOWN:
-    {
-        bool wasAlreadyDown = (lParam >> 30) & 1;
-        if (wasAlreadyDown)
-        {
-            break;
-        }
-
-        if (wParam == '1')
-        {
-            g_scene->CreateGameObject();
-        }
-        else if (wParam == '2')
-        {
-            std::span<const GameObject> gameObjects = g_scene->GetGameObjects();
-            if (gameObjects.empty() == false)
-            {
-                uint32_t id = gameObjects.back().id;
-#ifdef BA_EDITOR
-                if (g_editorState->GetSelectedGameObjectId() == id)
-                {
-                    g_editorState->SetSelectedGameObjectId(0);
-                }
-#endif // BA_EDITOR
-                g_scene->DestroyGameObject(id);
-            }
-        }
         return 0;
-    }
     }
 
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
