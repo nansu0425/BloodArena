@@ -16,11 +16,6 @@ namespace
 
 using json = nlohmann::json;
 
-constexpr uint32_t kGridColumns = 5;
-constexpr float kGridStartX = -4.0f;
-constexpr float kGridStartY = 3.0f;
-constexpr float kGridSpacing = 2.0f;
-
 constexpr uint32_t kSceneSchemaVersion = 3;
 
 std::filesystem::path GetScenePath(const std::string& name)
@@ -177,13 +172,9 @@ void Scene::Shutdown()
 uint32_t Scene::CreateGameObject()
 {
     uint32_t id = m_nextId++;
-    uint32_t index = static_cast<uint32_t>(m_gameObjects.size());
 
     GameObject gameObject;
     gameObject.id = id;
-
-    gameObject.transform.position.x = kGridStartX + static_cast<float>(index % kGridColumns) * kGridSpacing;
-    gameObject.transform.position.y = kGridStartY - static_cast<float>(index / kGridColumns) * kGridSpacing;
 
     m_gameObjects.push_back(std::move(gameObject));
 
