@@ -63,6 +63,16 @@ void AddModelComponent(GameObject& gameObject)
     gameObject.AddComponent<ModelComponent>(kDefaultModelName);
 }
 
+bool HasLightComponent(const GameObject& gameObject)
+{
+    return gameObject.HasComponent<LightComponent>();
+}
+
+void AddLightComponent(GameObject& gameObject)
+{
+    gameObject.AddComponent<LightComponent>();
+}
+
 struct ComponentAddEntry
 {
     const char* displayName;
@@ -72,11 +82,16 @@ struct ComponentAddEntry
 
 constexpr ComponentAddEntry kComponentAddEntries[] = {
     { "Model", &HasModelComponent, &AddModelComponent },
+    { "Light", &HasLightComponent, &AddLightComponent },
 };
 
 constexpr const char* kAddComponentPopupId = "AddComponentPopup";
 
 constexpr float kInspectorRotationDragSpeedDeg = 0.1f;
+
+constexpr const char* kViewModeLabels[] = { "Lit", "Unlit" };
+
+constexpr float kViewModeComboWidth = 80.0f;
 
 const char* GizmoModeToLabel(Gizmo::Mode mode)
 {
@@ -282,12 +297,23 @@ void EditorRenderer::RenderViewport()
         ImGui::SameLine();
 
         const char* kCameraLabel = "Camera";
-        float buttonWidth = ImGui::CalcTextSize(kCameraLabel).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+        float cameraButtonWidth = ImGui::CalcTextSize(kCameraLabel).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+        float itemSpacing = ImGui::GetStyle().ItemSpacing.x;
+        float rightBlockWidth = kViewModeComboWidth + itemSpacing + cameraButtonWidth;
         float available = ImGui::GetContentRegionAvail().x;
-        if (available > buttonWidth)
+        if (available > rightBlockWidth)
         {
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + available - buttonWidth);
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + available - rightBlockWidth);
         }
+
+        int viewModeIndex = static_cast<int>(g_sceneRenderer->GetViewMode());
+        ImGui::SetNextItemWidth(kViewModeComboWidth);
+        if (ImGui::Combo("##ViewMode", &viewModeIndex, kViewModeLabels, IM_ARRAYSIZE(kViewModeLabels)))
+        {
+            g_sceneRenderer->SetViewMode(static_cast<ViewMode>(viewModeIndex));
+        }
+        ImGui::SameLine();
+
         if (ImGui::Button(kCameraLabel))
         {
             ImGui::OpenPopup("CameraSettingsPopup");
@@ -639,6 +665,8 @@ void EditorRenderer::RenderInspector()
 
     RenderModelComponent(*selected);
 
+    RenderLightComponent(*selected);
+
     RenderAddComponentMenu(*selected);
 
     ImGui::End();
@@ -698,6 +726,38 @@ void EditorRenderer::RenderModelComponent(GameObject& gameObject)
     if (ImGui::Button("Remove"))
     {
         gameObject.RemoveComponent<ModelComponent>();
+    }
+}
+
+void EditorRenderer::RenderLightComponent(GameObject& gameObject)
+{
+    LightComponent* lightComponent = gameObject.GetComponent<LightComponent>();
+    if (!lightComponent)
+    {
+        return;
+    }
+
+    ImGui::Separator();
+    ImGui::Text("Light Component");
+
+    const char* kLightTypeLabels[] = { "Directional" };
+    int typeIndex = static_cast<int>(lightComponent->type);
+    if (ImGui::Combo("Type", &typeIndex, kLightTypeLabels, IM_ARRAYSIZE(kLightTypeLabels)))
+    {
+        lightComponent->type = static_cast<LightType>(typeIndex);
+    }
+
+    ImGui::TextDisabled("Direction follows Transform Rotation");
+
+    ImGui::ColorEdit3("Color", &lightComponent->color.x);
+    ImGui::DragFloat("Intensity", &lightComponent->intensity, 0.01f, 0.0f, 100.0f);
+    ImGui::ColorEdit3("Ambient Color", &lightComponent->ambientColor.x);
+    ImGui::DragFloat("Specular Strength", &lightComponent->specularStrength, 0.01f, 0.0f, 10.0f);
+    ImGui::DragFloat("Shininess", &lightComponent->shininess, 0.5f, 1.0f, 512.0f);
+
+    if (ImGui::Button("Remove##Light"))
+    {
+        gameObject.RemoveComponent<LightComponent>();
     }
 }
 

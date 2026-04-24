@@ -34,6 +34,7 @@ private:
     void RenderHierarchy();
     void RenderInspector();
     void RenderModelComponent(GameObject& gameObject);
+    void RenderLightComponent(GameObject& gameObject);
     void RenderAddComponentMenu(GameObject& gameObject);
     void RenderConsole();
 
