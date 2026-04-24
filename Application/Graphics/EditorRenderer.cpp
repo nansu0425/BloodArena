@@ -361,7 +361,7 @@ void EditorRenderer::RenderViewport()
             Matrix view = g_camera->GetViewMatrix();
             Matrix proj = g_camera->GetProjectionMatrix(aspect);
             Gizmo::ManipulateResult result = Gizmo::Manipulate(
-                selected->transform,
+                selected->GetTransform(),
                 g_editorState->GetGizmoMode(),
                 g_editorState->GetGizmoSpace(),
                 view,
@@ -369,7 +369,7 @@ void EditorRenderer::RenderViewport()
             );
             if (result.isChanged)
             {
-                selected->transform = result.transform;
+                selected->SetTransform(result.transform);
             }
         }
 
@@ -562,14 +562,14 @@ void EditorRenderer::RenderHierarchy()
 
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
-        bool isSelected = (selectedId == gameObject.id);
+        bool isSelected = (selectedId == gameObject.GetId());
 
         char label[32];
-        snprintf(label, sizeof(label), "GameObject %u", gameObject.id);
+        snprintf(label, sizeof(label), "GameObject %u", gameObject.GetId());
 
         if (ImGui::Selectable(label, isSelected))
         {
-            g_editorState->SetSelectedGameObjectId(gameObject.id);
+            g_editorState->SetSelectedGameObjectId(gameObject.GetId());
         }
     }
 
@@ -598,23 +598,25 @@ void EditorRenderer::RenderInspector()
         return;
     }
 
-    ImGui::Text("ID: %u", selected->id);
+    ImGui::Text("ID: %u", selected->GetId());
     ImGui::Separator();
 
-    Vector3 positionEdit = selected->transform.position;
+    Transform& transform = selected->GetTransform();
+
+    Vector3 positionEdit = transform.position;
     ImGui::DragFloat3("Position", &positionEdit.x, 0.01f);
-    const Vector3 deltaPosition = positionEdit - selected->transform.position;
+    const Vector3 deltaPosition = positionEdit - transform.position;
     const bool hasPositionDelta =
         (deltaPosition.x != 0.0f) || (deltaPosition.y != 0.0f) || (deltaPosition.z != 0.0f);
     if (hasPositionDelta)
     {
         const Vector3 worldDelta = (g_editorState->GetGizmoSpace() == Gizmo::Space::Local)
-            ? Vector3::Transform(deltaPosition, selected->transform.rotation)
+            ? Vector3::Transform(deltaPosition, transform.rotation)
             : deltaPosition;
-        selected->transform.position += worldDelta;
+        transform.position += worldDelta;
     }
 
-    const Vector3 eulerRad = QuaternionToEulerZXY(selected->transform.rotation);
+    const Vector3 eulerRad = QuaternionToEulerZXY(transform.rotation);
     Vector3 eulerDeg = {RadToDeg(eulerRad.x), RadToDeg(eulerRad.y), RadToDeg(eulerRad.z)};
     const Vector3 previousDeg = eulerDeg;
 
@@ -624,14 +626,14 @@ void EditorRenderer::RenderInspector()
     const InspectorAxisDrag drag = GetDraggedAxis(deltaDeg);
     if (drag.isDragging)
     {
-        Quaternion& rotation = selected->transform.rotation;
+        Quaternion& rotation = transform.rotation;
         const Quaternion delta = Quaternion::CreateFromAxisAngle(drag.axis, DegToRad(drag.deltaDeg));
         const bool isLocal = (g_editorState->GetGizmoSpace() == Gizmo::Space::Local);
         rotation = isLocal ? (delta * rotation) : (rotation * delta);
         rotation.Normalize();
     }
 
-    ImGui::DragFloat3("Scale", &selected->transform.scale.x, 0.01f);
+    ImGui::DragFloat3("Scale", &transform.scale.x, 0.01f);
 
     ImGui::Separator();
 

@@ -164,8 +164,8 @@ LightComponent ReadLightComponent(const json& j)
 json WriteGameObject(const GameObject& obj)
 {
     json result{
-        {"id", obj.id},
-        {"transform", WriteTransform(obj.transform)}
+        {"id", obj.GetId()},
+        {"transform", WriteTransform(obj.GetTransform())}
     };
     if (const auto* mc = obj.GetComponent<ModelComponent>())
     {
@@ -181,11 +181,11 @@ json WriteGameObject(const GameObject& obj)
 GameObject ReadGameObject(const json& j)
 {
     GameObject obj;
-    obj.id = j.value("id", obj.id);
+    obj.SetId(j.value("id", obj.GetId()));
 
     if (j.contains("transform"))
     {
-        obj.transform = ReadTransform(j["transform"]);
+        obj.SetTransform(ReadTransform(j["transform"]));
     }
 
     if (j.contains("modelComponent") && j["modelComponent"].is_object())
@@ -224,7 +224,7 @@ uint32_t Scene::CreateGameObject()
     uint32_t id = m_nextId++;
 
     GameObject gameObject;
-    gameObject.id = id;
+    gameObject.SetId(id);
 
     m_gameObjects.push_back(std::move(gameObject));
 
@@ -237,7 +237,7 @@ void Scene::DestroyGameObject(uint32_t id)
     auto it = std::find_if(
         m_gameObjects.begin(),
         m_gameObjects.end(),
-        [id](const GameObject& obj) { return (obj.id == id); }
+        [id](const GameObject& obj) { return (obj.GetId() == id); }
     );
 
     BA_ASSERT(it != m_gameObjects.end());
@@ -263,7 +263,7 @@ GameObject* Scene::FindGameObject(uint32_t id)
     auto it = std::find_if(
         m_gameObjects.begin(),
         m_gameObjects.end(),
-        [id](const GameObject& obj) { return (obj.id == id); }
+        [id](const GameObject& obj) { return (obj.GetId() == id); }
     );
 
     return (it != m_gameObjects.end()) ? &(*it) : nullptr;

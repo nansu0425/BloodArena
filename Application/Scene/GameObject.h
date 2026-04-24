@@ -8,24 +8,27 @@
 namespace BA
 {
 
-struct GameObject
+class GameObject
 {
-    uint32_t  id = 0;
-    Transform transform;
-
-    std::unordered_map<std::type_index, std::unique_ptr<IComponent>> components;
-
+public:
     GameObject() = default;
     GameObject(const GameObject&) = delete;
     GameObject& operator=(const GameObject&) = delete;
     GameObject(GameObject&&) = default;
     GameObject& operator=(GameObject&&) = default;
 
+    uint32_t         GetId() const;
+    void             SetId(uint32_t id);
+
+    const Transform& GetTransform() const;
+    Transform&       GetTransform();
+    void             SetTransform(const Transform& transform);
+
     template <typename T>
     T* GetComponent()
     {
-        auto it = components.find(std::type_index(typeid(T)));
-        if (it == components.end())
+        auto it = m_components.find(std::type_index(typeid(T)));
+        if (it == m_components.end())
         {
             return nullptr;
         }
@@ -35,8 +38,8 @@ struct GameObject
     template <typename T>
     const T* GetComponent() const
     {
-        auto it = components.find(std::type_index(typeid(T)));
-        if (it == components.end())
+        auto it = m_components.find(std::type_index(typeid(T)));
+        if (it == m_components.end())
         {
             return nullptr;
         }
@@ -46,25 +49,31 @@ struct GameObject
     template <typename T>
     bool HasComponent() const
     {
-        return (components.find(std::type_index(typeid(T))) != components.end());
+        return (m_components.find(std::type_index(typeid(T))) != m_components.end());
     }
 
     template <typename T, typename... Args>
     T& AddComponent(Args&&... args)
     {
         std::type_index key(typeid(T));
-        BA_ASSERT(components.find(key) == components.end());
+        BA_ASSERT(m_components.find(key) == m_components.end());
         auto owned = std::make_unique<T>(std::forward<Args>(args)...);
         T& ref = *owned;
-        components.emplace(key, std::move(owned));
+        m_components.emplace(key, std::move(owned));
         return ref;
     }
 
     template <typename T>
     void RemoveComponent()
     {
-        components.erase(std::type_index(typeid(T)));
+        m_components.erase(std::type_index(typeid(T)));
     }
+
+private:
+    uint32_t  m_id = 0;
+    Transform m_transform;
+
+    std::unordered_map<std::type_index, std::unique_ptr<IComponent>> m_components;
 };
 
 } // namespace BA

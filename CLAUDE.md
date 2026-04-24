@@ -14,6 +14,7 @@
   - Struct fields: plain camelCase (no `m_` prefix)
   - Macros: `BA_UPPER_SNAKE_CASE`
   - Booleans (variables, fields, return values) must use an interrogative form so the name reads as a yes/no question. Use `is`/`has`/`can`/`should` prefixes (e.g. `isHit`, `hasValue`, `canMove`, `shouldRender`). Bare nouns/adjectives like `hit`, `ready`, `valid` are not allowed for `bool`.
+- `struct` vs `class`: `struct` is reserved for **pure data aggregates** — fields are public and directly accessed. Special member functions (destructor, copy/move constructor, copy/move assignment — the rule of five) may appear on a `struct` since they do not constitute behavior. The moment a type needs any other member function (an accessor, a query, a mutator, a helper), it becomes a `class`: data members are `private` with the `m_` prefix and all external access goes through member functions. The test is "does this type have behavior?" — yes → `class`, no → `struct`.
 - Function return style:
   - Function parameters are **input only**. Output parameters (`T&`/`T*` used to return values, in/out params) are not allowed. All results must come back through the return value.
   - `std::optional` is not used in this project. For "single value that may fail," return a small struct with an `is`-prefixed boolean field plus the value (e.g. `struct RayTriangleHit { bool isHit; float t; };`).

@@ -153,7 +153,7 @@ void SceneRenderer::Render(float aspect)
         const Model* model = g_modelLibrary->FindModel(modelComponent->modelName);
         BA_ASSERT(model);
 
-        Matrix objectWorld = BuildWorld(gameObject.transform);
+        Matrix objectWorld = BuildWorld(gameObject.GetTransform());
         for (int rootIndex : model->rootNodeIndices)
         {
             DrawNode(m_deviceContext, *model, rootIndex,

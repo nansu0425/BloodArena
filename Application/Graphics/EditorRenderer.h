@@ -5,7 +5,7 @@
 namespace BA
 {
 
-struct GameObject;
+class GameObject;
 
 class EditorRenderer
 {

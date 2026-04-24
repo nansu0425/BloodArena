@@ -108,10 +108,10 @@ uint32_t PickGameObject(float ndcX, float ndcY, const Camera& camera, float aspe
         const Model* model = g_modelLibrary->FindModel(modelComponent->modelName);
         BA_ASSERT(model);
 
-        Matrix objectWorld = BuildWorld(gameObject.transform);
+        Matrix objectWorld = BuildWorld(gameObject.GetTransform());
         for (int rootIndex : model->rootNodeIndices)
         {
-            PickResult result = PickNode(ray, *model, rootIndex, Matrix::Identity, objectWorld, gameObject.id);
+            PickResult result = PickNode(ray, *model, rootIndex, Matrix::Identity, objectWorld, gameObject.GetId());
             if (result.isHit && result.closestT < closestT)
             {
                 closestT = result.closestT;
