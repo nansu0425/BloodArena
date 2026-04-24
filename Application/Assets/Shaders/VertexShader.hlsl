@@ -1,4 +1,5 @@
-#include "ObjectConstants.hlsli"
+#include "ModelConstants.hlsli"
+#include "FrameConstants.hlsli"
 
 struct VSInput
 {
@@ -10,18 +11,18 @@ struct VSInput
 struct VSOutput
 {
     float4 position : SV_POSITION;
-    float3 normal : NORMAL;
+    float3 worldNormal : NORMAL;
+    float3 worldPosition : POSITION1;
     float2 uv : TEXCOORD;
 };
 
 VSOutput main(VSInput input)
 {
-    float4 worldPos = mul(float4(input.position, 1.0), worldMatrix);
-    float4 viewPos = mul(worldPos, viewMatrix);
+    float4 worldPos4 = mul(float4(input.position, 1.0), worldMatrix);
     VSOutput output;
-    output.position = mul(viewPos, projectionMatrix);
-    // Pass through without inverse-transpose; correct transform needed for non-uniform scale (Task 6)
-    output.normal = input.normal;
+    output.worldPosition = worldPos4.xyz;
+    output.position = mul(mul(worldPos4, viewMatrix), projectionMatrix);
+    output.worldNormal = mul(float4(input.normal, 0.0), worldInverseTransposeMatrix).xyz;
     output.uv = input.uv;
     return output;
 }

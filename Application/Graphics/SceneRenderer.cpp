@@ -1,4 +1,4 @@
-﻿#include "Core/PCH.h"
+#include "Core/PCH.h"
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/Vertex.h"
@@ -14,16 +14,88 @@ namespace BA
 
 using namespace Microsoft::WRL;
 
-struct ObjectConstants
-{
-    Matrix worldMatrix;
-    Matrix viewMatrix;
-    Matrix projectionMatrix;
-    float baseColorFactor[4];
-};
-
 namespace
 {
+
+struct ModelConstants
+{
+    Matrix  worldMatrix;
+    Matrix  worldInverseTransposeMatrix;
+    Vector4 baseColorFactor;
+};
+
+struct FrameConstants
+{
+    Matrix   viewMatrix;
+    Matrix   projectionMatrix;
+    Vector4  cameraPositionWorld;  // xyz used; w unused
+    uint32_t viewMode;
+    uint32_t _viewModePad[3];
+};
+
+struct DirectionalLightConstants
+{
+    Vector4 lightDirection;  // xyz = normalized direction of travel; w unused
+    Vector4 lightColor;      // rgb = color * intensity; a unused
+    Vector4 ambientColor;    // rgb used; a unused
+    Vector4 specularParams;  // x = specularStrength, y = shininess; zw unused
+};
+
+// Ambient-only fallback so a scene without any directional light is still visible in Lit mode.
+// Matches LightComponent's default ambientColor so Lit + no-light ≈ "add a light here" hint,
+// not a black screen.
+constexpr float kNoLightAmbient[3] = {0.15f, 0.15f, 0.18f};
+
+FrameConstants BuildFrameConstants(
+    const Matrix& viewMatrix,
+    const Matrix& projectionMatrix,
+    const Vector3& cameraPositionWorld,
+    ViewMode viewMode)
+{
+    FrameConstants frame = {};
+    frame.viewMatrix = viewMatrix;
+    frame.projectionMatrix = projectionMatrix;
+    frame.cameraPositionWorld = Vector4(cameraPositionWorld.x, cameraPositionWorld.y, cameraPositionWorld.z, 0.0f);
+    frame.viewMode = static_cast<uint32_t>(viewMode);
+    return frame;
+}
+
+DirectionalLightConstants BuildDirectionalLightConstants(const Scene& scene)
+{
+    Vector3 directionWorld     = kAxisForward;
+    Vector3 colorPremultiplied = {0.0f, 0.0f, 0.0f};
+    Vector3 ambientColor       = {kNoLightAmbient[0], kNoLightAmbient[1], kNoLightAmbient[2]};
+    float   specularStrength   = 0.0f;
+    float   shininess          = 1.0f;
+
+    for (const GameObject& gameObject : scene.GetGameObjects())
+    {
+        const LightComponent* light = gameObject.GetComponent<LightComponent>();
+        if (!light)
+        {
+            continue;
+        }
+        if (light->type != LightType::Directional)
+        {
+            continue;
+        }
+        Vector3 dir = Vector3::Transform(kAxisForward, gameObject.GetTransform().rotation);
+        dir.Normalize();
+        directionWorld     = dir;
+        colorPremultiplied = light->color * light->intensity;
+        ambientColor       = light->ambientColor;
+        specularStrength   = light->specularStrength;
+        shininess          = light->shininess;
+        break;
+    }
+
+    DirectionalLightConstants data = {};
+    data.lightDirection = Vector4(directionWorld.x, directionWorld.y, directionWorld.z, 0.0f);
+    data.lightColor     = Vector4(colorPremultiplied.x, colorPremultiplied.y, colorPremultiplied.z, 0.0f);
+    data.ambientColor   = Vector4(ambientColor.x, ambientColor.y, ambientColor.z, 0.0f);
+    data.specularParams = Vector4(specularStrength, shininess, 0.0f, 0.0f);
+    return data;
+}
 
 void DrawNode(
     ID3D11DeviceContext* ctx,
@@ -31,9 +103,7 @@ void DrawNode(
     int nodeIndex,
     const Matrix& parentAccumulated,
     const Matrix& objectWorld,
-    const Matrix& viewMatrix,
-    const Matrix& projectionMatrix,
-    ID3D11Buffer* constantBuffer)
+    ID3D11Buffer* modelConstantBuffer)
 {
     // Row-vector convention (see ModelLoader.cpp ComputeNodeLocalTransform): v' = v * (local * parent).
     const Node& node = model.nodes[nodeIndex];
@@ -42,6 +112,7 @@ void DrawNode(
     if (node.meshIndex >= 0)
     {
         Matrix finalWorld = accumulated * objectWorld;
+        Matrix worldInverseTranspose = finalWorld.Invert().Transpose();
         const Mesh& mesh = model.meshes[node.meshIndex];
 
         for (const Primitive& prim : mesh.primitives)
@@ -70,27 +141,19 @@ void DrawNode(
             ctx->IASetIndexBuffer(prim.indexBuffer.Get(), indexFormat, 0);
             ctx->PSSetShaderResources(0, 1, texture->srv.GetAddressOf());
 
-            D3D11_MAPPED_SUBRESOURCE mapped = {};
-            BA_CRASH_IF_FAILED(ctx->Map(constantBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
+            ModelConstants modelCb = {};
+            modelCb.worldMatrix = finalWorld;
+            modelCb.worldInverseTransposeMatrix = worldInverseTranspose;
+            modelCb.baseColorFactor = Vector4(baseColorFactor);
+            g_graphicsDevice->UpdateConstantBuffer(modelConstantBuffer, modelCb);
 
-            ObjectConstants* constants = static_cast<ObjectConstants*>(mapped.pData);
-            constants->worldMatrix = finalWorld;
-            constants->viewMatrix = viewMatrix;
-            constants->projectionMatrix = projectionMatrix;
-            constants->baseColorFactor[0] = baseColorFactor[0];
-            constants->baseColorFactor[1] = baseColorFactor[1];
-            constants->baseColorFactor[2] = baseColorFactor[2];
-            constants->baseColorFactor[3] = baseColorFactor[3];
-
-            ctx->Unmap(constantBuffer, 0);
             ctx->DrawIndexed(prim.indexCount, 0, 0);
         }
     }
 
     for (int childIndex : node.childIndices)
     {
-        DrawNode(ctx, model, childIndex, accumulated, objectWorld,
-                 viewMatrix, projectionMatrix, constantBuffer);
+        DrawNode(ctx, model, childIndex, accumulated, objectWorld, modelConstantBuffer);
     }
 }
 
@@ -104,7 +167,7 @@ void SceneRenderer::Initialize()
     m_deviceContext = g_graphicsDevice->GetDeviceContext();
 
     CompileShaders();
-    CreateConstantBuffer();
+    CreateConstantBuffers();
     CreateRasterizerState();
     CreateDepthStencilState();
 
@@ -118,7 +181,9 @@ void SceneRenderer::Shutdown()
     m_linearWrapSampler.Reset();
     m_depthStencilState.Reset();
     m_rasterizerState.Reset();
-    m_constantBuffer.Reset();
+    m_directionalLightConstantBuffer.Reset();
+    m_frameConstantBuffer.Reset();
+    m_modelConstantBuffer.Reset();
     m_inputLayout.Reset();
     m_pixelShader.Reset();
     m_vertexShader.Reset();
@@ -136,12 +201,30 @@ void SceneRenderer::Render(float aspect)
     m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
     m_deviceContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     m_deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
-    m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
-    m_deviceContext->PSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_linearWrapSampler.GetAddressOf());
 
-    Matrix viewMatrix = g_camera->GetViewMatrix();
-    Matrix projectionMatrix = g_camera->GetProjectionMatrix(aspect);
+    ID3D11Buffer* vsBuffers[] = {
+        m_modelConstantBuffer.Get(),
+        m_frameConstantBuffer.Get(),
+    };
+    m_deviceContext->VSSetConstantBuffers(0, _countof(vsBuffers), vsBuffers);
+
+    ID3D11Buffer* psBuffers[] = {
+        m_modelConstantBuffer.Get(),
+        m_frameConstantBuffer.Get(),
+        m_directionalLightConstantBuffer.Get(),
+    };
+    m_deviceContext->PSSetConstantBuffers(0, _countof(psBuffers), psBuffers);
+
+    FrameConstants frameCb = BuildFrameConstants(
+        g_camera->GetViewMatrix(),
+        g_camera->GetProjectionMatrix(aspect),
+        g_camera->GetSettings().position,
+        m_viewMode);
+    g_graphicsDevice->UpdateConstantBuffer(m_frameConstantBuffer.Get(), frameCb);
+
+    DirectionalLightConstants lightCb = BuildDirectionalLightConstants(*g_scene);
+    g_graphicsDevice->UpdateConstantBuffer(m_directionalLightConstantBuffer.Get(), lightCb);
 
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
@@ -158,28 +241,26 @@ void SceneRenderer::Render(float aspect)
         {
             DrawNode(m_deviceContext, *model, rootIndex,
                      Matrix::Identity, objectWorld,
-                     viewMatrix, projectionMatrix,
-                     m_constantBuffer.Get());
+                     m_modelConstantBuffer.Get());
         }
     }
 }
 
-void SceneRenderer::CreateConstantBuffer()
+ViewMode SceneRenderer::GetViewMode() const
 {
-    BA_ASSERT(m_device);
+    return m_viewMode;
+}
 
-    D3D11_BUFFER_DESC bufferDesc = {
-        .ByteWidth = sizeof(ObjectConstants),
-        .Usage = D3D11_USAGE_DYNAMIC,
-        .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
-        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
-    };
+void SceneRenderer::SetViewMode(ViewMode mode)
+{
+    m_viewMode = mode;
+}
 
-    BA_CRASH_IF_FAILED(m_device->CreateBuffer(
-        &bufferDesc,
-        nullptr,
-        m_constantBuffer.GetAddressOf()
-    ));
+void SceneRenderer::CreateConstantBuffers()
+{
+    m_modelConstantBuffer            = g_graphicsDevice->CreateConstantBuffer(sizeof(ModelConstants));
+    m_frameConstantBuffer            = g_graphicsDevice->CreateConstantBuffer(sizeof(FrameConstants));
+    m_directionalLightConstantBuffer = g_graphicsDevice->CreateConstantBuffer(sizeof(DirectionalLightConstants));
 }
 
 void SceneRenderer::CompileShaders()

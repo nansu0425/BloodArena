@@ -24,8 +24,18 @@ public:
 
     Microsoft::WRL::ComPtr<ID3D11Buffer> CreateVertexBuffer(const void* data, UINT byteWidth);
     Microsoft::WRL::ComPtr<ID3D11Buffer> CreateIndexBuffer(const void* data, UINT byteWidth);
+    Microsoft::WRL::ComPtr<ID3D11Buffer> CreateConstantBuffer(UINT byteWidth);
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> CreateTextureRgba8SRV(const void* pixels, UINT width, UINT height);
     Microsoft::WRL::ComPtr<ID3D11SamplerState> CreateLinearWrapSampler();
+
+    template <typename TConstants>
+    void UpdateConstantBuffer(ID3D11Buffer* buffer, const TConstants& data)
+    {
+        D3D11_MAPPED_SUBRESOURCE mapped = {};
+        BA_CRASH_IF_FAILED(m_deviceContext->Map(buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped));
+        memcpy(mapped.pData, &data, sizeof(TConstants));
+        m_deviceContext->Unmap(buffer, 0);
+    }
 
 private:
     void CreateDevice();

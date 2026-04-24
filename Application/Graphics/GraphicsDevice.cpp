@@ -153,6 +153,24 @@ ComPtr<ID3D11Buffer> GraphicsDevice::CreateIndexBuffer(const void* data, UINT by
     return buffer;
 }
 
+ComPtr<ID3D11Buffer> GraphicsDevice::CreateConstantBuffer(UINT byteWidth)
+{
+    BA_ASSERT(m_device.Get());
+    BA_ASSERT(byteWidth > 0);
+
+    D3D11_BUFFER_DESC desc = {
+        .ByteWidth = byteWidth,
+        .Usage = D3D11_USAGE_DYNAMIC,
+        .BindFlags = D3D11_BIND_CONSTANT_BUFFER,
+        .CPUAccessFlags = D3D11_CPU_ACCESS_WRITE,
+    };
+
+    ComPtr<ID3D11Buffer> buffer;
+    BA_CRASH_IF_FAILED(m_device->CreateBuffer(&desc, nullptr, buffer.GetAddressOf()));
+
+    return buffer;
+}
+
 ComPtr<ID3D11ShaderResourceView> GraphicsDevice::CreateTextureRgba8SRV(const void* pixels, UINT width, UINT height)
 {
     BA_ASSERT(m_device.Get());
