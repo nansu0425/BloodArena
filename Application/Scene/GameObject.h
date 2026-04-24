@@ -8,6 +8,8 @@
 namespace BA
 {
 
+constexpr size_t kGameObjectNameBufferSize = 64;
+
 class GameObject
 {
 public:
@@ -17,12 +19,15 @@ public:
     GameObject(GameObject&&) = default;
     GameObject& operator=(GameObject&&) = default;
 
-    uint32_t         GetId() const;
-    void             SetId(uint32_t id);
+    uint32_t           GetId() const;
+    void               SetId(uint32_t id);
 
-    const Transform& GetTransform() const;
-    Transform&       GetTransform();
-    void             SetTransform(const Transform& transform);
+    const std::string& GetName() const;
+    void               SetName(std::string name);
+
+    const Transform&   GetTransform() const;
+    Transform&         GetTransform();
+    void               SetTransform(const Transform& transform);
 
     template <typename T>
     T* GetComponent()
@@ -70,8 +75,9 @@ public:
     }
 
 private:
-    uint32_t  m_id = 0;
-    Transform m_transform;
+    uint32_t    m_id = 0;
+    std::string m_name;
+    Transform   m_transform;
 
     std::unordered_map<std::type_index, std::unique_ptr<IComponent>> m_components;
 };

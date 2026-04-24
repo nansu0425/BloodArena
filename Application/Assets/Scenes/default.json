@@ -5,22 +5,36 @@
         "mouseSensitivity": 0.003000000026077032,
         "moveSpeed": 5.0,
         "nearZ": 0.10000000149011612,
-        "pitch": 0.10799847543239594,
-        "positionX": 1.7826536893844604,
-        "positionY": 8.1310396194458,
-        "positionZ": -11.970868110656738,
-        "yaw": -0.0029999883845448494
+        "pitch": 0.11700142174959183,
+        "positionX": -0.5993977785110474,
+        "positionY": 5.4003520011901855,
+        "positionZ": -12.687322616577148,
+        "yaw": 0.030000144615769386
     },
     "gameObjects": [
         {
             "id": 1,
-            "modelComponent": {
-                "modelName": "Duck"
+            "lightComponent": {
+                "ambientColor": [
+                    0.15000000596046448,
+                    0.15000000596046448,
+                    0.18000000715255737
+                ],
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "intensity": 1.0,
+                "shininess": 32.0,
+                "specularStrength": 0.5,
+                "type": "directional"
             },
+            "name": "Directional Light",
             "transform": {
                 "position": [
-                    -4.0,
-                    3.0,
+                    0.0,
+                    0.0,
                     0.0
                 ],
                 "rotation": [
@@ -39,18 +53,19 @@
         {
             "id": 2,
             "modelComponent": {
-                "modelName": "cube"
+                "modelName": "Lantern"
             },
+            "name": "Lantern",
             "transform": {
                 "position": [
-                    -2.0,
-                    3.0,
+                    3.768077850341797,
+                    0.0,
                     0.0
                 ],
                 "rotation": [
+                    -0.0,
                     0.0,
-                    0.0,
-                    0.0,
+                    -0.0,
                     1.0
                 ],
                 "scale": [
@@ -63,60 +78,13 @@
         {
             "id": 3,
             "modelComponent": {
-                "modelName": "BoxVertexColors"
-            },
-            "transform": {
-                "position": [
-                    0.0,
-                    3.0,
-                    0.0
-                ],
-                "rotation": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 4,
-            "modelComponent": {
                 "modelName": "Duck"
             },
+            "name": "Duck",
             "transform": {
                 "position": [
-                    2.0,
-                    3.0,
-                    0.0
-                ],
-                "rotation": [
+                    -4.219113826751709,
                     0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 5,
-            "modelComponent": {
-                "modelName": "Lantern"
-            },
-            "transform": {
-                "position": [
-                    5.900000095367432,
-                    3.0,
                     0.0
                 ],
                 "rotation": [
@@ -129,47 +97,10 @@
                     1.0,
                     1.0,
                     1.0
-                ]
-            }
-        },
-        {
-            "id": 7,
-            "lightComponent": {
-                "ambientColor": [
-                    0.15000000596046448,
-                    0.15000000596046448,
-                    0.18000000715255737
-                ],
-                "color": [
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "intensity": 1.0,
-                "shininess": 32.0,
-                "specularStrength": 0.5,
-                "type": "directional"
-            },
-            "transform": {
-                "position": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "rotation": [
-                    -1.4117074176311917e-10,
-                    1.908540686601512e-11,
-                    -2.6943011326504963e-21,
-                    -1.0
-                ],
-                "scale": [
-                    0.9999383687973022,
-                    0.9999340176582336,
-                    0.9999576210975647
                 ]
             }
         }
     ],
-    "nextId": 8,
-    "version": 4
+    "nextId": 4,
+    "version": 5
 }

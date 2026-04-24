@@ -16,7 +16,7 @@ namespace
 
 using json = nlohmann::json;
 
-constexpr uint32_t kSceneSchemaVersion = 4;
+constexpr uint32_t kSceneSchemaVersion = 5;
 
 std::filesystem::path GetScenePath(const std::string& name)
 {
@@ -165,6 +165,7 @@ json WriteGameObject(const GameObject& obj)
 {
     json result{
         {"id", obj.GetId()},
+        {"name", obj.GetName()},
         {"transform", WriteTransform(obj.GetTransform())}
     };
     if (const auto* mc = obj.GetComponent<ModelComponent>())
@@ -182,6 +183,7 @@ GameObject ReadGameObject(const json& j)
 {
     GameObject obj;
     obj.SetId(j.value("id", obj.GetId()));
+    obj.SetName(j.value("name", std::string{}));
 
     if (j.contains("transform"))
     {
@@ -225,6 +227,7 @@ uint32_t Scene::CreateGameObject()
 
     GameObject gameObject;
     gameObject.SetId(id);
+    gameObject.SetName("GameObject " + std::to_string(id));
 
     m_gameObjects.push_back(std::move(gameObject));
 

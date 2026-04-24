@@ -349,7 +349,7 @@ void EditorRenderer::RenderViewport()
             size
         );
 
-        if (!ImGui::IsMouseDown(ImGuiMouseButton_Right))
+        if (!ImGui::IsMouseDown(ImGuiMouseButton_Right) && !ImGui::GetIO().WantTextInput)
         {
             if (ImGui::IsKeyPressed(ImGuiKey_W, false))
             {
@@ -590,8 +590,8 @@ void EditorRenderer::RenderHierarchy()
     {
         bool isSelected = (selectedId == gameObject.GetId());
 
-        char label[32];
-        snprintf(label, sizeof(label), "GameObject %u", gameObject.GetId());
+        char label[96];
+        snprintf(label, sizeof(label), "%s##%u", gameObject.GetName().c_str(), gameObject.GetId());
 
         if (ImGui::Selectable(label, isSelected))
         {
@@ -625,6 +625,14 @@ void EditorRenderer::RenderInspector()
     }
 
     ImGui::Text("ID: %u", selected->GetId());
+
+    char nameBuffer[kGameObjectNameBufferSize] = {};
+    selected->GetName().copy(nameBuffer, kGameObjectNameBufferSize - 1);
+    if (ImGui::InputText("Name", nameBuffer, kGameObjectNameBufferSize))
+    {
+        selected->SetName(nameBuffer);
+    }
+
     ImGui::Separator();
 
     Transform& transform = selected->GetTransform();
