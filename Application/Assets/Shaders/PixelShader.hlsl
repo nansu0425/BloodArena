@@ -1,6 +1,6 @@
 #include "ModelConstants.hlsli"
 #include "FrameConstants.hlsli"
-#include "DirectionalLightConstants.hlsli"
+#include "LightingConstants.hlsli"
 
 Texture2D diffuseMap : register(t0);
 SamplerState linearWrap : register(s0);

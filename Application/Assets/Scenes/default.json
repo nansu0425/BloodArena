@@ -15,11 +15,6 @@
         {
             "id": 1,
             "lightComponent": {
-                "ambientColor": [
-                    0.15000000596046448,
-                    0.15000000596046448,
-                    0.18000000715255737
-                ],
                 "color": [
                     1.0,
                     1.0,
@@ -31,6 +26,37 @@
                 "type": "directional"
             },
             "name": "Directional Light",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "id": 4,
+            "lightComponent": {
+                "color": [
+                    0.15000000596046448,
+                    0.15000000596046448,
+                    0.18000000715255737
+                ],
+                "intensity": 1.0,
+                "type": "ambient"
+            },
+            "name": "Ambient Light",
             "transform": {
                 "position": [
                     0.0,
@@ -101,6 +127,6 @@
             }
         }
     ],
-    "nextId": 4,
+    "nextId": 5,
     "version": 5
 }

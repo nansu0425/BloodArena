@@ -123,19 +123,23 @@ CameraSettings ReadCamera(const json& j)
 json WriteLightComponent(const LightComponent& light)
 {
     json result;
+    result["color"]     = WriteVector3(light.color);
+    result["intensity"] = light.intensity;
     switch (light.type)
     {
         case LightType::Directional:
         {
-            result["type"] = "directional";
+            result["type"]             = "directional";
+            result["specularStrength"] = light.specularStrength;
+            result["shininess"]        = light.shininess;
+            break;
+        }
+        case LightType::Ambient:
+        {
+            result["type"] = "ambient";
             break;
         }
     }
-    result["color"]            = WriteVector3(light.color);
-    result["intensity"]        = light.intensity;
-    result["ambientColor"]     = WriteVector3(light.ambientColor);
-    result["specularStrength"] = light.specularStrength;
-    result["shininess"]        = light.shininess;
     return result;
 }
 
@@ -152,12 +156,18 @@ LightComponent ReadLightComponent(const json& j)
     {
         light.type = LightType::Directional;
     }
+    else if (typeStr == "ambient")
+    {
+        light.type = LightType::Ambient;
+    }
 
-    light.color            = ReadVector3(j.value("color",        json{}), light.color);
-    light.intensity        = j.value("intensity", light.intensity);
-    light.ambientColor     = ReadVector3(j.value("ambientColor", json{}), light.ambientColor);
-    light.specularStrength = j.value("specularStrength", light.specularStrength);
-    light.shininess        = j.value("shininess", light.shininess);
+    light.color     = ReadVector3(j.value("color", json{}), light.color);
+    light.intensity = j.value("intensity", light.intensity);
+    if (light.type == LightType::Directional)
+    {
+        light.specularStrength = j.value("specularStrength", light.specularStrength);
+        light.shininess        = j.value("shininess", light.shininess);
+    }
     return light;
 }
 

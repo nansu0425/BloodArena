@@ -774,20 +774,31 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
     ImGui::Separator();
     ImGui::Text("Light Component");
 
-    const char* kLightTypeLabels[] = { "Directional" };
+    const char* kLightTypeLabels[] = { "Directional", "Ambient" };
     int typeIndex = static_cast<int>(lightComponent->type);
     if (ImGui::Combo("Type", &typeIndex, kLightTypeLabels, IM_ARRAYSIZE(kLightTypeLabels)))
     {
         lightComponent->type = static_cast<LightType>(typeIndex);
     }
 
-    ImGui::TextDisabled("Direction follows Transform Rotation");
-
-    ImGui::ColorEdit3("Color", &lightComponent->color.x);
-    ImGui::DragFloat("Intensity", &lightComponent->intensity, 0.01f, 0.0f, 100.0f);
-    ImGui::ColorEdit3("Ambient Color", &lightComponent->ambientColor.x);
-    ImGui::DragFloat("Specular Strength", &lightComponent->specularStrength, 0.01f, 0.0f, 10.0f);
-    ImGui::DragFloat("Shininess", &lightComponent->shininess, 0.5f, 1.0f, 512.0f);
+    switch (lightComponent->type)
+    {
+    case LightType::Directional:
+    {
+        ImGui::TextDisabled("Direction follows Transform Rotation");
+        ImGui::ColorEdit3("Color", &lightComponent->color.x);
+        ImGui::DragFloat("Intensity", &lightComponent->intensity, 0.01f, 0.0f, 100.0f);
+        ImGui::DragFloat("Specular Strength", &lightComponent->specularStrength, 0.01f, 0.0f, 10.0f);
+        ImGui::DragFloat("Shininess", &lightComponent->shininess, 0.5f, 1.0f, 512.0f);
+        break;
+    }
+    case LightType::Ambient:
+    {
+        ImGui::ColorEdit3("Color", &lightComponent->color.x);
+        ImGui::DragFloat("Intensity", &lightComponent->intensity, 0.01f, 0.0f, 100.0f);
+        break;
+    }
+    }
 
     if (ImGui::Button("Remove##Light"))
     {

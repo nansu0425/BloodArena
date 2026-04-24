@@ -1,4 +1,4 @@
-#include "Core/PCH.h"
+﻿#include "Core/PCH.h"
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/Vertex.h"
@@ -33,18 +33,13 @@ struct FrameConstants
     uint32_t _viewModePad[3];
 };
 
-struct DirectionalLightConstants
+struct LightingConstants
 {
     Vector4 lightDirection;  // xyz = normalized direction of travel; w unused
-    Vector4 lightColor;      // rgb = color * intensity; a unused
-    Vector4 ambientColor;    // rgb used; a unused
+    Vector4 lightColor;      // rgb = directional color * intensity; a unused
+    Vector4 ambientColor;    // rgb = ambient color * intensity; a unused
     Vector4 specularParams;  // x = specularStrength, y = shininess; zw unused
 };
-
-// Ambient-only fallback so a scene without any directional light is still visible in Lit mode.
-// Matches LightComponent's default ambientColor so Lit + no-light ≈ "add a light here" hint,
-// not a black screen.
-constexpr float kNoLightAmbient[3] = {0.15f, 0.15f, 0.18f};
 
 FrameConstants BuildFrameConstants(
     const Matrix& viewMatrix,
@@ -60,13 +55,15 @@ FrameConstants BuildFrameConstants(
     return frame;
 }
 
-DirectionalLightConstants BuildDirectionalLightConstants(const Scene& scene)
+LightingConstants BuildLightingConstants(const Scene& scene)
 {
-    Vector3 directionWorld     = kAxisForward;
-    Vector3 colorPremultiplied = {0.0f, 0.0f, 0.0f};
-    Vector3 ambientColor       = {kNoLightAmbient[0], kNoLightAmbient[1], kNoLightAmbient[2]};
-    float   specularStrength   = 0.0f;
-    float   shininess          = 1.0f;
+    Vector3 directionWorld   = kAxisForward;
+    Vector3 directionalColor = {0.0f, 0.0f, 0.0f};
+    Vector3 ambientColor     = {0.0f, 0.0f, 0.0f};
+    float   specularStrength = 0.0f;
+    float   shininess        = 1.0f;
+    bool    hasDirectional   = false;
+    bool    hasAmbient       = false;
 
     for (const GameObject& gameObject : scene.GetGameObjects())
     {
@@ -75,25 +72,48 @@ DirectionalLightConstants BuildDirectionalLightConstants(const Scene& scene)
         {
             continue;
         }
-        if (light->type != LightType::Directional)
+
+        switch (light->type)
         {
-            continue;
+        case LightType::Directional:
+        {
+            if (hasDirectional)
+            {
+                break;
+            }
+            Vector3 dir = Vector3::Transform(kAxisForward, gameObject.GetTransform().rotation);
+            dir.Normalize();
+            directionWorld   = dir;
+            directionalColor = light->color * light->intensity;
+            specularStrength = light->specularStrength;
+            shininess        = light->shininess;
+            hasDirectional   = true;
+            break;
         }
-        Vector3 dir = Vector3::Transform(kAxisForward, gameObject.GetTransform().rotation);
-        dir.Normalize();
-        directionWorld     = dir;
-        colorPremultiplied = light->color * light->intensity;
-        ambientColor       = light->ambientColor;
-        specularStrength   = light->specularStrength;
-        shininess          = light->shininess;
-        break;
+        case LightType::Ambient:
+        {
+            if (hasAmbient)
+            {
+                break;
+            }
+            ambientColor = light->color * light->intensity;
+            hasAmbient   = true;
+            break;
+        }
+        }
+
+        if (hasDirectional && hasAmbient)
+        {
+            break;
+        }
     }
 
-    DirectionalLightConstants data = {};
+    LightingConstants data = {};
     data.lightDirection = Vector4(directionWorld.x, directionWorld.y, directionWorld.z, 0.0f);
-    data.lightColor     = Vector4(colorPremultiplied.x, colorPremultiplied.y, colorPremultiplied.z, 0.0f);
+    data.lightColor     = Vector4(directionalColor.x, directionalColor.y, directionalColor.z, 0.0f);
     data.ambientColor   = Vector4(ambientColor.x, ambientColor.y, ambientColor.z, 0.0f);
     data.specularParams = Vector4(specularStrength, shininess, 0.0f, 0.0f);
+
     return data;
 }
 
@@ -181,7 +201,7 @@ void SceneRenderer::Shutdown()
     m_linearWrapSampler.Reset();
     m_depthStencilState.Reset();
     m_rasterizerState.Reset();
-    m_directionalLightConstantBuffer.Reset();
+    m_lightingConstantBuffer.Reset();
     m_frameConstantBuffer.Reset();
     m_modelConstantBuffer.Reset();
     m_inputLayout.Reset();
@@ -212,7 +232,7 @@ void SceneRenderer::Render(float aspect)
     ID3D11Buffer* psBuffers[] = {
         m_modelConstantBuffer.Get(),
         m_frameConstantBuffer.Get(),
-        m_directionalLightConstantBuffer.Get(),
+        m_lightingConstantBuffer.Get(),
     };
     m_deviceContext->PSSetConstantBuffers(0, _countof(psBuffers), psBuffers);
 
@@ -223,8 +243,8 @@ void SceneRenderer::Render(float aspect)
         m_viewMode);
     g_graphicsDevice->UpdateConstantBuffer(m_frameConstantBuffer.Get(), frameCb);
 
-    DirectionalLightConstants lightCb = BuildDirectionalLightConstants(*g_scene);
-    g_graphicsDevice->UpdateConstantBuffer(m_directionalLightConstantBuffer.Get(), lightCb);
+    LightingConstants lightCb = BuildLightingConstants(*g_scene);
+    g_graphicsDevice->UpdateConstantBuffer(m_lightingConstantBuffer.Get(), lightCb);
 
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
@@ -260,7 +280,7 @@ void SceneRenderer::CreateConstantBuffers()
 {
     m_modelConstantBuffer            = g_graphicsDevice->CreateConstantBuffer(sizeof(ModelConstants));
     m_frameConstantBuffer            = g_graphicsDevice->CreateConstantBuffer(sizeof(FrameConstants));
-    m_directionalLightConstantBuffer = g_graphicsDevice->CreateConstantBuffer(sizeof(DirectionalLightConstants));
+    m_lightingConstantBuffer         = g_graphicsDevice->CreateConstantBuffer(sizeof(LightingConstants));
 }
 
 void SceneRenderer::CompileShaders()

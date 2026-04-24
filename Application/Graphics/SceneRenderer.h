@@ -37,7 +37,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_modelConstantBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_frameConstantBuffer;
-    Microsoft::WRL::ComPtr<ID3D11Buffer> m_directionalLightConstantBuffer;
+    Microsoft::WRL::ComPtr<ID3D11Buffer> m_lightingConstantBuffer;
     Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerState;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthStencilState;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> m_linearWrapSampler;
