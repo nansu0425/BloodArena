@@ -100,11 +100,12 @@ uint32_t PickGameObject(float ndcX, float ndcY, const Camera& camera, float aspe
 
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
-        if (!gameObject.modelComponent)
+        const ModelComponent* modelComponent = gameObject.GetComponent<ModelComponent>();
+        if (!modelComponent)
         {
             continue;
         }
-        const Model* model = g_modelLibrary->FindModel(gameObject.modelComponent->modelName);
+        const Model* model = g_modelLibrary->FindModel(modelComponent->modelName);
         BA_ASSERT(model);
 
         Matrix objectWorld = BuildWorld(gameObject.transform);

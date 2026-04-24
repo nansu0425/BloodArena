@@ -54,13 +54,13 @@ const char* kLogLevelNames[] = { "Trace", "Debug", "Info", "Warn", "Error", "Cri
 
 bool HasModelComponent(const GameObject& gameObject)
 {
-    return (gameObject.modelComponent != nullptr);
+    return gameObject.HasComponent<ModelComponent>();
 }
 
 void AddModelComponent(GameObject& gameObject)
 {
     BA_ASSERT(g_modelLibrary->FindModel(kDefaultModelName));
-    gameObject.modelComponent = std::make_unique<ModelComponent>(ModelComponent{kDefaultModelName});
+    gameObject.AddComponent<ModelComponent>(kDefaultModelName);
 }
 
 struct ComponentAddEntry
@@ -644,7 +644,8 @@ void EditorRenderer::RenderInspector()
 
 void EditorRenderer::RenderModelComponent(GameObject& gameObject)
 {
-    if (!gameObject.modelComponent)
+    ModelComponent* modelComponent = gameObject.GetComponent<ModelComponent>();
+    if (!modelComponent)
     {
         return;
     }
@@ -663,7 +664,7 @@ void EditorRenderer::RenderModelComponent(GameObject& gameObject)
     int currentIndex = -1;
     for (size_t i = 0; i < names.size(); ++i)
     {
-        if (names[i] == gameObject.modelComponent->modelName)
+        if (names[i] == modelComponent->modelName)
         {
             currentIndex = static_cast<int>(i);
             break;
@@ -675,10 +676,10 @@ void EditorRenderer::RenderModelComponent(GameObject& gameObject)
     {
         const std::string& selectedName = names[currentIndex];
         BA_ASSERT(g_modelLibrary->FindModel(selectedName));
-        gameObject.modelComponent->modelName = selectedName;
+        modelComponent->modelName = selectedName;
     }
 
-    const Model* model = g_modelLibrary->FindModel(gameObject.modelComponent->modelName);
+    const Model* model = g_modelLibrary->FindModel(modelComponent->modelName);
     BA_ASSERT(model);
 
     size_t primitiveCount = 0;
@@ -694,7 +695,7 @@ void EditorRenderer::RenderModelComponent(GameObject& gameObject)
 
     if (ImGui::Button("Remove"))
     {
-        gameObject.modelComponent.reset();
+        gameObject.RemoveComponent<ModelComponent>();
     }
 }
 

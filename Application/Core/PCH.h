@@ -27,6 +27,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <typeindex>
 #include <unordered_map>
 #include <vector>
 

@@ -16,7 +16,7 @@ namespace
 
 using json = nlohmann::json;
 
-constexpr uint32_t kSceneSchemaVersion = 3;
+constexpr uint32_t kSceneSchemaVersion = 4;
 
 std::filesystem::path GetScenePath(const std::string& name)
 {
@@ -120,15 +120,60 @@ CameraSettings ReadCamera(const json& j)
     return s;
 }
 
+json WriteLightComponent(const LightComponent& light)
+{
+    json result;
+    switch (light.type)
+    {
+        case LightType::Directional:
+        {
+            result["type"] = "directional";
+            break;
+        }
+    }
+    result["color"]            = WriteVector3(light.color);
+    result["intensity"]        = light.intensity;
+    result["ambientColor"]     = WriteVector3(light.ambientColor);
+    result["specularStrength"] = light.specularStrength;
+    result["shininess"]        = light.shininess;
+    return result;
+}
+
+LightComponent ReadLightComponent(const json& j)
+{
+    LightComponent light;
+    if (!j.is_object())
+    {
+        return light;
+    }
+
+    std::string typeStr = j.value("type", std::string{"directional"});
+    if (typeStr == "directional")
+    {
+        light.type = LightType::Directional;
+    }
+
+    light.color            = ReadVector3(j.value("color",        json{}), light.color);
+    light.intensity        = j.value("intensity", light.intensity);
+    light.ambientColor     = ReadVector3(j.value("ambientColor", json{}), light.ambientColor);
+    light.specularStrength = j.value("specularStrength", light.specularStrength);
+    light.shininess        = j.value("shininess", light.shininess);
+    return light;
+}
+
 json WriteGameObject(const GameObject& obj)
 {
     json result{
         {"id", obj.id},
         {"transform", WriteTransform(obj.transform)}
     };
-    if (obj.modelComponent)
+    if (const auto* mc = obj.GetComponent<ModelComponent>())
     {
-        result["modelComponent"] = json{{"modelName", obj.modelComponent->modelName}};
+        result["modelComponent"] = json{{"modelName", mc->modelName}};
+    }
+    if (const auto* lc = obj.GetComponent<LightComponent>())
+    {
+        result["lightComponent"] = WriteLightComponent(*lc);
     }
     return result;
 }
@@ -149,7 +194,12 @@ GameObject ReadGameObject(const json& j)
         std::string name = mc.value("modelName", std::string{});
         BA_ASSERT(!name.empty());
         BA_ASSERT(g_modelLibrary->FindModel(name));
-        obj.modelComponent = std::make_unique<ModelComponent>(ModelComponent{std::move(name)});
+        obj.AddComponent<ModelComponent>(std::move(name));
+    }
+
+    if (j.contains("lightComponent") && j["lightComponent"].is_object())
+    {
+        obj.AddComponent<LightComponent>(ReadLightComponent(j["lightComponent"]));
     }
 
     return obj;
