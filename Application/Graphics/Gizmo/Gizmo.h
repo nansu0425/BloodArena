@@ -49,6 +49,25 @@ ManipulateResult Manipulate(const Transform& in,
 // Used to suppress the existing PickGameObject click-to-select flow.
 bool IsUsingMouse();
 
+// Draws a 3D arrow as an editor viewport overlay (ImGui DrawList based, always
+// on top, no depth testing). Must be called during the viewport ImGui window
+// after ImGui::Image so the correct DrawList is active and the item rect is
+// available. Domain-neutral — callers derive origin, direction, and color from
+// whatever concept they visualize.
+// The arrow stays a constant size on screen regardless of camera distance:
+// `screenSpaceLength` is expressed as a fraction of viewport height
+// (e.g. 0.15 ≈ 15% of the viewport height).
+void DrawArrow(const Vector3& origin,
+               const Vector3& direction,
+               float          screenSpaceLength,
+               const Vector3& color,
+               float          viewportX,
+               float          viewportY,
+               float          viewportWidth,
+               float          viewportHeight,
+               const Matrix&  view,
+               const Matrix&  projection);
+
 } // namespace BA::Gizmo
 
 #endif // BA_EDITOR

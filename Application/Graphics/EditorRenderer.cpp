@@ -93,6 +93,8 @@ constexpr const char* kViewModeLabels[] = { "Lit", "Unlit" };
 
 constexpr float kViewModeComboWidth = 80.0f;
 
+constexpr float kLightArrowScreenLength = 0.15f;
+
 const char* GizmoModeToLabel(Gizmo::Mode mode)
 {
     switch (mode)
@@ -377,15 +379,39 @@ void EditorRenderer::RenderViewport()
             }
         }
 
+        ImVec2 rectMin = ImGui::GetItemRectMin();
+        ImVec2 rectSize = ImGui::GetItemRectSize();
+        Matrix view = g_camera->GetViewMatrix();
+        Matrix proj = g_camera->GetProjectionMatrix(aspect);
+
+        for (const GameObject& gameObject : g_scene->GetGameObjects())
+        {
+            const LightComponent* light = gameObject.GetComponent<LightComponent>();
+            if (!light)
+            {
+                continue;
+            }
+            if (light->type != LightType::Directional)
+            {
+                continue;
+            }
+            const Transform& tf = gameObject.GetTransform();
+            Vector3 direction = Vector3::Transform(kAxisForward, tf.rotation);
+            direction.Normalize();
+            Gizmo::DrawArrow(
+                tf.position,
+                direction,
+                kLightArrowScreenLength,
+                light->color,
+                rectMin.x, rectMin.y, rectSize.x, rectSize.y,
+                view, proj);
+        }
+
         GameObject* selected = g_scene->FindGameObject(g_editorState->GetSelectedGameObjectId());
         if (selected != nullptr && g_editorState->GetGizmoMode() != Gizmo::Mode::None)
         {
-            ImVec2 rectMin = ImGui::GetItemRectMin();
-            ImVec2 rectSize = ImGui::GetItemRectSize();
             Gizmo::SetViewportRect(rectMin.x, rectMin.y, rectSize.x, rectSize.y);
 
-            Matrix view = g_camera->GetViewMatrix();
-            Matrix proj = g_camera->GetProjectionMatrix(aspect);
             Gizmo::ManipulateResult result = Gizmo::Manipulate(
                 selected->GetTransform(),
                 g_editorState->GetGizmoMode(),

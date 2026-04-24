@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+// NOMINMAX is defined at the project level (Application.vcxproj PreprocessorDefinitions)
+// to prevent <Windows.h> from defining min/max macros that collide with std::min/std::max.
 #include <Windows.h>
 
 #include <d3d11.h>
