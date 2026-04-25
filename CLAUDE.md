@@ -36,6 +36,13 @@
 ### Style
 - Braces on every control block. Always wrap the body in `{}` on its own lines, even for one-liners. This applies uniformly to `if`/`else`/`for`/`while` and to each `switch` case. Single-line or braceless forms such as `case X: return Y;`, `if (cond) doThing();`, or `for (...) body;` are not allowed — every case label and every control statement must be followed by a braced block on separate lines.
 - Minimize lambda use. Lambdas are only for one-line expressions such as simple predicates or projections passed to STL algorithms. For any multi-line helper, define a named function in the anonymous namespace and pass the needed state through parameters instead of capturing. Named functions aid code navigation, reuse, and debugging.
+- Blank lines separate semantic units. Code should read as a sequence of logical paragraphs, not a dense wall of statements — use blank lines actively to mark the boundary between chunks the reader must understand as distinct steps. A "semantic unit" includes the work itself **and** its associated validation/error path: a guard `if` that exists solely to check the immediately preceding computation or action and bail out (early return, fail-fast assert, error result) belongs to the same paragraph as that work and stays attached with no blank line between them. This applies regardless of function or class length.
+  - Inside function bodies:
+    - Insert a blank line between groups that play different roles (variable setup, computation, side effect, cleanup).
+    - Insert a blank line between adjacent control blocks (`if`/`else`/`for`/`while`/`switch`/`do`), **except** that a guard `if` stays attached (no blank line above it) to the code it validates.
+    - Insert a blank line before any `return` statement that is not the first statement of its enclosing block. (Returns that are themselves the body of a guard `if` are first statements of the guard's block, so this exception applies naturally.)
+  - Inside class/struct declarations: insert a blank line between member groups that play different roles (lifetime/special members, public API methods, internal helpers, data members, nested types). Members within the same role group may be packed without blank lines.
+  - Do not use multiple consecutive blank lines, and do not insert a blank line within a single statement that spans multiple lines.
 
 ### Code quality
 - Code should be self-documenting. Avoid code that requires comments to be understood.
