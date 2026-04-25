@@ -16,7 +16,7 @@ namespace
 
 using json = nlohmann::json;
 
-constexpr uint32_t kSceneSchemaVersion = 5;
+constexpr uint32_t kSceneSchemaVersion = 6;
 
 std::filesystem::path GetScenePath(const std::string& name)
 {
@@ -123,15 +123,16 @@ CameraSettings ReadCamera(const json& j)
 json WriteLightComponent(const LightComponent& light)
 {
     json result;
-    result["color"]     = WriteVector3(light.color);
-    result["intensity"] = light.intensity;
-    switch (light.type)
+    result["isEnabled"] = light.IsEnabled();
+    result["color"]     = WriteVector3(light.GetColor());
+    result["intensity"] = light.GetIntensity();
+    switch (light.GetType())
     {
         case LightType::Directional:
         {
             result["type"]             = "directional";
-            result["specularStrength"] = light.specularStrength;
-            result["shininess"]        = light.shininess;
+            result["specularStrength"] = light.GetSpecularStrength();
+            result["shininess"]        = light.GetShininess();
             break;
         }
         case LightType::Ambient:
@@ -154,19 +155,20 @@ LightComponent ReadLightComponent(const json& j)
     std::string typeStr = j.value("type", std::string{"directional"});
     if (typeStr == "directional")
     {
-        light.type = LightType::Directional;
+        light.SetType(LightType::Directional);
     }
     else if (typeStr == "ambient")
     {
-        light.type = LightType::Ambient;
+        light.SetType(LightType::Ambient);
     }
 
-    light.color     = ReadVector3(j.value("color", json{}), light.color);
-    light.intensity = j.value("intensity", light.intensity);
-    if (light.type == LightType::Directional)
+    light.SetEnabled(j.value("isEnabled", true));
+    light.SetColor(ReadVector3(j.value("color", json{}), light.GetColor()));
+    light.SetIntensity(j.value("intensity", light.GetIntensity()));
+    if (light.GetType() == LightType::Directional)
     {
-        light.specularStrength = j.value("specularStrength", light.specularStrength);
-        light.shininess        = j.value("shininess", light.shininess);
+        light.SetSpecularStrength(j.value("specularStrength", light.GetSpecularStrength()));
+        light.SetShininess(j.value("shininess", light.GetShininess()));
     }
     return light;
 }
@@ -180,7 +182,10 @@ json WriteGameObject(const GameObject& obj)
     };
     if (const auto* mc = obj.GetComponent<ModelComponent>())
     {
-        result["modelComponent"] = json{{"modelName", mc->modelName}};
+        result["modelComponent"] = json{
+            {"modelName", mc->GetModelName()},
+            {"isEnabled", mc->IsEnabled()}
+        };
     }
     if (const auto* lc = obj.GetComponent<LightComponent>())
     {
@@ -206,7 +211,8 @@ GameObject ReadGameObject(const json& j)
         std::string name = mc.value("modelName", std::string{});
         BA_ASSERT(!name.empty());
         BA_ASSERT(g_modelLibrary->FindModel(name));
-        obj.AddComponent<ModelComponent>(std::move(name));
+        ModelComponent& component = obj.AddComponent<ModelComponent>(std::move(name));
+        component.SetEnabled(mc.value("isEnabled", true));
     }
 
     if (j.contains("lightComponent") && j["lightComponent"].is_object())

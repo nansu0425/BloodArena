@@ -5,15 +5,21 @@
 namespace BA
 {
 
-struct ModelComponent : public IComponent
+class ModelComponent : public IComponent
 {
-    std::string modelName;
-
+public:
     ModelComponent() = default;
-    explicit ModelComponent(std::string name)
-        : modelName(std::move(name))
-    {
-    }
+    explicit ModelComponent(std::string modelName);
+
+    bool IsEnabled() const override;
+    void SetEnabled(bool isEnabled) override;
+
+    const std::string& GetModelName() const;
+    void SetModelName(std::string modelName);
+
+private:
+    std::string m_modelName;
+    bool        m_isEnabled = true;
 };
 
 } // namespace BA

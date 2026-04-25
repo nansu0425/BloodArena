@@ -387,11 +387,11 @@ void EditorRenderer::RenderViewport()
         for (const GameObject& gameObject : g_scene->GetGameObjects())
         {
             const LightComponent* light = gameObject.GetComponent<LightComponent>();
-            if (!light)
+            if (!light || !light->IsEnabled())
             {
                 continue;
             }
-            if (light->type != LightType::Directional)
+            if (light->GetType() != LightType::Directional)
             {
                 continue;
             }
@@ -402,7 +402,7 @@ void EditorRenderer::RenderViewport()
                 tf.position,
                 direction,
                 kLightArrowScreenLength,
-                light->color,
+                light->GetColor(),
                 rectMin.x, rectMin.y, rectSize.x, rectSize.y,
                 view, proj);
         }
@@ -714,7 +714,15 @@ void EditorRenderer::RenderModelComponent(GameObject& gameObject)
         return;
     }
 
+    bool isEnabled = modelComponent->IsEnabled();
+    if (ImGui::Checkbox("##ModelEnabled", &isEnabled))
+    {
+        modelComponent->SetEnabled(isEnabled);
+    }
+    ImGui::SameLine();
     ImGui::Text("Model Component");
+
+    ImGui::BeginDisabled(!isEnabled);
 
     std::vector<std::string> names = g_modelLibrary->GetModelNames();
 
@@ -725,10 +733,11 @@ void EditorRenderer::RenderModelComponent(GameObject& gameObject)
         items.push_back(name.c_str());
     }
 
+    const std::string& currentName = modelComponent->GetModelName();
     int currentIndex = -1;
     for (size_t i = 0; i < names.size(); ++i)
     {
-        if (names[i] == modelComponent->modelName)
+        if (names[i] == currentName)
         {
             currentIndex = static_cast<int>(i);
             break;
@@ -740,10 +749,10 @@ void EditorRenderer::RenderModelComponent(GameObject& gameObject)
     {
         const std::string& selectedName = names[currentIndex];
         BA_ASSERT(g_modelLibrary->FindModel(selectedName));
-        modelComponent->modelName = selectedName;
+        modelComponent->SetModelName(selectedName);
     }
 
-    const Model* model = g_modelLibrary->FindModel(modelComponent->modelName);
+    const Model* model = g_modelLibrary->FindModel(modelComponent->GetModelName());
     BA_ASSERT(model);
 
     size_t primitiveCount = 0;
@@ -756,6 +765,8 @@ void EditorRenderer::RenderModelComponent(GameObject& gameObject)
     ImGui::Text("Meshes: %zu", model->meshes.size());
     ImGui::Text("Primitives: %zu", primitiveCount);
     ImGui::Text("Materials: %zu", model->materials.size());
+
+    ImGui::EndDisabled();
 
     if (ImGui::Button("Remove"))
     {
@@ -772,33 +783,73 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
     }
 
     ImGui::Separator();
+
+    bool isEnabled = lightComponent->IsEnabled();
+    if (ImGui::Checkbox("##LightEnabled", &isEnabled))
+    {
+        lightComponent->SetEnabled(isEnabled);
+    }
+    ImGui::SameLine();
     ImGui::Text("Light Component");
 
+    ImGui::BeginDisabled(!isEnabled);
+
     const char* kLightTypeLabels[] = { "Directional", "Ambient" };
-    int typeIndex = static_cast<int>(lightComponent->type);
+    int typeIndex = static_cast<int>(lightComponent->GetType());
     if (ImGui::Combo("Type", &typeIndex, kLightTypeLabels, IM_ARRAYSIZE(kLightTypeLabels)))
     {
-        lightComponent->type = static_cast<LightType>(typeIndex);
+        lightComponent->SetType(static_cast<LightType>(typeIndex));
     }
 
-    switch (lightComponent->type)
+    switch (lightComponent->GetType())
     {
     case LightType::Directional:
     {
         ImGui::TextDisabled("Direction follows Transform Rotation");
-        ImGui::ColorEdit3("Color", &lightComponent->color.x);
-        ImGui::DragFloat("Intensity", &lightComponent->intensity, 0.01f, 0.0f, 100.0f);
-        ImGui::DragFloat("Specular Strength", &lightComponent->specularStrength, 0.01f, 0.0f, 10.0f);
-        ImGui::DragFloat("Shininess", &lightComponent->shininess, 0.5f, 1.0f, 512.0f);
+
+        Vector3 color = lightComponent->GetColor();
+        if (ImGui::ColorEdit3("Color", &color.x))
+        {
+            lightComponent->SetColor(color);
+        }
+
+        float intensity = lightComponent->GetIntensity();
+        if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 100.0f))
+        {
+            lightComponent->SetIntensity(intensity);
+        }
+
+        float specularStrength = lightComponent->GetSpecularStrength();
+        if (ImGui::DragFloat("Specular Strength", &specularStrength, 0.01f, 0.0f, 10.0f))
+        {
+            lightComponent->SetSpecularStrength(specularStrength);
+        }
+
+        float shininess = lightComponent->GetShininess();
+        if (ImGui::DragFloat("Shininess", &shininess, 0.5f, 1.0f, 512.0f))
+        {
+            lightComponent->SetShininess(shininess);
+        }
         break;
     }
     case LightType::Ambient:
     {
-        ImGui::ColorEdit3("Color", &lightComponent->color.x);
-        ImGui::DragFloat("Intensity", &lightComponent->intensity, 0.01f, 0.0f, 100.0f);
+        Vector3 color = lightComponent->GetColor();
+        if (ImGui::ColorEdit3("Color", &color.x))
+        {
+            lightComponent->SetColor(color);
+        }
+
+        float intensity = lightComponent->GetIntensity();
+        if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f, 100.0f))
+        {
+            lightComponent->SetIntensity(intensity);
+        }
         break;
     }
     }
+
+    ImGui::EndDisabled();
 
     if (ImGui::Button("Remove##Light"))
     {

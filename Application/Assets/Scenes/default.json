@@ -5,11 +5,11 @@
         "mouseSensitivity": 0.003000000026077032,
         "moveSpeed": 5.0,
         "nearZ": 0.10000000149011612,
-        "pitch": 0.026339922100305557,
-        "positionX": 9.01889419555664,
-        "positionY": 1.2004320621490479,
-        "positionZ": 0.2358165830373764,
-        "yaw": -1.5810233354568481
+        "pitch": 0.012000063434243202,
+        "positionX": -10.184844970703125,
+        "positionY": 1.157832145690918,
+        "positionZ": 0.2937987446784973,
+        "yaw": 1.5419964790344238
     },
     "gameObjects": [
         {
@@ -21,6 +21,7 @@
                     1.0
                 ],
                 "intensity": 1.0,
+                "isEnabled": true,
                 "shininess": 32.0,
                 "specularStrength": 0.5,
                 "type": "directional"
@@ -40,13 +41,13 @@
                 ],
                 "scale": [
                     1.0,
-                    0.9999986290931702,
-                    0.9999986290931702
+                    1.0,
+                    1.0
                 ]
             }
         },
         {
-            "id": 4,
+            "id": 2,
             "lightComponent": {
                 "color": [
                     1.0,
@@ -54,6 +55,7 @@
                     1.0
                 ],
                 "intensity": 1.0,
+                "isEnabled": true,
                 "type": "ambient"
             },
             "name": "Ambient Light",
@@ -79,31 +81,7 @@
         {
             "id": 3,
             "modelComponent": {
-                "modelName": "Duck"
-            },
-            "name": "Duck",
-            "transform": {
-                "position": [
-                    0.0,
-                    0.0,
-                    0.0
-                ],
-                "rotation": [
-                    -0.0,
-                    0.0,
-                    -0.0,
-                    1.0
-                ],
-                "scale": [
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            }
-        },
-        {
-            "id": 5,
-            "modelComponent": {
+                "isEnabled": true,
                 "modelName": "Sponza"
             },
             "name": "Sponza",
@@ -121,12 +99,12 @@
                 ],
                 "scale": [
                     1.0,
-                    0.9999992847442627,
-                    0.9999992847442627
+                    1.0,
+                    1.0
                 ]
             }
         }
     ],
-    "nextId": 6,
-    "version": 5
+    "nextId": 4,
+    "version": 6
 }

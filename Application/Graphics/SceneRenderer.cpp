@@ -69,12 +69,12 @@ LightingConstants BuildLightingConstants(const Scene& scene)
     for (const GameObject& gameObject : scene.GetGameObjects())
     {
         const LightComponent* light = gameObject.GetComponent<LightComponent>();
-        if (!light)
+        if (!light || !light->IsEnabled())
         {
             continue;
         }
 
-        switch (light->type)
+        switch (light->GetType())
         {
         case LightType::Directional:
         {
@@ -85,9 +85,9 @@ LightingConstants BuildLightingConstants(const Scene& scene)
             Vector3 dir = Vector3::Transform(kAxisForward, gameObject.GetTransform().rotation);
             dir.Normalize();
             directionWorld   = dir;
-            directionalColor = light->color * light->intensity;
-            specularStrength = light->specularStrength;
-            shininess        = light->shininess;
+            directionalColor = light->GetColor() * light->GetIntensity();
+            specularStrength = light->GetSpecularStrength();
+            shininess        = light->GetShininess();
             hasDirectional   = true;
             break;
         }
@@ -97,7 +97,7 @@ LightingConstants BuildLightingConstants(const Scene& scene)
             {
                 break;
             }
-            ambientColor = light->color * light->intensity;
+            ambientColor = light->GetColor() * light->GetIntensity();
             hasAmbient   = true;
             break;
         }
@@ -267,11 +267,11 @@ void SceneRenderer::Render(float aspect)
     for (const GameObject& gameObject : g_scene->GetGameObjects())
     {
         const ModelComponent* modelComponent = gameObject.GetComponent<ModelComponent>();
-        if (!modelComponent)
+        if (!modelComponent || !modelComponent->IsEnabled())
         {
             continue;
         }
-        const Model* model = g_modelLibrary->FindModel(modelComponent->modelName);
+        const Model* model = g_modelLibrary->FindModel(modelComponent->GetModelName());
         BA_ASSERT(model);
 
         Matrix objectWorld = BuildWorld(gameObject.GetTransform());
