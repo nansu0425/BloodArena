@@ -5,10 +5,21 @@
 namespace BA
 {
 
+enum class AlphaMode : uint32_t
+{
+    Opaque = 0,
+    Mask   = 1,
+};
+
+inline constexpr float kDefaultAlphaCutoff = 0.5f;
+
 struct Material
 {
     std::string diffuseTextureName;
-    float baseColorFactor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    float       baseColorFactor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    AlphaMode   alphaMode          = AlphaMode::Opaque;
+    float       alphaCutoff        = kDefaultAlphaCutoff;
+    bool        isDoubleSided      = false;
 };
 
 struct Primitive

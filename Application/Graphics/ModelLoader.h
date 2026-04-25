@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/Vertex.h"
+#include "Graphics/Model.h"
 
 namespace BA
 {
@@ -19,11 +20,14 @@ struct LoadedMeshData
 
 struct LoadedMaterialData
 {
-    bool hasDiffuseTexture = false;
+    bool                 hasDiffuseTexture = false;
     std::vector<uint8_t> diffuseRgba8;
-    uint32_t diffuseWidth = 0;
-    uint32_t diffuseHeight = 0;
-    float baseColorFactor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    uint32_t             diffuseWidth      = 0;
+    uint32_t             diffuseHeight     = 0;
+    float                baseColorFactor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    AlphaMode            alphaMode         = AlphaMode::Opaque;
+    float                alphaCutoff       = kDefaultAlphaCutoff;
+    bool                 isDoubleSided     = false;
 };
 
 struct LoadedNodeData

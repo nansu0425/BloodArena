@@ -17,6 +17,11 @@ float4 main(PSInput input) : SV_TARGET
 {
     float4 diffuseSample = diffuseMap.Sample(linearWrap, input.uv) * baseColorFactor;
 
+    if ((uint)materialParams.y == BA_ALPHA_MODE_MASK)
+    {
+        clip(diffuseSample.a - materialParams.x);
+    }
+
     if (viewMode == BA_VIEW_MODE_UNLIT)
     {
         return diffuseSample;

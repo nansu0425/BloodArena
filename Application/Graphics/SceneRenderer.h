@@ -39,6 +39,7 @@ private:
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_frameConstantBuffer;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_lightingConstantBuffer;
     Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerState;
+    Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_doubleSidedRasterizerState;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthStencilState;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> m_linearWrapSampler;
 

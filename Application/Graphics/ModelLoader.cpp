@@ -14,6 +14,17 @@ namespace BA
 namespace
 {
 
+constexpr std::string_view kGltfAlphaModeMask = "MASK";
+
+AlphaMode ParseAlphaMode(const std::string& token)
+{
+    if (token == kGltfAlphaModeMask)
+    {
+        return AlphaMode::Mask;
+    }
+    return AlphaMode::Opaque;
+}
+
 const float* GetAttributeData(const tinygltf::Model& model, const tinygltf::Primitive& primitive, const char* attribute)
 {
     auto it = primitive.attributes.find(attribute);
@@ -336,6 +347,10 @@ LoadedMaterialData ExtractMaterial(const tinygltf::Model& model, const tinygltf:
             result.baseColorFactor[i] = static_cast<float>(factor[i]);
         }
     }
+
+    result.alphaMode     = ParseAlphaMode(material.alphaMode);
+    result.alphaCutoff   = static_cast<float>(material.alphaCutoff);
+    result.isDoubleSided = material.doubleSided;
 
     int textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
     if (textureIndex < 0 || textureIndex >= static_cast<int>(model.textures.size()))

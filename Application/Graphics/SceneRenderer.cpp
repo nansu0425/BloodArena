@@ -22,6 +22,7 @@ struct ModelConstants
     Matrix  worldMatrix;
     Matrix  worldInverseTransposeMatrix;
     Vector4 baseColorFactor;
+    Vector4 materialParams;  // x = alphaCutoff, y = alphaMode (as float), zw reserved
 };
 
 struct FrameConstants
@@ -123,7 +124,9 @@ void DrawNode(
     int nodeIndex,
     const Matrix& parentAccumulated,
     const Matrix& objectWorld,
-    ID3D11Buffer* modelConstantBuffer)
+    ID3D11Buffer* modelConstantBuffer,
+    ID3D11RasterizerState* singleSidedRasterizer,
+    ID3D11RasterizerState* doubleSidedRasterizer)
 {
     // Row-vector convention (see ModelLoader.cpp ComputeNodeLocalTransform): v' = v * (local * parent).
     const Node& node = model.nodes[nodeIndex];
@@ -140,6 +143,9 @@ void DrawNode(
             const Texture* texture = nullptr;
             constexpr float kIdentityFactor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
             const float* baseColorFactor = kIdentityFactor;
+            AlphaMode alphaMode = AlphaMode::Opaque;
+            float     alphaCutoff = kDefaultAlphaCutoff;
+            bool      isDoubleSided = false;
             if (prim.materialIndex >= 0 && prim.materialIndex < static_cast<int>(model.materials.size()))
             {
                 const Material& material = model.materials[prim.materialIndex];
@@ -147,6 +153,9 @@ void DrawNode(
                     ? g_textureLibrary->GetDefaultTexture()
                     : g_textureLibrary->FindTexture(material.diffuseTextureName);
                 baseColorFactor = material.baseColorFactor;
+                alphaMode       = material.alphaMode;
+                alphaCutoff     = material.alphaCutoff;
+                isDoubleSided   = material.isDoubleSided;
             }
             if (!texture)
             {
@@ -165,7 +174,14 @@ void DrawNode(
             modelCb.worldMatrix = finalWorld;
             modelCb.worldInverseTransposeMatrix = worldInverseTranspose;
             modelCb.baseColorFactor = Vector4(baseColorFactor);
+            modelCb.materialParams = Vector4(
+                alphaCutoff,
+                static_cast<float>(alphaMode),
+                0.0f, 0.0f);
             g_graphicsDevice->UpdateConstantBuffer(modelConstantBuffer, modelCb);
+
+            ID3D11RasterizerState* rs = isDoubleSided ? doubleSidedRasterizer : singleSidedRasterizer;
+            ctx->RSSetState(rs);
 
             ctx->DrawIndexed(prim.indexCount, 0, 0);
         }
@@ -173,7 +189,8 @@ void DrawNode(
 
     for (int childIndex : node.childIndices)
     {
-        DrawNode(ctx, model, childIndex, accumulated, objectWorld, modelConstantBuffer);
+        DrawNode(ctx, model, childIndex, accumulated, objectWorld,
+                 modelConstantBuffer, singleSidedRasterizer, doubleSidedRasterizer);
     }
 }
 
@@ -200,6 +217,7 @@ void SceneRenderer::Shutdown()
 {
     m_linearWrapSampler.Reset();
     m_depthStencilState.Reset();
+    m_doubleSidedRasterizerState.Reset();
     m_rasterizerState.Reset();
     m_lightingConstantBuffer.Reset();
     m_frameConstantBuffer.Reset();
@@ -261,7 +279,9 @@ void SceneRenderer::Render(float aspect)
         {
             DrawNode(m_deviceContext, *model, rootIndex,
                      Matrix::Identity, objectWorld,
-                     m_modelConstantBuffer.Get());
+                     m_modelConstantBuffer.Get(),
+                     m_rasterizerState.Get(),
+                     m_doubleSidedRasterizerState.Get());
         }
     }
 }
@@ -382,6 +402,12 @@ void SceneRenderer::CreateRasterizerState()
     BA_CRASH_IF_FAILED(m_device->CreateRasterizerState(
         &desc,
         m_rasterizerState.GetAddressOf()
+    ));
+
+    desc.CullMode = D3D11_CULL_NONE;
+    BA_CRASH_IF_FAILED(m_device->CreateRasterizerState(
+        &desc,
+        m_doubleSidedRasterizerState.GetAddressOf()
     ));
 }
 

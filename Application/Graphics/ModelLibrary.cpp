@@ -153,6 +153,9 @@ bool ModelLibrary::LoadModel(const std::string& name, const std::string& filePat
             mat.diffuseTextureName = std::move(textureName);
         }
         std::copy(std::begin(src.baseColorFactor), std::end(src.baseColorFactor), std::begin(mat.baseColorFactor));
+        mat.alphaMode     = src.alphaMode;
+        mat.alphaCutoff   = src.alphaCutoff;
+        mat.isDoubleSided = src.isDoubleSided;
         model.materials.push_back(std::move(mat));
     }
 
