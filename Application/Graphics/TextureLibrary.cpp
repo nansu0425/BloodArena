@@ -44,6 +44,8 @@ const Texture* TextureLibrary::GetDefaultTexture() const
 
 void TextureLibrary::RegisterTexture(const std::string& name, const uint8_t* pixelsRgba8, uint32_t width, uint32_t height)
 {
+    BA_PROFILE_SCOPE("TextureLibrary::RegisterTexture");
+
     if (m_textures.contains(name))
     {
         BA_LOG_WARN("Texture '{}' already registered, skipping", name);

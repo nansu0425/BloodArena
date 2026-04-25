@@ -398,6 +398,8 @@ LoadedMaterialData ExtractMaterial(const tinygltf::Model& model, const tinygltf:
 
 LoadedModelData LoadModelFromFile(const std::string& filePath)
 {
+    BA_PROFILE_SCOPE("LoadModelFromFile");
+
     tinygltf::Model model;
     tinygltf::TinyGLTF loader;
     std::string err;
@@ -406,14 +408,18 @@ LoadedModelData LoadModelFromFile(const std::string& filePath)
     bool isLoaded = false;
 
     constexpr std::string_view kGlbExtension = ".glb";
-    if (filePath.size() >= kGlbExtension.size()
-        && filePath.compare(filePath.size() - kGlbExtension.size(), kGlbExtension.size(), kGlbExtension) == 0)
     {
-        isLoaded = loader.LoadBinaryFromFile(&model, &err, &warn, filePath);
-    }
-    else
-    {
-        isLoaded = loader.LoadASCIIFromFile(&model, &err, &warn, filePath);
+        BA_PROFILE_SCOPE("tinygltf::LoadFromFile");
+
+        if (filePath.size() >= kGlbExtension.size()
+            && filePath.compare(filePath.size() - kGlbExtension.size(), kGlbExtension.size(), kGlbExtension) == 0)
+        {
+            isLoaded = loader.LoadBinaryFromFile(&model, &err, &warn, filePath);
+        }
+        else
+        {
+            isLoaded = loader.LoadASCIIFromFile(&model, &err, &warn, filePath);
+        }
     }
 
     if (!warn.empty())
@@ -430,25 +436,33 @@ LoadedModelData LoadModelFromFile(const std::string& filePath)
     LoadedModelData out;
     out.isLoaded = true;
 
-    out.materials.reserve(model.materials.size());
-    for (const tinygltf::Material& material : model.materials)
     {
-        out.materials.push_back(ExtractMaterial(model, material));
+        BA_PROFILE_SCOPE("ExtractMaterials");
+
+        out.materials.reserve(model.materials.size());
+        for (const tinygltf::Material& material : model.materials)
+        {
+            out.materials.push_back(ExtractMaterial(model, material));
+        }
     }
 
-    out.meshes.reserve(model.meshes.size());
-    for (const tinygltf::Mesh& mesh : model.meshes)
     {
-        LoadedMeshData meshOut;
-        for (const tinygltf::Primitive& primitive : mesh.primitives)
+        BA_PROFILE_SCOPE("ExtractMeshes");
+
+        out.meshes.reserve(model.meshes.size());
+        for (const tinygltf::Mesh& mesh : model.meshes)
         {
-            if (!IsExtractablePrimitive(primitive))
+            LoadedMeshData meshOut;
+            for (const tinygltf::Primitive& primitive : mesh.primitives)
             {
-                continue;
+                if (!IsExtractablePrimitive(primitive))
+                {
+                    continue;
+                }
+                meshOut.primitives.push_back(ExtractPrimitive(model, primitive));
             }
-            meshOut.primitives.push_back(ExtractPrimitive(model, primitive));
+            out.meshes.push_back(std::move(meshOut));
         }
-        out.meshes.push_back(std::move(meshOut));
     }
 
     out.nodes.reserve(model.nodes.size());

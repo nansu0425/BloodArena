@@ -52,6 +52,8 @@ void OnResize(UINT width, UINT height)
 
 void Initialize(HINSTANCE hInstance, int nShowCmd)
 {
+    BA_PROFILE_SCOPE("Lifecycle::Initialize");
+
 #ifdef _DEBUG
     _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
     // _CrtSetBreakAlloc(allocation number); // Break at the specified allocation number during memory allocation
@@ -73,6 +75,9 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 
     g_graphicsDevice = std::make_unique<GraphicsDevice>();
     g_graphicsDevice->Initialize(g_window->GetHandle());
+
+    g_gpuProfiler = std::make_unique<GpuProfiler>();
+    g_gpuProfiler->Initialize();
 
     g_textureLibrary = std::make_unique<TextureLibrary>();
     g_textureLibrary->Initialize();
@@ -144,6 +149,9 @@ int Run()
 #endif // BA_EDITOR
 
         g_graphicsDevice->EndFrame();
+
+        BA_PROFILE_GPU_COLLECT();
+        BA_PROFILE_FRAME_MARK();
     }
 
     return static_cast<int>(msg.wParam);
@@ -151,6 +159,8 @@ int Run()
 
 void Shutdown()
 {
+    BA_PROFILE_SCOPE("Lifecycle::Shutdown");
+
     AppSettings appSettings;
     appSettings.window = g_window->GetSettings();
 #ifdef BA_EDITOR
@@ -185,6 +195,9 @@ void Shutdown()
 
     g_textureLibrary->Shutdown();
     g_textureLibrary.reset();
+
+    g_gpuProfiler->Shutdown();
+    g_gpuProfiler.reset();
 
     g_graphicsDevice->Shutdown();
     g_graphicsDevice.reset();

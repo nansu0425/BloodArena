@@ -317,6 +317,8 @@ bool Scene::SaveToFile(const std::string& name) const
 
 bool Scene::LoadFromFile(const std::string& name)
 {
+    BA_PROFILE_SCOPE("Scene::LoadFromFile");
+
     BA_ASSERT(g_camera);
 
     std::filesystem::path filePath = GetScenePath(name);

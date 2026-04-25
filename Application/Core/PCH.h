@@ -36,4 +36,6 @@
 #include "Core/Assert.h"
 #include "Core/Logger.h"
 #include "Core/Crash.h"
+#include "Core/Profiler.h"
+#include "Core/GpuProfiler.h"
 

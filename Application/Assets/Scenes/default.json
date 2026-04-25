@@ -53,7 +53,7 @@
                     1.0,
                     1.0
                 ],
-                "intensity": 0.4000000059604645,
+                "intensity": 1.0,
                 "type": "ambient"
             },
             "name": "Ambient Light",

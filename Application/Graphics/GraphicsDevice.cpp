@@ -111,6 +111,8 @@ float GraphicsDevice::GetAspectRatio() const
 
 ComPtr<ID3D11Buffer> GraphicsDevice::CreateVertexBuffer(const void* data, UINT byteWidth)
 {
+    BA_PROFILE_SCOPE("GraphicsDevice::CreateVertexBuffer");
+
     BA_ASSERT(m_device.Get());
     BA_ASSERT(data);
     BA_ASSERT(byteWidth > 0);
@@ -133,6 +135,8 @@ ComPtr<ID3D11Buffer> GraphicsDevice::CreateVertexBuffer(const void* data, UINT b
 
 ComPtr<ID3D11Buffer> GraphicsDevice::CreateIndexBuffer(const void* data, UINT byteWidth)
 {
+    BA_PROFILE_SCOPE("GraphicsDevice::CreateIndexBuffer");
+
     BA_ASSERT(m_device.Get());
     BA_ASSERT(data);
     BA_ASSERT(byteWidth > 0);
@@ -173,6 +177,8 @@ ComPtr<ID3D11Buffer> GraphicsDevice::CreateConstantBuffer(UINT byteWidth)
 
 ComPtr<ID3D11ShaderResourceView> GraphicsDevice::CreateTextureRgba8SRV(const void* pixels, UINT width, UINT height)
 {
+    BA_PROFILE_SCOPE("GraphicsDevice::CreateTextureRgba8SRV");
+
     BA_ASSERT(m_device.Get());
     BA_ASSERT(pixels);
     BA_ASSERT(width > 0 && height > 0);

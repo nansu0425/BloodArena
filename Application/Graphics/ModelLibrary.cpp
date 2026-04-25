@@ -33,6 +33,8 @@ std::string BuildDiffuseTextureName(const std::string& modelName, size_t materia
 
 Primitive CreatePrimitiveFromLoaded(const LoadedPrimitiveData& src)
 {
+    BA_PROFILE_SCOPE("CreatePrimitiveFromLoaded");
+
     Primitive p;
     p.materialIndex = src.materialIndex;
     p.indexCount = static_cast<uint32_t>(src.indices.size());
@@ -78,6 +80,8 @@ Primitive CreatePrimitiveFromLoaded(const LoadedPrimitiveData& src)
 
 void ModelLibrary::Initialize()
 {
+    BA_PROFILE_SCOPE("ModelLibrary::Initialize");
+
     CreateBuiltInCube();
     LoadModelsFromAssetsDirectory();
 
@@ -116,6 +120,9 @@ std::vector<std::string> ModelLibrary::GetModelNames() const
 
 bool ModelLibrary::LoadModel(const std::string& name, const std::string& filePath)
 {
+    std::string profileLabel = "LoadModel: " + name;
+    BA_PROFILE_SCOPE_DYNAMIC(profileLabel);
+
     if (m_models.contains(name))
     {
         BA_LOG_WARN("Model '{}' already loaded, skipping", name);
@@ -136,40 +143,48 @@ bool ModelLibrary::LoadModel(const std::string& name, const std::string& filePat
     Model model;
 
     // Materials: register each diffuse texture under "<modelName>::mat<idx>::diffuse".
-    model.materials.reserve(data.materials.size());
-    for (size_t i = 0; i < data.materials.size(); ++i)
     {
-        Material mat;
-        const LoadedMaterialData& src = data.materials[i];
-        if (src.hasDiffuseTexture)
+        BA_PROFILE_SCOPE("RegisterMaterialTextures");
+
+        model.materials.reserve(data.materials.size());
+        for (size_t i = 0; i < data.materials.size(); ++i)
         {
-            std::string textureName = BuildDiffuseTextureName(name, i);
-            g_textureLibrary->RegisterTexture(
-                textureName,
-                src.diffuseRgba8.data(),
-                src.diffuseWidth,
-                src.diffuseHeight
-            );
-            mat.diffuseTextureName = std::move(textureName);
+            Material mat;
+            const LoadedMaterialData& src = data.materials[i];
+            if (src.hasDiffuseTexture)
+            {
+                std::string textureName = BuildDiffuseTextureName(name, i);
+                g_textureLibrary->RegisterTexture(
+                    textureName,
+                    src.diffuseRgba8.data(),
+                    src.diffuseWidth,
+                    src.diffuseHeight
+                );
+                mat.diffuseTextureName = std::move(textureName);
+            }
+            std::copy(std::begin(src.baseColorFactor), std::end(src.baseColorFactor), std::begin(mat.baseColorFactor));
+            mat.alphaMode     = src.alphaMode;
+            mat.alphaCutoff   = src.alphaCutoff;
+            mat.isDoubleSided = src.isDoubleSided;
+            model.materials.push_back(std::move(mat));
         }
-        std::copy(std::begin(src.baseColorFactor), std::end(src.baseColorFactor), std::begin(mat.baseColorFactor));
-        mat.alphaMode     = src.alphaMode;
-        mat.alphaCutoff   = src.alphaCutoff;
-        mat.isDoubleSided = src.isDoubleSided;
-        model.materials.push_back(std::move(mat));
     }
 
     // Meshes: upload per-primitive VB/IB.
-    model.meshes.reserve(data.meshes.size());
-    for (const LoadedMeshData& srcMesh : data.meshes)
     {
-        Mesh dstMesh;
-        dstMesh.primitives.reserve(srcMesh.primitives.size());
-        for (const LoadedPrimitiveData& srcPrim : srcMesh.primitives)
+        BA_PROFILE_SCOPE("UploadMeshPrimitives");
+
+        model.meshes.reserve(data.meshes.size());
+        for (const LoadedMeshData& srcMesh : data.meshes)
         {
-            dstMesh.primitives.push_back(CreatePrimitiveFromLoaded(srcPrim));
+            Mesh dstMesh;
+            dstMesh.primitives.reserve(srcMesh.primitives.size());
+            for (const LoadedPrimitiveData& srcPrim : srcMesh.primitives)
+            {
+                dstMesh.primitives.push_back(CreatePrimitiveFromLoaded(srcPrim));
+            }
+            model.meshes.push_back(std::move(dstMesh));
         }
-        model.meshes.push_back(std::move(dstMesh));
     }
 
     // Nodes: direct copy (indices already match glTF ordering).
@@ -291,6 +306,8 @@ void ModelLibrary::CreateBuiltInCube()
 
 void ModelLibrary::LoadModelsFromAssetsDirectory()
 {
+    BA_PROFILE_SCOPE("ModelLibrary::LoadModelsFromAssetsDirectory");
+
     std::string_view relativeDir = kModelsDirectoryRelative;
     std::wstring wideRelativeDir(relativeDir.begin(), relativeDir.end());
     std::wstring resolvedDirW = ResolveAssetPath(wideRelativeDir.c_str());
