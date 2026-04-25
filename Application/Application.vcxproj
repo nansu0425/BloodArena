@@ -206,6 +206,7 @@
     <ClInclude Include="Graphics\Vertex.h" />
     <ClInclude Include="Graphics\Model.h" />
     <ClInclude Include="Graphics\ModelLoader.h" />
+    <ClInclude Include="Graphics\ModelCache.h" />
     <ClInclude Include="Graphics\ModelLibrary.h" />
     <ClInclude Include="Graphics\Texture.h" />
     <ClInclude Include="Graphics\TextureLibrary.h" />
@@ -238,6 +239,7 @@
     <ClCompile Include="Editor\EditorConsoleSink.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Graphics\GraphicsDevice.cpp" />
     <ClCompile Include="Graphics\ModelLoader.cpp" />
+    <ClCompile Include="Graphics\ModelCache.cpp" />
     <ClCompile Include="Graphics\ModelLibrary.cpp" />
     <ClCompile Include="Graphics\TextureLibrary.cpp" />
     <ClCompile Include="Graphics\SceneRenderer.cpp" />

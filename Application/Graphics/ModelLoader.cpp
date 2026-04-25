@@ -8,6 +8,8 @@
 #define JSON_NOEXCEPTION
 #include <tiny_gltf.h>
 
+#include "Graphics/ModelCache.h"
+
 namespace BA
 {
 
@@ -394,11 +396,9 @@ LoadedMaterialData ExtractMaterial(const tinygltf::Model& model, const tinygltf:
     return result;
 }
 
-} // namespace
-
-LoadedModelData LoadModelFromFile(const std::string& filePath)
+LoadedModelData LoadModelFromGltf(const std::string& filePath)
 {
-    BA_PROFILE_SCOPE("LoadModelFromFile");
+    BA_PROFILE_SCOPE("LoadModelFromGltf");
 
     tinygltf::Model model;
     tinygltf::TinyGLTF loader;
@@ -501,6 +501,40 @@ LoadedModelData LoadModelFromFile(const std::string& filePath)
     }
 
     return out;
+}
+
+} // namespace
+
+LoadedModelData LoadModelFromFile(const std::string& filePath)
+{
+    BA_PROFILE_SCOPE("LoadModelFromFile");
+
+    std::string cachePath = ComputeCachePath(filePath);
+    {
+        BA_PROFILE_SCOPE("ModelCache::Read");
+        ModelCacheReadResult cached = ReadModelCache(cachePath, filePath);
+        if (cached.isHit)
+        {
+            return std::move(cached.data);
+        }
+    }
+
+    BA_LOG_INFO("Cooking '{}'... (one-time)", filePath);
+    LoadedModelData data = LoadModelFromGltf(filePath);
+    if (!data.isLoaded)
+    {
+        return data;
+    }
+
+    {
+        BA_PROFILE_SCOPE("ModelCache::Write");
+        if (!WriteModelCache(cachePath, filePath, data))
+        {
+            BA_LOG_WARN("ModelCache write failed for '{}'; continuing without cache", filePath);
+        }
+    }
+
+    return data;
 }
 
 } // namespace BA

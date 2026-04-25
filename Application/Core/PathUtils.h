@@ -3,7 +3,9 @@
 namespace BA
 {
 
-inline std::wstring ResolveAssetPath(const wchar_t* relativePath)
+// Resolve a path relative to the Application root (project dir under debugger,
+// executable directory in standalone runs).
+inline std::wstring ResolveApplicationPath(const wchar_t* relativePath)
 {
     if (IsDebuggerPresent())
     {
@@ -18,6 +20,11 @@ inline std::wstring ResolveAssetPath(const wchar_t* relativePath)
     resolved += relativePath;
 
     return resolved;
+}
+
+inline std::wstring ResolveAssetPath(const wchar_t* relativePath)
+{
+    return ResolveApplicationPath(relativePath);
 }
 
 } // namespace BA

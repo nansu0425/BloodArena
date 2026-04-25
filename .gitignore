@@ -73,3 +73,9 @@ Application/Assets/Models/*.gltf
 Application/Assets/Models/*.fbx
 Application/Assets/Models/*.bin
 !Application/Assets/Models/Samples/
+
+# =============================================================================
+# Runtime Caches (BACA framework)
+# =============================================================================
+# Per-build cooked artifacts under Application/.cache/{Models,Shaders,...}.
+Application/.cache/
