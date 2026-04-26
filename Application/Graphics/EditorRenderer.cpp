@@ -715,13 +715,16 @@ void EditorRenderer::RenderModelComponent(GameObject& gameObject)
         return;
     }
 
+    if (!ImGui::CollapsingHeader("Model Component", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        return;
+    }
+
     bool isEnabled = modelComponent->IsEnabled();
-    if (ImGui::Checkbox("##ModelEnabled", &isEnabled))
+    if (ImGui::Checkbox("Enabled##Model", &isEnabled))
     {
         modelComponent->SetEnabled(isEnabled);
     }
-    ImGui::SameLine();
-    ImGui::Text("Model Component");
 
     ImGui::BeginDisabled(!isEnabled);
 
@@ -783,15 +786,16 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
         return;
     }
 
-    ImGui::Separator();
+    if (!ImGui::CollapsingHeader("Light Component", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        return;
+    }
 
     bool isEnabled = lightComponent->IsEnabled();
-    if (ImGui::Checkbox("##LightEnabled", &isEnabled))
+    if (ImGui::Checkbox("Enabled##Light", &isEnabled))
     {
         lightComponent->SetEnabled(isEnabled);
     }
-    ImGui::SameLine();
-    ImGui::Text("Light Component");
 
     ImGui::BeginDisabled(!isEnabled);
 
