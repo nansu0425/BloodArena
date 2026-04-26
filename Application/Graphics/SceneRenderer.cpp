@@ -134,9 +134,9 @@ LightingConstants BuildLightingConstants(const Scene& scene)
     return data;
 }
 
-void ApplyAutoFitToDirectionalLights(Scene& scene)
+void FitDirectionalShadowFrustumsToScene(Scene& scene)
 {
-    BA_PROFILE_SCOPE("ApplyAutoFitToDirectionalLights");
+    BA_PROFILE_SCOPE("FitDirectionalShadowFrustumsToScene");
 
     for (GameObject& gameObject : scene.GetGameObjects())
     {
@@ -169,11 +169,9 @@ void ApplyAutoFitToDirectionalLights(Scene& scene)
     }
 }
 
-ShadowSetup BuildShadowSetup(Scene& scene)
+ShadowSetup BuildShadowSetup(const Scene& scene)
 {
     BA_PROFILE_SCOPE("BuildShadowSetup");
-
-    ApplyAutoFitToDirectionalLights(scene);
 
     ShadowSetup setup = {};
     setup.lightViewMatrix       = Matrix::Identity;
@@ -392,6 +390,8 @@ void SceneRenderer::RenderShadowPass(Scene& scene)
     BA_PROFILE_SCOPE("SceneRenderer::RenderShadowPass");
 
     BA_ASSERT(m_shadowMap);
+
+    FitDirectionalShadowFrustumsToScene(scene);
 
     ShadowSetup setup = BuildShadowSetup(scene);
 
