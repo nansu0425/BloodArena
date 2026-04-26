@@ -13,6 +13,7 @@ public:
     void Clear();
 
     ID3D11RenderTargetView* GetRTV() const;
+    ID3D11DepthStencilView* GetDSV() const;
     ID3D11ShaderResourceView* GetSRV() const;
 
     UINT GetWidth() const;

@@ -139,6 +139,7 @@ json WriteLightComponent(const LightComponent& light)
             result["shadowNearZ"]           = light.GetShadowNearZ();
             result["shadowFarZ"]            = light.GetShadowFarZ();
             result["shadowDepthBias"]       = light.GetShadowDepthBias();
+            result["isShadowFrustumVisualized"] = light.IsShadowFrustumVisualized();
             break;
         }
         case LightType::Ambient:
@@ -181,6 +182,8 @@ LightComponent ReadLightComponent(const json& j)
         light.SetShadowNearZ(j.value("shadowNearZ", light.GetShadowNearZ()));
         light.SetShadowFarZ(j.value("shadowFarZ", light.GetShadowFarZ()));
         light.SetShadowDepthBias(j.value("shadowDepthBias", light.GetShadowDepthBias()));
+        light.SetShadowFrustumVisualized(
+            j.value("isShadowFrustumVisualized", light.IsShadowFrustumVisualized()));
     }
     return light;
 }

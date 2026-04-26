@@ -212,6 +212,8 @@
     <ClInclude Include="Graphics\TextureLibrary.h" />
     <ClInclude Include="Graphics\SceneRenderer.h" />
     <ClInclude Include="Graphics\ShadowMap.h" />
+    <ClInclude Include="Graphics\ShadowFrustum.h" />
+    <ClInclude Include="Graphics\DebugRenderer.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Core\Window.h" />
     <ClInclude Include="Core\Lifecycle.h" />
     <ClInclude Include="Graphics\SceneViewport.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
@@ -245,6 +247,8 @@
     <ClCompile Include="Graphics\TextureLibrary.cpp" />
     <ClCompile Include="Graphics\SceneRenderer.cpp" />
     <ClCompile Include="Graphics\ShadowMap.cpp" />
+    <ClCompile Include="Graphics\ShadowFrustum.cpp" />
+    <ClCompile Include="Graphics\DebugRenderer.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Core\Window.cpp" />
     <ClCompile Include="Core\WinMain.cpp" />
     <ClCompile Include="Core\Lifecycle.cpp" />

@@ -124,4 +124,14 @@ void LightComponent::SetShadowDepthBias(float depthBias)
     m_shadowDepthBias = depthBias;
 }
 
+bool LightComponent::IsShadowFrustumVisualized() const
+{
+    return m_isShadowFrustumVisualized;
+}
+
+void LightComponent::SetShadowFrustumVisualized(bool isVisualized)
+{
+    m_isShadowFrustumVisualized = isVisualized;
+}
+
 } // namespace BA

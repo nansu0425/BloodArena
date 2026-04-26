@@ -124,6 +124,11 @@ ID3D11RenderTargetView* SceneViewport::GetRTV() const
     return m_rtv.Get();
 }
 
+ID3D11DepthStencilView* SceneViewport::GetDSV() const
+{
+    return m_dsv.Get();
+}
+
 ID3D11ShaderResourceView* SceneViewport::GetSRV() const
 {
     return m_srv.Get();

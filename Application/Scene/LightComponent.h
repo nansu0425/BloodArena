@@ -60,6 +60,9 @@ public:
     float          GetShadowDepthBias() const;
     void           SetShadowDepthBias(float depthBias);
 
+    bool           IsShadowFrustumVisualized() const;
+    void           SetShadowFrustumVisualized(bool isVisualized);
+
 private:
     LightType m_type             = LightType::Directional;
     Vector3   m_color            = {1.0f, 1.0f, 1.0f};
@@ -74,6 +77,8 @@ private:
     float     m_shadowNearZ       = kDefaultShadowNearZ;
     float     m_shadowFarZ        = kDefaultShadowFarZ;
     float     m_shadowDepthBias   = kDefaultShadowDepthBias;
+
+    bool      m_isShadowFrustumVisualized = false;
 };
 
 } // namespace BA

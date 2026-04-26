@@ -4,6 +4,8 @@
 #include "Graphics/ModelLibrary.h"
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/SceneViewport.h"
+#include "Graphics/ShadowFrustum.h"
+#include "Graphics/DebugRenderer.h"
 #include "Editor/EditorState.h"
 #include "Editor/ViewportPicking.h"
 #include "Graphics/Gizmo/Gizmo.h"
@@ -343,7 +345,45 @@ void EditorRenderer::RenderViewport()
         g_sceneViewport->Clear();
 
         float aspect = size.x / size.y;
+        const Matrix view = g_camera->GetViewMatrix();
+        const Matrix proj = g_camera->GetProjectionMatrix(aspect);
+
         g_sceneRenderer->RenderMainPass(*g_scene, aspect);
+
+        for (const GameObject& gameObject : g_scene->GetGameObjects())
+        {
+            const LightComponent* light = gameObject.GetComponent<LightComponent>();
+            if (!light || !light->IsEnabled())
+            {
+                continue;
+            }
+            if (light->GetType() != LightType::Directional)
+            {
+                continue;
+            }
+            if (!light->ShouldCastShadow())
+            {
+                continue;
+            }
+
+            if (light->IsShadowFrustumVisualized())
+            {
+                const DirectionalShadowFrustum frustum = ComputeDirectionalShadowFrustum(
+                    *light, gameObject.GetTransform());
+                const Matrix lightViewProj = frustum.lightViewMatrix * frustum.lightProjectionMatrix;
+
+                g_debugRenderer->DrawFrustum(
+                    lightViewProj,
+                    view,
+                    proj,
+                    light->GetColor(),
+                    g_sceneViewport->GetRTV(),
+                    g_sceneViewport->GetDSV(),
+                    g_sceneViewport->GetWidth(),
+                    g_sceneViewport->GetHeight());
+            }
+            break;
+        }
 
         g_graphicsDevice->RestoreBackBuffer();
 
@@ -382,8 +422,6 @@ void EditorRenderer::RenderViewport()
 
         ImVec2 rectMin = ImGui::GetItemRectMin();
         ImVec2 rectSize = ImGui::GetItemRectSize();
-        Matrix view = g_camera->GetViewMatrix();
-        Matrix proj = g_camera->GetProjectionMatrix(aspect);
 
         for (const GameObject& gameObject : g_scene->GetGameObjects())
         {
@@ -876,6 +914,12 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
             lightComponent->SetShadowDepthBias(shadowDepthBias);
         }
 
+        bool isShadowFrustumVisualized = lightComponent->IsShadowFrustumVisualized();
+        if (ImGui::Checkbox("Visualize Shadow Frustum", &isShadowFrustumVisualized))
+        {
+            lightComponent->SetShadowFrustumVisualized(isShadowFrustumVisualized);
+        }
+
         ImGui::EndDisabled();
 
         break;
@@ -893,6 +937,7 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
         {
             lightComponent->SetIntensity(intensity);
         }
+
         break;
     }
     }

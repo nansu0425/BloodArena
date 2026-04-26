@@ -6,6 +6,7 @@
 #include "Graphics/TextureLibrary.h"
 #include "Core/PathUtils.h"
 #include "Math/MathUtils.h"
+#include "Graphics/ShadowFrustum.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
 
@@ -56,8 +57,6 @@ struct ShadowSetup
     Matrix lightProjectionMatrix;
     float  depthBias;
 };
-
-inline constexpr float kLightUpFallbackThreshold = 0.99f;
 
 FrameConstants BuildFrameConstants(
     const Matrix& viewMatrix,
@@ -157,27 +156,13 @@ ShadowSetup BuildShadowSetup(const Scene& scene)
             continue;
         }
 
-        Vector3 lightDir = Vector3::Transform(kAxisForward, gameObject.GetTransform().rotation);
-        lightDir.Normalize();
-
-        Vector3 sceneCenter = {0.0f, 0.0f, 0.0f};
-        float   halfFar     = 0.5f * light->GetShadowFarZ();
-        Vector3 lightEye    = sceneCenter - lightDir * halfFar;
-
-        Vector3 up = kAxisUp;
-        if (std::abs(lightDir.Dot(kAxisUp)) > kLightUpFallbackThreshold)
-        {
-            up = kAxisRight;
-        }
+        DirectionalShadowFrustum frustum = ComputeDirectionalShadowFrustum(
+            *light, gameObject.GetTransform());
 
         setup.isShadowEnabled       = true;
-        setup.lightViewMatrix       = BuildLookAt(lightEye, sceneCenter, up);
-        setup.lightProjectionMatrix = BuildOrthographic(
-            light->GetShadowOrthoWidth(),
-            light->GetShadowOrthoHeight(),
-            light->GetShadowNearZ(),
-            light->GetShadowFarZ());
-        setup.depthBias = light->GetShadowDepthBias();
+        setup.lightViewMatrix       = frustum.lightViewMatrix;
+        setup.lightProjectionMatrix = frustum.lightProjectionMatrix;
+        setup.depthBias             = frustum.depthBias;
 
         break;
     }

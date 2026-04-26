@@ -16,6 +16,7 @@
 #include "Editor/EditorState.h"
 #include "Graphics/EditorRenderer.h"
 #include "Graphics/Gizmo/Gizmo.h"
+#include "Graphics/DebugRenderer.h"
 #endif // BA_EDITOR
 
 namespace BA
@@ -107,6 +108,9 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_editorRenderer = std::make_unique<EditorRenderer>();
     g_editorRenderer->Initialize();
 
+    g_debugRenderer = std::make_unique<DebugRenderer>();
+    g_debugRenderer->Initialize();
+
     Gizmo::Initialize();
 #endif // BA_EDITOR
 
@@ -174,6 +178,9 @@ void Shutdown()
 
 #ifdef BA_EDITOR
     Gizmo::Shutdown();
+
+    g_debugRenderer->Shutdown();
+    g_debugRenderer.reset();
 
     g_editorRenderer->Shutdown();
     g_editorRenderer.reset();
