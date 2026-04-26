@@ -70,6 +70,7 @@ Primitive CreatePrimitiveFromLoaded(const LoadedPrimitiveData& src)
     for (const Vertex& v : src.vertices)
     {
         p.cpuPositions.push_back(v.position);
+        p.localAabb = ExpandAabbWithPoint(p.localAabb, v.position);
     }
     p.cpuIndices = src.indices;
 
@@ -283,6 +284,7 @@ void ModelLibrary::CreateBuiltInCube()
     for (const Vertex& v : vertices)
     {
         prim.cpuPositions.push_back(v.position);
+        prim.localAabb = ExpandAabbWithPoint(prim.localAabb, v.position);
     }
     prim.cpuIndices.reserve(_countof(indices));
     for (uint16_t idx : indices)

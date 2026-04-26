@@ -6,6 +6,7 @@
 #include "Scene/GameObject.h"
 #include "Scene/ModelComponent.h"
 #include "Scene/Scene.h"
+#include <array>
 
 namespace BA
 {
@@ -31,10 +32,17 @@ Aabb ComputeNodeWorldAabb(
 
         for (const Primitive& prim : mesh.primitives)
         {
-            for (const Vector3& localPos : prim.cpuPositions)
+            if (!prim.localAabb.isValid)
             {
-                const Vector3 worldPos = Vector3::Transform(localPos, finalWorld);
-                result = ExpandAabbWithPoint(result, worldPos);
+                continue;
+            }
+
+            const std::array<Vector3, kAabbCornerCount> corners =
+                GetAabbCorners(prim.localAabb);
+            for (const Vector3& localCorner : corners)
+            {
+                const Vector3 worldCorner = Vector3::Transform(localCorner, finalWorld);
+                result = ExpandAabbWithPoint(result, worldCorner);
             }
         }
     }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Math/Aabb.h"
 #include "Math/MathTypes.h"
 
 namespace BA
@@ -32,6 +33,8 @@ struct Primitive
 
     std::vector<Vector3> cpuPositions;
     std::vector<uint32_t> cpuIndices;
+
+    Aabb localAabb = MakeEmptyAabb();
 };
 
 struct Mesh

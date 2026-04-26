@@ -9,6 +9,7 @@
 #include "Scene/ModelComponent.h"
 #include "Scene/Scene.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 namespace BA
@@ -59,80 +60,6 @@ Vector3 ProjectToLightAlignedSpace(
         offset.Dot(basis.forward));
 }
 
-Aabb ComputeNodeLightAlignedAabb(
-    const Model&             model,
-    int                      nodeIndex,
-    const Matrix&            parentAccumulated,
-    const Matrix&            objectWorld,
-    const Vector3&           frustumCenter,
-    const LightAlignedBasis& basis)
-{
-    const Node&  node        = model.nodes[nodeIndex];
-    const Matrix accumulated = node.localTransform * parentAccumulated;
-
-    Aabb result = MakeEmptyAabb();
-
-    if (node.meshIndex >= 0)
-    {
-        const Matrix finalWorld = accumulated * objectWorld;
-        const Mesh&  mesh       = model.meshes[node.meshIndex];
-
-        for (const Primitive& prim : mesh.primitives)
-        {
-            for (const Vector3& localPos : prim.cpuPositions)
-            {
-                const Vector3 worldPos      = Vector3::Transform(localPos, finalWorld);
-                const Vector3 lightSpacePos = ProjectToLightAlignedSpace(worldPos, frustumCenter, basis);
-                result = ExpandAabbWithPoint(result, lightSpacePos);
-            }
-        }
-    }
-
-    for (int childIndex : node.childIndices)
-    {
-        const Aabb childAabb =
-            ComputeNodeLightAlignedAabb(model, childIndex, accumulated, objectWorld,
-                                        frustumCenter, basis);
-        result = MergeAabb(result, childAabb);
-    }
-
-    return result;
-}
-
-Aabb ComputeSceneLightAlignedAabb(
-    const Scene&             scene,
-    const Vector3&           frustumCenter,
-    const LightAlignedBasis& basis)
-{
-    BA_PROFILE_SCOPE("ComputeSceneLightAlignedAabb");
-
-    Aabb result = MakeEmptyAabb();
-
-    for (const GameObject& obj : scene.GetGameObjects())
-    {
-        const ModelComponent* mc = obj.GetComponent<ModelComponent>();
-        if (!mc || !mc->IsEnabled())
-        {
-            continue;
-        }
-        const Model* model = g_modelLibrary->FindModel(mc->GetModelName());
-        if (!model)
-        {
-            continue;
-        }
-
-        const Matrix objectWorld = BuildWorld(obj.GetTransform());
-        for (int rootIndex : model->rootNodeIndices)
-        {
-            const Aabb objectAabb = ComputeNodeLightAlignedAabb(
-                *model, rootIndex, Matrix::Identity, objectWorld, frustumCenter, basis);
-            result = MergeAabb(result, objectAabb);
-        }
-    }
-
-    return result;
-}
-
 } // namespace
 
 DirectionalShadowFrustum ComputeDirectionalShadowFrustum(
@@ -180,10 +107,13 @@ AutoFitShadowFrustumResult ComputeAutoFitShadowFrustumParameters(
     lightDir.Normalize();
     const LightAlignedBasis basis = BuildLightAlignedBasis(lightDir);
 
-    const Aabb laAabb = ComputeSceneLightAlignedAabb(scene, frustumCenter, basis);
-    if (!laAabb.isValid)
+    const std::array<Vector3, kAabbCornerCount> worldCorners = GetAabbCorners(worldAabb);
+
+    Aabb laAabb = MakeEmptyAabb();
+    for (const Vector3& worldCorner : worldCorners)
     {
-        return result;
+        const Vector3 lightSpacePos = ProjectToLightAlignedSpace(worldCorner, frustumCenter, basis);
+        laAabb = ExpandAabbWithPoint(laAabb, lightSpacePos);
     }
 
     const float halfDepth = std::max(std::abs(laAabb.minCorner.z), std::abs(laAabb.maxCorner.z))

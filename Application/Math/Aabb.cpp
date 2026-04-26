@@ -63,4 +63,21 @@ Aabb ExpandAabbWithPoint(const Aabb& aabb, const Vector3& point)
     return expanded;
 }
 
+std::array<Vector3, kAabbCornerCount> GetAabbCorners(const Aabb& aabb)
+{
+    const Vector3& lo = aabb.minCorner;
+    const Vector3& hi = aabb.maxCorner;
+
+    return std::array<Vector3, kAabbCornerCount>{
+        Vector3(lo.x, lo.y, lo.z),
+        Vector3(hi.x, lo.y, lo.z),
+        Vector3(lo.x, hi.y, lo.z),
+        Vector3(hi.x, hi.y, lo.z),
+        Vector3(lo.x, lo.y, hi.z),
+        Vector3(hi.x, lo.y, hi.z),
+        Vector3(lo.x, hi.y, hi.z),
+        Vector3(hi.x, hi.y, hi.z),
+    };
+}
+
 } // namespace BA
