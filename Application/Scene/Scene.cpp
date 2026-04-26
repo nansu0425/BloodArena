@@ -16,7 +16,7 @@ namespace
 
 using json = nlohmann::json;
 
-constexpr uint32_t kSceneSchemaVersion = 6;
+constexpr uint32_t kSceneSchemaVersion = 7;
 
 std::filesystem::path GetScenePath(const std::string& name)
 {
@@ -130,9 +130,15 @@ json WriteLightComponent(const LightComponent& light)
     {
         case LightType::Directional:
         {
-            result["type"]             = "directional";
-            result["specularStrength"] = light.GetSpecularStrength();
-            result["shininess"]        = light.GetShininess();
+            result["type"]                  = "directional";
+            result["specularStrength"]      = light.GetSpecularStrength();
+            result["shininess"]             = light.GetShininess();
+            result["shouldCastShadow"]      = light.ShouldCastShadow();
+            result["shadowOrthoWidth"]      = light.GetShadowOrthoWidth();
+            result["shadowOrthoHeight"]     = light.GetShadowOrthoHeight();
+            result["shadowNearZ"]           = light.GetShadowNearZ();
+            result["shadowFarZ"]            = light.GetShadowFarZ();
+            result["shadowDepthBias"]       = light.GetShadowDepthBias();
             break;
         }
         case LightType::Ambient:
@@ -169,6 +175,12 @@ LightComponent ReadLightComponent(const json& j)
     {
         light.SetSpecularStrength(j.value("specularStrength", light.GetSpecularStrength()));
         light.SetShininess(j.value("shininess", light.GetShininess()));
+        light.SetShouldCastShadow(j.value("shouldCastShadow", light.ShouldCastShadow()));
+        light.SetShadowOrthoWidth(j.value("shadowOrthoWidth", light.GetShadowOrthoWidth()));
+        light.SetShadowOrthoHeight(j.value("shadowOrthoHeight", light.GetShadowOrthoHeight()));
+        light.SetShadowNearZ(j.value("shadowNearZ", light.GetShadowNearZ()));
+        light.SetShadowFarZ(j.value("shadowFarZ", light.GetShadowFarZ()));
+        light.SetShadowDepthBias(j.value("shadowDepthBias", light.GetShadowDepthBias()));
     }
     return light;
 }

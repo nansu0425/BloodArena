@@ -15,6 +15,8 @@ constexpr FLOAT kBackgroundColor[4] = {0.1f, 0.1f, 0.1f, 1.0f};
 constexpr FLOAT kBackgroundColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 #endif // BA_EDITOR
 
+constexpr FLOAT kShadowSamplerBorderColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+
 } // namespace
 
 void GraphicsDevice::Initialize(HWND window)
@@ -80,13 +82,11 @@ void GraphicsDevice::Resize(UINT width, UINT height)
     SetViewports();
 }
 
-#ifdef BA_EDITOR
 void GraphicsDevice::RestoreBackBuffer()
 {
     m_deviceContext->OMSetRenderTargets(1, m_backBufferRTV.GetAddressOf(), m_dsv.Get());
     SetViewports();
 }
-#endif // BA_EDITOR
 
 ID3D11Device* GraphicsDevice::GetDevice() const
 {
@@ -224,6 +224,79 @@ ComPtr<ID3D11SamplerState> GraphicsDevice::CreateLinearWrapSampler()
         .MinLOD = 0.0f,
         .MaxLOD = D3D11_FLOAT32_MAX,
     };
+
+    ComPtr<ID3D11SamplerState> sampler;
+    BA_CRASH_IF_FAILED(m_device->CreateSamplerState(&desc, sampler.GetAddressOf()));
+
+    return sampler;
+}
+
+DepthTextureResources GraphicsDevice::CreateDepthTexture(UINT width, UINT height)
+{
+    BA_PROFILE_SCOPE("GraphicsDevice::CreateDepthTexture");
+
+    BA_ASSERT(m_device.Get());
+    BA_ASSERT(width > 0 && height > 0);
+
+    D3D11_TEXTURE2D_DESC texDesc = {
+        .Width = width,
+        .Height = height,
+        .MipLevels = 1,
+        .ArraySize = 1,
+        .Format = DXGI_FORMAT_R32_TYPELESS,
+        .SampleDesc = {.Count = 1, .Quality = 0},
+        .Usage = D3D11_USAGE_DEFAULT,
+        .BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE,
+    };
+
+    DepthTextureResources resources;
+    BA_CRASH_IF_FAILED(m_device->CreateTexture2D(
+        &texDesc,
+        nullptr,
+        resources.texture.GetAddressOf()
+    ));
+
+    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {
+        .Format = DXGI_FORMAT_D32_FLOAT,
+        .ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D,
+        .Texture2D = {.MipSlice = 0},
+    };
+    BA_CRASH_IF_FAILED(m_device->CreateDepthStencilView(
+        resources.texture.Get(),
+        &dsvDesc,
+        resources.dsv.GetAddressOf()
+    ));
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+        .Format = DXGI_FORMAT_R32_FLOAT,
+        .ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
+        .Texture2D = {.MostDetailedMip = 0, .MipLevels = 1},
+    };
+    BA_CRASH_IF_FAILED(m_device->CreateShaderResourceView(
+        resources.texture.Get(),
+        &srvDesc,
+        resources.srv.GetAddressOf()
+    ));
+
+    return resources;
+}
+
+ComPtr<ID3D11SamplerState> GraphicsDevice::CreateShadowComparisonSampler()
+{
+    BA_ASSERT(m_device.Get());
+
+    D3D11_SAMPLER_DESC desc = {
+        .Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
+        .AddressU = D3D11_TEXTURE_ADDRESS_BORDER,
+        .AddressV = D3D11_TEXTURE_ADDRESS_BORDER,
+        .AddressW = D3D11_TEXTURE_ADDRESS_BORDER,
+        .MipLODBias = 0.0f,
+        .MaxAnisotropy = 1,
+        .ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL,
+        .MinLOD = 0.0f,
+        .MaxLOD = D3D11_FLOAT32_MAX,
+    };
+    memcpy(desc.BorderColor, kShadowSamplerBorderColor, sizeof(desc.BorderColor));
 
     ComPtr<ID3D11SamplerState> sampler;
     BA_CRASH_IF_FAILED(m_device->CreateSamplerState(&desc, sampler.GetAddressOf()));

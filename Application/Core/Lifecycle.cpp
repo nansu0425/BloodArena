@@ -36,7 +36,9 @@ void RenderFrame()
     g_editorRenderer->EndImGuiFrame();
 #else
     // TODO: When game modes are added, the game build will be locked to gameplay state
-    g_sceneRenderer->Render(g_graphicsDevice->GetAspectRatio());
+    g_sceneRenderer->RenderShadowPass(*g_scene);
+    g_graphicsDevice->RestoreBackBuffer();
+    g_sceneRenderer->RenderMainPass(*g_scene, g_graphicsDevice->GetAspectRatio());
 #endif // BA_EDITOR
 
     g_graphicsDevice->EndFrame();
@@ -145,7 +147,9 @@ int Run()
         g_editorRenderer->RenderPanels();
         g_editorRenderer->EndImGuiFrame();
 #else
-        g_sceneRenderer->Render(g_graphicsDevice->GetAspectRatio());
+        g_sceneRenderer->RenderShadowPass(*g_scene);
+        g_graphicsDevice->RestoreBackBuffer();
+        g_sceneRenderer->RenderMainPass(*g_scene, g_graphicsDevice->GetAspectRatio());
 #endif // BA_EDITOR
 
         g_graphicsDevice->EndFrame();

@@ -64,4 +64,64 @@ void LightComponent::SetShininess(float shininess)
     m_shininess = shininess;
 }
 
+bool LightComponent::ShouldCastShadow() const
+{
+    return m_shouldCastShadow;
+}
+
+void LightComponent::SetShouldCastShadow(bool shouldCastShadow)
+{
+    m_shouldCastShadow = shouldCastShadow;
+}
+
+float LightComponent::GetShadowOrthoWidth() const
+{
+    return m_shadowOrthoWidth;
+}
+
+void LightComponent::SetShadowOrthoWidth(float orthoWidth)
+{
+    m_shadowOrthoWidth = orthoWidth;
+}
+
+float LightComponent::GetShadowOrthoHeight() const
+{
+    return m_shadowOrthoHeight;
+}
+
+void LightComponent::SetShadowOrthoHeight(float orthoHeight)
+{
+    m_shadowOrthoHeight = orthoHeight;
+}
+
+float LightComponent::GetShadowNearZ() const
+{
+    return m_shadowNearZ;
+}
+
+void LightComponent::SetShadowNearZ(float nearZ)
+{
+    m_shadowNearZ = nearZ;
+}
+
+float LightComponent::GetShadowFarZ() const
+{
+    return m_shadowFarZ;
+}
+
+void LightComponent::SetShadowFarZ(float farZ)
+{
+    m_shadowFarZ = farZ;
+}
+
+float LightComponent::GetShadowDepthBias() const
+{
+    return m_shadowDepthBias;
+}
+
+void LightComponent::SetShadowDepthBias(float depthBias)
+{
+    m_shadowDepthBias = depthBias;
+}
+
 } // namespace BA

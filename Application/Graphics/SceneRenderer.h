@@ -1,7 +1,11 @@
 #pragma once
 
+#include "Graphics/ShadowMap.h"
+
 namespace BA
 {
+
+class Scene;
 
 enum class ViewMode : uint32_t
 {
@@ -15,18 +19,22 @@ public:
     void Initialize();
     void Shutdown();
 
-    void Render(float aspect);
+    void RenderShadowPass(const Scene& scene);
+    void RenderMainPass(const Scene& scene, float aspect);
 
     ViewMode GetViewMode() const;
     void     SetViewMode(ViewMode mode);
 
 private:
     void CompileShaders();
+    void CompileShadowDepthShader();
     Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const wchar_t* filePath, const char* target);
     void CreateInputLayout(ID3DBlob* vsBlob);
     void CreateConstantBuffers();
     void CreateRasterizerState();
     void CreateDepthStencilState();
+    void CreateShadowMap();
+    void CreateShadowSampler();
 
 private:
     ID3D11Device* m_device = nullptr;
@@ -42,6 +50,11 @@ private:
     Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_doubleSidedRasterizerState;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthStencilState;
     Microsoft::WRL::ComPtr<ID3D11SamplerState> m_linearWrapSampler;
+
+    Microsoft::WRL::ComPtr<ID3D11VertexShader> m_shadowDepthVertexShader;
+    Microsoft::WRL::ComPtr<ID3D11Buffer>       m_shadowConstantBuffer;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> m_shadowComparisonSampler;
+    std::unique_ptr<ShadowMap>                 m_shadowMap;
 
     ViewMode m_viewMode = ViewMode::Lit;
 };

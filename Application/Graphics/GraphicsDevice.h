@@ -3,6 +3,13 @@
 namespace BA
 {
 
+struct DepthTextureResources
+{
+    Microsoft::WRL::ComPtr<ID3D11Texture2D>          texture;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilView>   dsv;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv;
+};
+
 class GraphicsDevice
 {
 public:
@@ -14,9 +21,7 @@ public:
 
     void Resize(UINT width, UINT height);
 
-#ifdef BA_EDITOR
     void RestoreBackBuffer();
-#endif // BA_EDITOR
 
     ID3D11Device* GetDevice() const;
     ID3D11DeviceContext* GetDeviceContext() const;
@@ -27,6 +32,9 @@ public:
     Microsoft::WRL::ComPtr<ID3D11Buffer> CreateConstantBuffer(UINT byteWidth);
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> CreateTextureRgba8SRV(const void* pixels, UINT width, UINT height);
     Microsoft::WRL::ComPtr<ID3D11SamplerState> CreateLinearWrapSampler();
+
+    DepthTextureResources CreateDepthTexture(UINT width, UINT height);
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> CreateShadowComparisonSampler();
 
     template <typename TConstants>
     void UpdateConstantBuffer(ID3D11Buffer* buffer, const TConstants& data)

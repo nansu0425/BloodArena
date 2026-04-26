@@ -42,6 +42,23 @@ struct LightingConstants
     Vector4 specularParams;  // x = specularStrength, y = shininess; zw unused
 };
 
+struct ShadowConstants
+{
+    Matrix  lightViewMatrix;
+    Matrix  lightProjectionMatrix;
+    Vector4 shadowParams;  // x = depthBias, y = invShadowMapSize, z = isShadowEnabled (0/1), w unused
+};
+
+struct ShadowSetup
+{
+    bool   isShadowEnabled;
+    Matrix lightViewMatrix;
+    Matrix lightProjectionMatrix;
+    float  depthBias;
+};
+
+inline constexpr float kLightUpFallbackThreshold = 0.99f;
+
 FrameConstants BuildFrameConstants(
     const Matrix& viewMatrix,
     const Matrix& projectionMatrix,
@@ -116,6 +133,56 @@ LightingConstants BuildLightingConstants(const Scene& scene)
     data.specularParams = Vector4(specularStrength, shininess, 0.0f, 0.0f);
 
     return data;
+}
+
+ShadowSetup BuildShadowSetup(const Scene& scene)
+{
+    ShadowSetup setup = {};
+    setup.lightViewMatrix       = Matrix::Identity;
+    setup.lightProjectionMatrix = Matrix::Identity;
+
+    for (const GameObject& gameObject : scene.GetGameObjects())
+    {
+        const LightComponent* light = gameObject.GetComponent<LightComponent>();
+        if (!light || !light->IsEnabled())
+        {
+            continue;
+        }
+        if (light->GetType() != LightType::Directional)
+        {
+            continue;
+        }
+        if (!light->ShouldCastShadow())
+        {
+            continue;
+        }
+
+        Vector3 lightDir = Vector3::Transform(kAxisForward, gameObject.GetTransform().rotation);
+        lightDir.Normalize();
+
+        Vector3 sceneCenter = {0.0f, 0.0f, 0.0f};
+        float   halfFar     = 0.5f * light->GetShadowFarZ();
+        Vector3 lightEye    = sceneCenter - lightDir * halfFar;
+
+        Vector3 up = kAxisUp;
+        if (std::abs(lightDir.Dot(kAxisUp)) > kLightUpFallbackThreshold)
+        {
+            up = kAxisRight;
+        }
+
+        setup.isShadowEnabled       = true;
+        setup.lightViewMatrix       = BuildLookAt(lightEye, sceneCenter, up);
+        setup.lightProjectionMatrix = BuildOrthographic(
+            light->GetShadowOrthoWidth(),
+            light->GetShadowOrthoHeight(),
+            light->GetShadowNearZ(),
+            light->GetShadowFarZ());
+        setup.depthBias = light->GetShadowDepthBias();
+
+        break;
+    }
+
+    return setup;
 }
 
 void DrawNode(
@@ -194,6 +261,59 @@ void DrawNode(
     }
 }
 
+void DrawNodeDepthOnly(
+    ID3D11DeviceContext* ctx,
+    const Model& model,
+    int nodeIndex,
+    const Matrix& parentAccumulated,
+    const Matrix& objectWorld,
+    ID3D11Buffer* modelConstantBuffer,
+    ID3D11RasterizerState* singleSidedRasterizer,
+    ID3D11RasterizerState* doubleSidedRasterizer)
+{
+    const Node& node = model.nodes[nodeIndex];
+    Matrix accumulated = node.localTransform * parentAccumulated;
+
+    if (node.meshIndex >= 0)
+    {
+        Matrix finalWorld = accumulated * objectWorld;
+        const Mesh& mesh = model.meshes[node.meshIndex];
+
+        for (const Primitive& prim : mesh.primitives)
+        {
+            bool isDoubleSided = false;
+            if (prim.materialIndex >= 0 && prim.materialIndex < static_cast<int>(model.materials.size()))
+            {
+                isDoubleSided = model.materials[prim.materialIndex].isDoubleSided;
+            }
+
+            UINT stride = sizeof(Vertex);
+            UINT offset = 0;
+            ctx->IASetVertexBuffers(0, 1, prim.vertexBuffer.GetAddressOf(), &stride, &offset);
+            DXGI_FORMAT indexFormat = prim.isIndex32Bit ? DXGI_FORMAT_R32_UINT : DXGI_FORMAT_R16_UINT;
+            ctx->IASetIndexBuffer(prim.indexBuffer.Get(), indexFormat, 0);
+
+            ModelConstants modelCb = {};
+            modelCb.worldMatrix                 = finalWorld;
+            modelCb.worldInverseTransposeMatrix = Matrix::Identity;
+            modelCb.baseColorFactor             = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            modelCb.materialParams              = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+            g_graphicsDevice->UpdateConstantBuffer(modelConstantBuffer, modelCb);
+
+            ID3D11RasterizerState* rs = isDoubleSided ? doubleSidedRasterizer : singleSidedRasterizer;
+            ctx->RSSetState(rs);
+
+            ctx->DrawIndexed(prim.indexCount, 0, 0);
+        }
+    }
+
+    for (int childIndex : node.childIndices)
+    {
+        DrawNodeDepthOnly(ctx, model, childIndex, accumulated, objectWorld,
+                          modelConstantBuffer, singleSidedRasterizer, doubleSidedRasterizer);
+    }
+}
+
 } // namespace
 
 void SceneRenderer::Initialize()
@@ -204,9 +324,12 @@ void SceneRenderer::Initialize()
     m_deviceContext = g_graphicsDevice->GetDeviceContext();
 
     CompileShaders();
+    CompileShadowDepthShader();
     CreateConstantBuffers();
     CreateRasterizerState();
     CreateDepthStencilState();
+    CreateShadowMap();
+    CreateShadowSampler();
 
     m_linearWrapSampler = g_graphicsDevice->CreateLinearWrapSampler();
 
@@ -215,6 +338,15 @@ void SceneRenderer::Initialize()
 
 void SceneRenderer::Shutdown()
 {
+    if (m_shadowMap)
+    {
+        m_shadowMap->Shutdown();
+        m_shadowMap.reset();
+    }
+    m_shadowComparisonSampler.Reset();
+    m_shadowConstantBuffer.Reset();
+    m_shadowDepthVertexShader.Reset();
+
     m_linearWrapSampler.Reset();
     m_depthStencilState.Reset();
     m_doubleSidedRasterizerState.Reset();
@@ -231,7 +363,67 @@ void SceneRenderer::Shutdown()
     BA_LOG_INFO("SceneRenderer shutdown.");
 }
 
-void SceneRenderer::Render(float aspect)
+void SceneRenderer::RenderShadowPass(const Scene& scene)
+{
+    BA_ASSERT(m_shadowMap);
+
+    ShadowSetup setup = BuildShadowSetup(scene);
+
+    ShadowConstants shadowCb = {};
+    shadowCb.lightViewMatrix       = setup.lightViewMatrix;
+    shadowCb.lightProjectionMatrix = setup.lightProjectionMatrix;
+    shadowCb.shadowParams = Vector4(
+        setup.depthBias,
+        setup.isShadowEnabled ? 1.0f : 0.0f,
+        0.0f,
+        0.0f);
+    g_graphicsDevice->UpdateConstantBuffer(m_shadowConstantBuffer.Get(), shadowCb);
+
+    m_shadowMap->BeginPass(m_deviceContext);
+
+    if (!setup.isShadowEnabled)
+    {
+        return;
+    }
+
+    m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_deviceContext->IASetInputLayout(m_inputLayout.Get());
+    m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
+    m_deviceContext->VSSetShader(m_shadowDepthVertexShader.Get(), nullptr, 0);
+    m_deviceContext->PSSetShader(nullptr, nullptr, 0);
+
+    ID3D11Buffer* vsBuffers[] = {
+        m_modelConstantBuffer.Get(),
+        nullptr,
+        nullptr,
+        m_shadowConstantBuffer.Get(),
+    };
+    m_deviceContext->VSSetConstantBuffers(0, _countof(vsBuffers), vsBuffers);
+
+    for (const GameObject& gameObject : scene.GetGameObjects())
+    {
+        const ModelComponent* modelComponent = gameObject.GetComponent<ModelComponent>();
+        if (!modelComponent || !modelComponent->IsEnabled())
+        {
+            continue;
+        }
+
+        const Model* model = g_modelLibrary->FindModel(modelComponent->GetModelName());
+        BA_ASSERT(model);
+
+        Matrix objectWorld = BuildWorld(gameObject.GetTransform());
+        for (int rootIndex : model->rootNodeIndices)
+        {
+            DrawNodeDepthOnly(m_deviceContext, *model, rootIndex,
+                              Matrix::Identity, objectWorld,
+                              m_modelConstantBuffer.Get(),
+                              m_rasterizerState.Get(),
+                              m_doubleSidedRasterizerState.Get());
+        }
+    }
+}
+
+void SceneRenderer::RenderMainPass(const Scene& scene, float aspect)
 {
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_deviceContext->IASetInputLayout(m_inputLayout.Get());
@@ -239,7 +431,12 @@ void SceneRenderer::Render(float aspect)
     m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
     m_deviceContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
     m_deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
-    m_deviceContext->PSSetSamplers(0, 1, m_linearWrapSampler.GetAddressOf());
+
+    ID3D11SamplerState* samplers[] = {
+        m_linearWrapSampler.Get(),
+        m_shadowComparisonSampler.Get(),
+    };
+    m_deviceContext->PSSetSamplers(0, _countof(samplers), samplers);
 
     ID3D11Buffer* vsBuffers[] = {
         m_modelConstantBuffer.Get(),
@@ -251,6 +448,7 @@ void SceneRenderer::Render(float aspect)
         m_modelConstantBuffer.Get(),
         m_frameConstantBuffer.Get(),
         m_lightingConstantBuffer.Get(),
+        m_shadowConstantBuffer.Get(),
     };
     m_deviceContext->PSSetConstantBuffers(0, _countof(psBuffers), psBuffers);
 
@@ -261,10 +459,13 @@ void SceneRenderer::Render(float aspect)
         m_viewMode);
     g_graphicsDevice->UpdateConstantBuffer(m_frameConstantBuffer.Get(), frameCb);
 
-    LightingConstants lightCb = BuildLightingConstants(*g_scene);
+    LightingConstants lightCb = BuildLightingConstants(scene);
     g_graphicsDevice->UpdateConstantBuffer(m_lightingConstantBuffer.Get(), lightCb);
 
-    for (const GameObject& gameObject : g_scene->GetGameObjects())
+    ID3D11ShaderResourceView* shadowSrv = m_shadowMap->GetSRV();
+    m_deviceContext->PSSetShaderResources(1, 1, &shadowSrv);
+
+    for (const GameObject& gameObject : scene.GetGameObjects())
     {
         const ModelComponent* modelComponent = gameObject.GetComponent<ModelComponent>();
         if (!modelComponent || !modelComponent->IsEnabled())
@@ -284,6 +485,9 @@ void SceneRenderer::Render(float aspect)
                      m_doubleSidedRasterizerState.Get());
         }
     }
+
+    ID3D11ShaderResourceView* nullSrv = nullptr;
+    m_deviceContext->PSSetShaderResources(1, 1, &nullSrv);
 }
 
 ViewMode SceneRenderer::GetViewMode() const
@@ -298,9 +502,10 @@ void SceneRenderer::SetViewMode(ViewMode mode)
 
 void SceneRenderer::CreateConstantBuffers()
 {
-    m_modelConstantBuffer            = g_graphicsDevice->CreateConstantBuffer(sizeof(ModelConstants));
-    m_frameConstantBuffer            = g_graphicsDevice->CreateConstantBuffer(sizeof(FrameConstants));
-    m_lightingConstantBuffer         = g_graphicsDevice->CreateConstantBuffer(sizeof(LightingConstants));
+    m_modelConstantBuffer    = g_graphicsDevice->CreateConstantBuffer(sizeof(ModelConstants));
+    m_frameConstantBuffer    = g_graphicsDevice->CreateConstantBuffer(sizeof(FrameConstants));
+    m_lightingConstantBuffer = g_graphicsDevice->CreateConstantBuffer(sizeof(LightingConstants));
+    m_shadowConstantBuffer   = g_graphicsDevice->CreateConstantBuffer(sizeof(ShadowConstants));
 }
 
 void SceneRenderer::CompileShaders()
@@ -325,6 +530,20 @@ void SceneRenderer::CompileShaders()
     ));
 
     CreateInputLayout(vsBlob.Get());
+}
+
+void SceneRenderer::CompileShadowDepthShader()
+{
+    BA_ASSERT(m_device);
+
+    ComPtr<ID3DBlob> vsBlob = CompileShader(L"Assets/Shaders/ShadowDepthVertexShader.hlsl", "vs_5_0");
+
+    BA_CRASH_IF_FAILED(m_device->CreateVertexShader(
+        vsBlob->GetBufferPointer(),
+        vsBlob->GetBufferSize(),
+        nullptr,
+        m_shadowDepthVertexShader.GetAddressOf()
+    ));
 }
 
 ComPtr<ID3DBlob> SceneRenderer::CompileShader(const wchar_t* filePath, const char* target)
@@ -426,6 +645,17 @@ void SceneRenderer::CreateDepthStencilState()
         &desc,
         m_depthStencilState.GetAddressOf()
     ));
+}
+
+void SceneRenderer::CreateShadowMap()
+{
+    m_shadowMap = std::make_unique<ShadowMap>();
+    m_shadowMap->Initialize(kDefaultShadowMapResolution);
+}
+
+void SceneRenderer::CreateShadowSampler()
+{
+    m_shadowComparisonSampler = g_graphicsDevice->CreateShadowComparisonSampler();
 }
 
 std::unique_ptr<SceneRenderer> g_sceneRenderer;

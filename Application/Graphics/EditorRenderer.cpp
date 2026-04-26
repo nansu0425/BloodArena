@@ -339,10 +339,11 @@ void EditorRenderer::RenderViewport()
             g_sceneViewport->Resize(width, height);
         }
 
+        g_sceneRenderer->RenderShadowPass(*g_scene);
         g_sceneViewport->Clear();
 
         float aspect = size.x / size.y;
-        g_sceneRenderer->Render(aspect);
+        g_sceneRenderer->RenderMainPass(*g_scene, aspect);
 
         g_graphicsDevice->RestoreBackBuffer();
 
@@ -830,6 +831,49 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
         {
             lightComponent->SetShininess(shininess);
         }
+
+        ImGui::Separator();
+
+        bool shouldCastShadow = lightComponent->ShouldCastShadow();
+        if (ImGui::Checkbox("Cast Shadow", &shouldCastShadow))
+        {
+            lightComponent->SetShouldCastShadow(shouldCastShadow);
+        }
+
+        ImGui::BeginDisabled(!shouldCastShadow);
+
+        float shadowOrthoWidth = lightComponent->GetShadowOrthoWidth();
+        if (ImGui::DragFloat("Shadow Ortho Width", &shadowOrthoWidth, 0.5f, 0.0f, 0.0f))
+        {
+            lightComponent->SetShadowOrthoWidth(shadowOrthoWidth);
+        }
+
+        float shadowOrthoHeight = lightComponent->GetShadowOrthoHeight();
+        if (ImGui::DragFloat("Shadow Ortho Height", &shadowOrthoHeight, 0.5f, 0.0f, 0.0f))
+        {
+            lightComponent->SetShadowOrthoHeight(shadowOrthoHeight);
+        }
+
+        float shadowNearZ = lightComponent->GetShadowNearZ();
+        if (ImGui::DragFloat("Shadow Near Z", &shadowNearZ, 0.1f, 0.0f, 0.0f))
+        {
+            lightComponent->SetShadowNearZ(shadowNearZ);
+        }
+
+        float shadowFarZ = lightComponent->GetShadowFarZ();
+        if (ImGui::DragFloat("Shadow Far Z", &shadowFarZ, 0.1f, 0.0f, 0.0f))
+        {
+            lightComponent->SetShadowFarZ(shadowFarZ);
+        }
+
+        float shadowDepthBias = lightComponent->GetShadowDepthBias();
+        if (ImGui::DragFloat("Shadow Depth Bias", &shadowDepthBias, 0.0001f, 0.0f, 0.0f, "%.4f"))
+        {
+            lightComponent->SetShadowDepthBias(shadowDepthBias);
+        }
+
+        ImGui::EndDisabled();
+
         break;
     }
     case LightType::Ambient:
