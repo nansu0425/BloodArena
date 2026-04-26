@@ -6,10 +6,14 @@ namespace BA
 {
 
 class LightComponent;
+class Scene;
 struct Transform;
 
-inline const Vector3 kShadowSceneCenter = {0.0f, 0.0f, 0.0f};
 inline constexpr float kShadowLightUpFallbackThreshold = 0.99f;
+
+inline constexpr float kAutoFitOrthoPaddingRatio = 0.05f;
+inline constexpr float kAutoFitDepthMargin       = 1.0f;
+inline constexpr float kAutoFitMinNearZ          = 0.1f;
 
 struct DirectionalShadowFrustum
 {
@@ -21,5 +25,21 @@ struct DirectionalShadowFrustum
 DirectionalShadowFrustum ComputeDirectionalShadowFrustum(
     const LightComponent& light,
     const Transform&      transform);
+
+struct AutoFitShadowFrustumResult
+{
+    bool    isValid;
+    Vector3 frustumCenter;
+    float   orthoWidth;
+    float   orthoHeight;
+    float   nearZ;
+    float   farZ;
+};
+
+AutoFitShadowFrustumResult ComputeAutoFitShadowFrustumParameters(
+    const Scene&     scene,
+    const Transform& lightTransform);
+
+bool HasAnyShadowFitMesh(const Scene& scene);
 
 } // namespace BA

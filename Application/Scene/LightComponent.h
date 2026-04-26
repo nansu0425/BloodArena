@@ -10,6 +10,7 @@ inline constexpr float kDefaultShadowOrthoSize = 30.0f;
 inline constexpr float kDefaultShadowNearZ     = 1.0f;
 inline constexpr float kDefaultShadowFarZ      = 100.0f;
 inline constexpr float kDefaultShadowDepthBias = 0.0005f;
+inline const Vector3   kDefaultShadowFrustumCenter = {0.0f, 0.0f, 0.0f};
 
 enum class LightType
 {
@@ -63,6 +64,12 @@ public:
     bool           IsShadowFrustumVisualized() const;
     void           SetShadowFrustumVisualized(bool isVisualized);
 
+    const Vector3& GetShadowFrustumCenter() const;
+    void           SetShadowFrustumCenter(const Vector3& frustumCenter);
+
+    bool           IsShadowFrustumAutoFit() const;
+    void           SetShadowFrustumAutoFit(bool isAutoFit);
+
 private:
     LightType m_type             = LightType::Directional;
     Vector3   m_color            = {1.0f, 1.0f, 1.0f};
@@ -77,8 +84,10 @@ private:
     float     m_shadowNearZ       = kDefaultShadowNearZ;
     float     m_shadowFarZ        = kDefaultShadowFarZ;
     float     m_shadowDepthBias   = kDefaultShadowDepthBias;
+    Vector3   m_shadowFrustumCenter = kDefaultShadowFrustumCenter;
 
     bool      m_isShadowFrustumVisualized = false;
+    bool      m_isShadowFrustumAutoFit    = false;
 };
 
 } // namespace BA

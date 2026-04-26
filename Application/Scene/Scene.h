@@ -16,6 +16,7 @@ public:
     void Clear();
 
     std::span<const GameObject> GetGameObjects() const;
+    std::span<GameObject>       GetGameObjects();
     GameObject* FindGameObject(uint32_t id);
 
     bool SaveToFile(const std::string& name) const;

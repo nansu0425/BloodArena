@@ -134,4 +134,24 @@ void LightComponent::SetShadowFrustumVisualized(bool isVisualized)
     m_isShadowFrustumVisualized = isVisualized;
 }
 
+const Vector3& LightComponent::GetShadowFrustumCenter() const
+{
+    return m_shadowFrustumCenter;
+}
+
+void LightComponent::SetShadowFrustumCenter(const Vector3& frustumCenter)
+{
+    m_shadowFrustumCenter = frustumCenter;
+}
+
+bool LightComponent::IsShadowFrustumAutoFit() const
+{
+    return m_isShadowFrustumAutoFit;
+}
+
+void LightComponent::SetShadowFrustumAutoFit(bool isAutoFit)
+{
+    m_isShadowFrustumAutoFit = isAutoFit;
+}
+
 } // namespace BA

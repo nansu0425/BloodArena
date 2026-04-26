@@ -22,8 +22,15 @@
                 ],
                 "intensity": 1.0,
                 "isEnabled": true,
+                "isShadowFrustumAutoFit": false,
+                "isShadowFrustumVisualized": false,
                 "shadowDepthBias": 0.0005000000237487257,
                 "shadowFarZ": 100.0,
+                "shadowFrustumCenter": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
                 "shadowNearZ": 1.0,
                 "shadowOrthoHeight": 30.0,
                 "shadowOrthoWidth": 30.0,

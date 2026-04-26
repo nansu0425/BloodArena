@@ -884,6 +884,23 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
 
         ImGui::BeginDisabled(!shouldCastShadow);
 
+        const bool hasEligibleMesh = HasAnyShadowFitMesh(*g_scene);
+        const bool isAutoFit       = lightComponent->IsShadowFrustumAutoFit();
+
+        ImGui::BeginDisabled(!hasEligibleMesh);
+        bool isAutoFitToggle = isAutoFit;
+        if (ImGui::Checkbox("Auto-fit Shadow Frustum", &isAutoFitToggle))
+        {
+            lightComponent->SetShadowFrustumAutoFit(isAutoFitToggle);
+        }
+        ImGui::EndDisabled();
+        if (!hasEligibleMesh && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("No enabled mesh found in scene");
+        }
+
+        ImGui::BeginDisabled(isAutoFit);
+
         float shadowOrthoWidth = lightComponent->GetShadowOrthoWidth();
         if (ImGui::DragFloat("Shadow Ortho Width", &shadowOrthoWidth, 0.5f, 0.0f, 0.0f))
         {
@@ -907,6 +924,14 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
         {
             lightComponent->SetShadowFarZ(shadowFarZ);
         }
+
+        Vector3 shadowFrustumCenter = lightComponent->GetShadowFrustumCenter();
+        if (ImGui::DragFloat3("Shadow Frustum Center", &shadowFrustumCenter.x, 0.1f))
+        {
+            lightComponent->SetShadowFrustumCenter(shadowFrustumCenter);
+        }
+
+        ImGui::EndDisabled();
 
         float shadowDepthBias = lightComponent->GetShadowDepthBias();
         if (ImGui::DragFloat("Shadow Depth Bias", &shadowDepthBias, 0.0001f, 0.0f, 0.0f, "%.4f"))

@@ -134,8 +134,47 @@ LightingConstants BuildLightingConstants(const Scene& scene)
     return data;
 }
 
-ShadowSetup BuildShadowSetup(const Scene& scene)
+void ApplyAutoFitToDirectionalLights(Scene& scene)
 {
+    BA_PROFILE_SCOPE("ApplyAutoFitToDirectionalLights");
+
+    for (GameObject& gameObject : scene.GetGameObjects())
+    {
+        LightComponent* light = gameObject.GetComponent<LightComponent>();
+        if (!light || !light->IsEnabled())
+        {
+            continue;
+        }
+        if (light->GetType() != LightType::Directional)
+        {
+            continue;
+        }
+        if (!light->ShouldCastShadow() || !light->IsShadowFrustumAutoFit())
+        {
+            continue;
+        }
+
+        const AutoFitShadowFrustumResult fit =
+            ComputeAutoFitShadowFrustumParameters(scene, gameObject.GetTransform());
+        if (!fit.isValid)
+        {
+            continue;
+        }
+
+        light->SetShadowFrustumCenter(fit.frustumCenter);
+        light->SetShadowOrthoWidth(fit.orthoWidth);
+        light->SetShadowOrthoHeight(fit.orthoHeight);
+        light->SetShadowNearZ(fit.nearZ);
+        light->SetShadowFarZ(fit.farZ);
+    }
+}
+
+ShadowSetup BuildShadowSetup(Scene& scene)
+{
+    BA_PROFILE_SCOPE("BuildShadowSetup");
+
+    ApplyAutoFitToDirectionalLights(scene);
+
     ShadowSetup setup = {};
     setup.lightViewMatrix       = Matrix::Identity;
     setup.lightProjectionMatrix = Matrix::Identity;
@@ -348,8 +387,10 @@ void SceneRenderer::Shutdown()
     BA_LOG_INFO("SceneRenderer shutdown.");
 }
 
-void SceneRenderer::RenderShadowPass(const Scene& scene)
+void SceneRenderer::RenderShadowPass(Scene& scene)
 {
+    BA_PROFILE_SCOPE("SceneRenderer::RenderShadowPass");
+
     BA_ASSERT(m_shadowMap);
 
     ShadowSetup setup = BuildShadowSetup(scene);

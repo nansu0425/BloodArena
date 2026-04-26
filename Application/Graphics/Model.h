@@ -30,9 +30,8 @@ struct Primitive
     bool isIndex32Bit = false;
     int materialIndex = -1;
 
-    // CPU-side geometry retained for editor ray-triangle picking.
-    std::vector<Vector3> pickingPositions;
-    std::vector<uint32_t> pickingIndices;
+    std::vector<Vector3> cpuPositions;
+    std::vector<uint32_t> cpuIndices;
 };
 
 struct Mesh

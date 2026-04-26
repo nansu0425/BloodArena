@@ -139,7 +139,9 @@ json WriteLightComponent(const LightComponent& light)
             result["shadowNearZ"]           = light.GetShadowNearZ();
             result["shadowFarZ"]            = light.GetShadowFarZ();
             result["shadowDepthBias"]       = light.GetShadowDepthBias();
+            result["shadowFrustumCenter"]     = WriteVector3(light.GetShadowFrustumCenter());
             result["isShadowFrustumVisualized"] = light.IsShadowFrustumVisualized();
+            result["isShadowFrustumAutoFit"]    = light.IsShadowFrustumAutoFit();
             break;
         }
         case LightType::Ambient:
@@ -182,8 +184,12 @@ LightComponent ReadLightComponent(const json& j)
         light.SetShadowNearZ(j.value("shadowNearZ", light.GetShadowNearZ()));
         light.SetShadowFarZ(j.value("shadowFarZ", light.GetShadowFarZ()));
         light.SetShadowDepthBias(j.value("shadowDepthBias", light.GetShadowDepthBias()));
+        light.SetShadowFrustumCenter(
+            ReadVector3(j.value("shadowFrustumCenter", json{}), light.GetShadowFrustumCenter()));
         light.SetShadowFrustumVisualized(
             j.value("isShadowFrustumVisualized", light.IsShadowFrustumVisualized()));
+        light.SetShadowFrustumAutoFit(
+            j.value("isShadowFrustumAutoFit", light.IsShadowFrustumAutoFit()));
     }
     return light;
 }
@@ -288,6 +294,11 @@ void Scene::Clear()
 }
 
 std::span<const GameObject> Scene::GetGameObjects() const
+{
+    return m_gameObjects;
+}
+
+std::span<GameObject> Scene::GetGameObjects()
 {
     return m_gameObjects;
 }

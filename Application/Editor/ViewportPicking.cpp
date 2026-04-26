@@ -55,16 +55,16 @@ PickResult PickNode(
 
         for (const Primitive& prim : mesh.primitives)
         {
-            const size_t triangleCount = prim.pickingIndices.size() / kIndicesPerTriangle;
+            const size_t triangleCount = prim.cpuIndices.size() / kIndicesPerTriangle;
             for (size_t t = 0; t < triangleCount; ++t)
             {
-                const uint32_t i0 = prim.pickingIndices[t * kIndicesPerTriangle + 0];
-                const uint32_t i1 = prim.pickingIndices[t * kIndicesPerTriangle + 1];
-                const uint32_t i2 = prim.pickingIndices[t * kIndicesPerTriangle + 2];
+                const uint32_t i0 = prim.cpuIndices[t * kIndicesPerTriangle + 0];
+                const uint32_t i1 = prim.cpuIndices[t * kIndicesPerTriangle + 1];
+                const uint32_t i2 = prim.cpuIndices[t * kIndicesPerTriangle + 2];
 
-                Vector3 v0 = Vector3::Transform(prim.pickingPositions[i0], finalWorld);
-                Vector3 v1 = Vector3::Transform(prim.pickingPositions[i1], finalWorld);
-                Vector3 v2 = Vector3::Transform(prim.pickingPositions[i2], finalWorld);
+                Vector3 v0 = Vector3::Transform(prim.cpuPositions[i0], finalWorld);
+                Vector3 v1 = Vector3::Transform(prim.cpuPositions[i1], finalWorld);
+                Vector3 v2 = Vector3::Transform(prim.cpuPositions[i2], finalWorld);
 
                 float distance = 0.0f;
                 if (ray.Intersects(v0, v1, v2, distance) && distance < best.closestT)
