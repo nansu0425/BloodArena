@@ -15,6 +15,7 @@ public:
     ID3D11RenderTargetView* GetRTV() const;
     ID3D11DepthStencilView* GetDSV() const;
     ID3D11ShaderResourceView* GetSRV() const;
+    ID3D11ShaderResourceView* GetDepthSRV() const;
 
     UINT GetWidth() const;
     UINT GetHeight() const;
@@ -29,6 +30,7 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depthTexture;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_dsv;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_depthSRV;
 
     UINT m_width = 0;
     UINT m_height = 0;

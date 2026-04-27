@@ -2,6 +2,7 @@
 #if defined(BA_EDITOR)
 
 #include "Math/MathTypes.h"
+#include "Graphics/ShadowDebug.h"
 
 namespace BA
 {
@@ -28,6 +29,21 @@ public:
                      UINT viewportWidth,
                      UINT viewportHeight);
 
+    ShadowDebugSettings GetShadowDebugSettings() const;
+    void                SetShadowDebugSettings(const ShadowDebugSettings& settings);
+
+    // Fullscreen alpha-blend overlay onto rtv. Reconstructs world position from sceneDepthSrv,
+    // computes shadow uv from the shadow pass matrices, then draws the active debug visualization.
+    // Caller must skip the call when settings.mode == ShadowDebugMode::Off.
+    void DrawShadowDebugOverlay(ID3D11ShaderResourceView* sceneDepthSrv,
+                                const Matrix&             cameraView,
+                                const Matrix&             cameraProjection,
+                                const Matrix&             lightViewMatrix,
+                                const Matrix&             lightProjectionMatrix,
+                                ID3D11RenderTargetView*   rtv,
+                                UINT                      viewportWidth,
+                                UINT                      viewportHeight);
+
 private:
     void CompileShaders();
     void CreateInputLayout(ID3DBlob* vsBlob);
@@ -36,6 +52,11 @@ private:
     void CreateRasterizerStates();
     void CreateDepthState();
     void CreateBlendStates();
+
+    void CompileShadowOverlayShaders();
+    void CreateShadowOverlayConstantBuffer();
+    void CreateShadowOverlayDepthState();
+    void CreateShadowOverlaySampler();
 
     Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const wchar_t* filePath, const char* target);
 
@@ -54,6 +75,14 @@ private:
     Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_depthState;
     Microsoft::WRL::ComPtr<ID3D11BlendState>        m_alphaBlendState;
     Microsoft::WRL::ComPtr<ID3D11BlendState>        m_opaqueBlendState;
+
+    Microsoft::WRL::ComPtr<ID3D11VertexShader>      m_shadowOverlayVertexShader;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader>       m_shadowOverlayPixelShader;
+    Microsoft::WRL::ComPtr<ID3D11Buffer>            m_shadowOverlayConstantBuffer;
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_shadowOverlayDepthState;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState>      m_shadowOverlaySampler;
+
+    ShadowDebugSettings m_shadowDebugSettings;
 };
 
 extern std::unique_ptr<DebugRenderer> g_debugRenderer;

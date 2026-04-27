@@ -17,6 +17,7 @@ void SceneViewport::Initialize()
 
 void SceneViewport::Shutdown()
 {
+    m_depthSRV.Reset();
     m_dsv.Reset();
     m_depthTexture.Reset();
     m_srv.Reset();
@@ -41,6 +42,7 @@ void SceneViewport::Resize(UINT width, UINT height)
     m_srv.Reset();
     m_rtv.Reset();
     m_texture.Reset();
+    m_depthSRV.Reset();
     m_dsv.Reset();
     m_depthTexture.Reset();
 
@@ -73,15 +75,17 @@ void SceneViewport::Resize(UINT width, UINT height)
         m_srv.GetAddressOf()
     ));
 
+    // Typeless storage so the texture can be both a depth/stencil target and
+    // a shader resource (SRV reads the depth channel for debug overlays etc.).
     D3D11_TEXTURE2D_DESC depthDesc = {
         .Width = width,
         .Height = height,
         .MipLevels = 1,
         .ArraySize = 1,
-        .Format = DXGI_FORMAT_D24_UNORM_S8_UINT,
+        .Format = DXGI_FORMAT_R24G8_TYPELESS,
         .SampleDesc = {.Count = 1, .Quality = 0},
         .Usage = D3D11_USAGE_DEFAULT,
-        .BindFlags = D3D11_BIND_DEPTH_STENCIL,
+        .BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE,
     };
 
     BA_CRASH_IF_FAILED(m_device->CreateTexture2D(
@@ -90,10 +94,26 @@ void SceneViewport::Resize(UINT width, UINT height)
         m_depthTexture.GetAddressOf()
     ));
 
+    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {
+        .Format = DXGI_FORMAT_D24_UNORM_S8_UINT,
+        .ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D,
+        .Texture2D = {.MipSlice = 0},
+    };
     BA_CRASH_IF_FAILED(m_device->CreateDepthStencilView(
         m_depthTexture.Get(),
-        nullptr,
+        &dsvDesc,
         m_dsv.GetAddressOf()
+    ));
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+        .Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS,
+        .ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
+        .Texture2D = {.MostDetailedMip = 0, .MipLevels = 1},
+    };
+    BA_CRASH_IF_FAILED(m_device->CreateShaderResourceView(
+        m_depthTexture.Get(),
+        &srvDesc,
+        m_depthSRV.GetAddressOf()
     ));
 
     m_width = width;
@@ -132,6 +152,11 @@ ID3D11DepthStencilView* SceneViewport::GetDSV() const
 ID3D11ShaderResourceView* SceneViewport::GetSRV() const
 {
     return m_srv.Get();
+}
+
+ID3D11ShaderResourceView* SceneViewport::GetDepthSRV() const
+{
+    return m_depthSRV.Get();
 }
 
 UINT SceneViewport::GetWidth() const

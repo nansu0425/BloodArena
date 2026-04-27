@@ -35,6 +35,7 @@ void GraphicsDevice::Initialize(HWND window)
 
 void GraphicsDevice::Shutdown()
 {
+    m_depthSRV.Reset();
     m_dsv.Reset();
     m_depthTexture.Reset();
     m_backBufferRTV.Reset();
@@ -74,6 +75,7 @@ void GraphicsDevice::Resize(UINT width, UINT height)
 
     m_deviceContext->OMSetRenderTargets(0, nullptr, nullptr);
     m_backBufferRTV.Reset();
+    m_depthSRV.Reset();
     m_dsv.Reset();
     m_depthTexture.Reset();
     BA_CRASH_IF_FAILED(m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0));
@@ -96,6 +98,11 @@ ID3D11Device* GraphicsDevice::GetDevice() const
 ID3D11DeviceContext* GraphicsDevice::GetDeviceContext() const
 {
     return m_deviceContext.Get();
+}
+
+ID3D11ShaderResourceView* GraphicsDevice::GetDepthSRV() const
+{
+    return m_depthSRV.Get();
 }
 
 float GraphicsDevice::GetAspectRatio() const
@@ -392,15 +399,17 @@ void GraphicsDevice::CreateDepthBuffer()
     DXGI_SWAP_CHAIN_DESC1 desc = {};
     m_swapChain->GetDesc1(&desc);
 
+    // Typeless storage so the texture can be both a depth/stencil target and
+    // a shader resource (SRV reads the depth channel for debug overlays etc.).
     D3D11_TEXTURE2D_DESC depthDesc = {
         .Width = desc.Width,
         .Height = desc.Height,
         .MipLevels = 1,
         .ArraySize = 1,
-        .Format = DXGI_FORMAT_D24_UNORM_S8_UINT,
+        .Format = DXGI_FORMAT_R24G8_TYPELESS,
         .SampleDesc = {.Count = 1, .Quality = 0},
         .Usage = D3D11_USAGE_DEFAULT,
-        .BindFlags = D3D11_BIND_DEPTH_STENCIL,
+        .BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE,
     };
 
     BA_CRASH_IF_FAILED(m_device->CreateTexture2D(
@@ -409,10 +418,26 @@ void GraphicsDevice::CreateDepthBuffer()
         m_depthTexture.GetAddressOf()
     ));
 
+    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {
+        .Format = DXGI_FORMAT_D24_UNORM_S8_UINT,
+        .ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D,
+        .Texture2D = {.MipSlice = 0},
+    };
     BA_CRASH_IF_FAILED(m_device->CreateDepthStencilView(
         m_depthTexture.Get(),
-        nullptr,
+        &dsvDesc,
         m_dsv.GetAddressOf()
+    ));
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+        .Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS,
+        .ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D,
+        .Texture2D = {.MostDetailedMip = 0, .MipLevels = 1},
+    };
+    BA_CRASH_IF_FAILED(m_device->CreateShaderResourceView(
+        m_depthTexture.Get(),
+        &srvDesc,
+        m_depthSRV.GetAddressOf()
     ));
 }
 

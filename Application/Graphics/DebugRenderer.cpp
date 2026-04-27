@@ -3,6 +3,7 @@
 
 #include "Graphics/DebugRenderer.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Graphics/ShadowMap.h"
 #include "Core/PathUtils.h"
 
 namespace BA
@@ -25,6 +26,21 @@ struct DebugFrustumConstants
     Matrix  cameraProjection;
     Vector4 color;
 };
+
+struct ShadowDebugOverlayConstants
+{
+    Matrix   inverseViewProjection;
+    Matrix   lightViewMatrix;
+    Matrix   lightProjectionMatrix;
+    float    shadowMapResolution;
+    uint32_t shadowDebugMode;
+    float    pptThresholdRed;
+    float    pptThresholdOrange;
+    float    pptThresholdGreen;
+    float    _pad[3];
+};
+
+constexpr UINT kShadowOverlayVertexCount = 3;
 
 constexpr int kCubeVertexCount    = 8;
 constexpr int kCubeLineIndexCount = 24;
@@ -73,11 +89,22 @@ void DebugRenderer::Initialize()
     CreateDepthState();
     CreateBlendStates();
 
+    CompileShadowOverlayShaders();
+    CreateShadowOverlayConstantBuffer();
+    CreateShadowOverlayDepthState();
+    CreateShadowOverlaySampler();
+
     BA_LOG_INFO("DebugRenderer initialized.");
 }
 
 void DebugRenderer::Shutdown()
 {
+    m_shadowOverlaySampler.Reset();
+    m_shadowOverlayDepthState.Reset();
+    m_shadowOverlayConstantBuffer.Reset();
+    m_shadowOverlayPixelShader.Reset();
+    m_shadowOverlayVertexShader.Reset();
+
     m_opaqueBlendState.Reset();
     m_alphaBlendState.Reset();
     m_depthState.Reset();
@@ -93,6 +120,16 @@ void DebugRenderer::Shutdown()
     m_device = nullptr;
 
     BA_LOG_INFO("DebugRenderer shutdown.");
+}
+
+ShadowDebugSettings DebugRenderer::GetShadowDebugSettings() const
+{
+    return m_shadowDebugSettings;
+}
+
+void DebugRenderer::SetShadowDebugSettings(const ShadowDebugSettings& settings)
+{
+    m_shadowDebugSettings = settings;
 }
 
 void DebugRenderer::DrawFrustum(
@@ -268,6 +305,138 @@ void DebugRenderer::CreateBlendStates()
         &opaqueDesc,
         m_opaqueBlendState.GetAddressOf()
     ));
+}
+
+void DebugRenderer::CompileShadowOverlayShaders()
+{
+    BA_ASSERT(m_device);
+
+    ComPtr<ID3DBlob> vsBlob = CompileShader(L"Assets/Shaders/ShadowDebugOverlayVertexShader.hlsl", "vs_5_0");
+    ComPtr<ID3DBlob> psBlob = CompileShader(L"Assets/Shaders/ShadowDebugOverlayPixelShader.hlsl", "ps_5_0");
+
+    BA_CRASH_IF_FAILED(m_device->CreateVertexShader(
+        vsBlob->GetBufferPointer(),
+        vsBlob->GetBufferSize(),
+        nullptr,
+        m_shadowOverlayVertexShader.GetAddressOf()
+    ));
+
+    BA_CRASH_IF_FAILED(m_device->CreatePixelShader(
+        psBlob->GetBufferPointer(),
+        psBlob->GetBufferSize(),
+        nullptr,
+        m_shadowOverlayPixelShader.GetAddressOf()
+    ));
+}
+
+void DebugRenderer::CreateShadowOverlayConstantBuffer()
+{
+    BA_ASSERT(g_graphicsDevice);
+
+    m_shadowOverlayConstantBuffer = g_graphicsDevice->CreateConstantBuffer(sizeof(ShadowDebugOverlayConstants));
+}
+
+void DebugRenderer::CreateShadowOverlayDepthState()
+{
+    BA_ASSERT(m_device);
+
+    // Overlay ignores scene depth entirely; we paint on top of the rendered frame.
+    D3D11_DEPTH_STENCIL_DESC desc = {
+        .DepthEnable    = FALSE,
+        .DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO,
+        .DepthFunc      = D3D11_COMPARISON_ALWAYS,
+        .StencilEnable  = FALSE,
+    };
+
+    BA_CRASH_IF_FAILED(m_device->CreateDepthStencilState(
+        &desc,
+        m_shadowOverlayDepthState.GetAddressOf()
+    ));
+}
+
+void DebugRenderer::CreateShadowOverlaySampler()
+{
+    BA_ASSERT(m_device);
+
+    // Point + clamp: scene depth must be sampled at the exact texel; no interpolation.
+    D3D11_SAMPLER_DESC desc = {
+        .Filter         = D3D11_FILTER_MIN_MAG_MIP_POINT,
+        .AddressU       = D3D11_TEXTURE_ADDRESS_CLAMP,
+        .AddressV       = D3D11_TEXTURE_ADDRESS_CLAMP,
+        .AddressW       = D3D11_TEXTURE_ADDRESS_CLAMP,
+        .MipLODBias     = 0.0f,
+        .MaxAnisotropy  = 1,
+        .ComparisonFunc = D3D11_COMPARISON_NEVER,
+        .MinLOD         = 0.0f,
+        .MaxLOD         = D3D11_FLOAT32_MAX,
+    };
+
+    BA_CRASH_IF_FAILED(m_device->CreateSamplerState(
+        &desc,
+        m_shadowOverlaySampler.GetAddressOf()
+    ));
+}
+
+void DebugRenderer::DrawShadowDebugOverlay(
+    ID3D11ShaderResourceView* sceneDepthSrv,
+    const Matrix&             cameraView,
+    const Matrix&             cameraProjection,
+    const Matrix&             lightViewMatrix,
+    const Matrix&             lightProjectionMatrix,
+    ID3D11RenderTargetView*   rtv,
+    UINT                      viewportWidth,
+    UINT                      viewportHeight)
+{
+    BA_ASSERT(sceneDepthSrv);
+    BA_ASSERT(rtv);
+    BA_ASSERT(viewportWidth > 0 && viewportHeight > 0);
+
+    D3D11_VIEWPORT vp = {
+        .TopLeftX = 0.0f,
+        .TopLeftY = 0.0f,
+        .Width    = static_cast<float>(viewportWidth),
+        .Height   = static_cast<float>(viewportHeight),
+        .MinDepth = 0.0f,
+        .MaxDepth = 1.0f,
+    };
+    m_deviceContext->RSSetViewports(1, &vp);
+
+    // Bind the RTV with no DSV so the depth resource is free to be read as an SRV.
+    m_deviceContext->OMSetRenderTargets(1, &rtv, nullptr);
+
+    ShadowDebugOverlayConstants cb = {};
+    cb.inverseViewProjection  = (cameraView * cameraProjection).Invert();
+    cb.lightViewMatrix        = lightViewMatrix;
+    cb.lightProjectionMatrix  = lightProjectionMatrix;
+    cb.shadowMapResolution    = static_cast<float>(kDefaultShadowMapResolution);
+    cb.shadowDebugMode        = static_cast<uint32_t>(m_shadowDebugSettings.mode);
+    cb.pptThresholdRed        = m_shadowDebugSettings.pptThresholdRed;
+    cb.pptThresholdOrange     = m_shadowDebugSettings.pptThresholdOrange;
+    cb.pptThresholdGreen      = m_shadowDebugSettings.pptThresholdGreen;
+    g_graphicsDevice->UpdateConstantBuffer(m_shadowOverlayConstantBuffer.Get(), cb);
+
+    m_deviceContext->IASetInputLayout(nullptr);
+    ID3D11Buffer* nullVertexBuffer = nullptr;
+    UINT stride = 0;
+    UINT offset = 0;
+    m_deviceContext->IASetVertexBuffers(0, 1, &nullVertexBuffer, &stride, &offset);
+    m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_deviceContext->VSSetShader(m_shadowOverlayVertexShader.Get(), nullptr, 0);
+    m_deviceContext->PSSetShader(m_shadowOverlayPixelShader.Get(), nullptr, 0);
+    m_deviceContext->PSSetConstantBuffers(0, 1, m_shadowOverlayConstantBuffer.GetAddressOf());
+    m_deviceContext->PSSetSamplers(0, 1, m_shadowOverlaySampler.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(0, 1, &sceneDepthSrv);
+    m_deviceContext->RSSetState(m_rasterizerState.Get());
+    m_deviceContext->OMSetDepthStencilState(m_shadowOverlayDepthState.Get(), 0);
+
+    const float blendFactor[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    m_deviceContext->OMSetBlendState(m_alphaBlendState.Get(), blendFactor, 0xFFFFFFFF);
+
+    m_deviceContext->Draw(kShadowOverlayVertexCount, 0);
+
+    // Unbind the depth SRV so the same resource can be rebound as a DSV next frame.
+    ID3D11ShaderResourceView* nullSrv = nullptr;
+    m_deviceContext->PSSetShaderResources(0, 1, &nullSrv);
 }
 
 ComPtr<ID3DBlob> DebugRenderer::CompileShader(const wchar_t* filePath, const char* target)

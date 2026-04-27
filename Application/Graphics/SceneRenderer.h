@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/ShadowMap.h"
+#include "Math/MathTypes.h"
 
 namespace BA
 {
@@ -24,6 +25,11 @@ public:
 
     ViewMode GetViewMode() const;
     void     SetViewMode(ViewMode mode);
+
+    // Snapshots from the most recent RenderShadowPass; consumed by editor-side debug overlays.
+    bool   IsLastShadowEnabled() const;
+    Matrix GetLastShadowLightViewMatrix() const;
+    Matrix GetLastShadowLightProjectionMatrix() const;
 
 private:
     void CompileShaders();
@@ -57,6 +63,10 @@ private:
     std::unique_ptr<ShadowMap>                 m_shadowMap;
 
     ViewMode m_viewMode = ViewMode::Lit;
+
+    bool   m_isLastShadowEnabled             = false;
+    Matrix m_lastShadowLightViewMatrix       = Matrix::Identity;
+    Matrix m_lastShadowLightProjectionMatrix = Matrix::Identity;
 };
 
 extern std::unique_ptr<SceneRenderer> g_sceneRenderer;

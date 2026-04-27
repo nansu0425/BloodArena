@@ -5,6 +5,7 @@
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/SceneViewport.h"
 #include "Graphics/ShadowFrustum.h"
+#include "Graphics/ShadowMap.h"
 #include "Graphics/DebugRenderer.h"
 #include "Editor/EditorState.h"
 #include "Editor/ViewportPicking.h"
@@ -53,6 +54,8 @@ ImVec4 GetLogLevelColor(LogLevel level)
 }
 
 const char* kLogLevelNames[] = { "Trace", "Debug", "Info", "Warn", "Error", "Critical" };
+
+const char* kShadowDebugModeLabels[] = { "Off", "Texel Grid", "PPT Heatmap" };
 
 bool HasModelComponent(const GameObject& gameObject)
 {
@@ -349,6 +352,21 @@ void EditorRenderer::RenderViewport()
         const Matrix proj = g_camera->GetProjectionMatrix(aspect);
 
         g_sceneRenderer->RenderMainPass(*g_scene, aspect);
+
+        const ShadowDebugSettings shadowDebugSettings = g_debugRenderer->GetShadowDebugSettings();
+        if (shadowDebugSettings.mode != ShadowDebugMode::Off
+            && g_sceneRenderer->IsLastShadowEnabled())
+        {
+            g_debugRenderer->DrawShadowDebugOverlay(
+                g_sceneViewport->GetDepthSRV(),
+                view,
+                proj,
+                g_sceneRenderer->GetLastShadowLightViewMatrix(),
+                g_sceneRenderer->GetLastShadowLightProjectionMatrix(),
+                g_sceneViewport->GetRTV(),
+                g_sceneViewport->GetWidth(),
+                g_sceneViewport->GetHeight());
+        }
 
         for (const GameObject& gameObject : g_scene->GetGameObjects())
         {
@@ -939,10 +957,53 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
             lightComponent->SetShadowDepthBias(shadowDepthBias);
         }
 
+        ImGui::SeparatorText("Shadow Debug");
+
+        const float orthoWidth     = lightComponent->GetShadowOrthoWidth();
+        const float orthoHeight    = lightComponent->GetShadowOrthoHeight();
+        const float texelWorldSize = std::max(orthoWidth, orthoHeight)
+                                   / static_cast<float>(kDefaultShadowMapResolution);
+
+        ImGui::Text("Texel Size: %.4f units (%.2f cm)",
+                    texelWorldSize, texelWorldSize * 100.0f);
+        ImGui::Text("Shadow Map: %ux%u",
+                    kDefaultShadowMapResolution, kDefaultShadowMapResolution);
+
         bool isShadowFrustumVisualized = lightComponent->IsShadowFrustumVisualized();
         if (ImGui::Checkbox("Visualize Shadow Frustum", &isShadowFrustumVisualized))
         {
             lightComponent->SetShadowFrustumVisualized(isShadowFrustumVisualized);
+        }
+
+        ShadowDebugSettings shadowDebugSettings = g_debugRenderer->GetShadowDebugSettings();
+
+        int shadowDebugModeIndex = static_cast<int>(shadowDebugSettings.mode);
+        if (ImGui::Combo("Debug Mode", &shadowDebugModeIndex,
+                         kShadowDebugModeLabels, IM_ARRAYSIZE(kShadowDebugModeLabels)))
+        {
+            shadowDebugSettings.mode = static_cast<ShadowDebugMode>(shadowDebugModeIndex);
+            g_debugRenderer->SetShadowDebugSettings(shadowDebugSettings);
+        }
+
+        if (shadowDebugSettings.mode == ShadowDebugMode::PptHeatmap)
+        {
+            if (ImGui::DragFloat("Red Min",
+                                 &shadowDebugSettings.pptThresholdRed, 0.05f, 0.0f, 0.0f, "%.2f"))
+            {
+                g_debugRenderer->SetShadowDebugSettings(shadowDebugSettings);
+            }
+
+            if (ImGui::DragFloat("Orange Min",
+                                 &shadowDebugSettings.pptThresholdOrange, 0.05f, 0.0f, 0.0f, "%.2f"))
+            {
+                g_debugRenderer->SetShadowDebugSettings(shadowDebugSettings);
+            }
+
+            if (ImGui::DragFloat("Green Min",
+                                 &shadowDebugSettings.pptThresholdGreen, 0.05f, 0.0f, 0.0f, "%.2f"))
+            {
+                g_debugRenderer->SetShadowDebugSettings(shadowDebugSettings);
+            }
         }
 
         ImGui::EndDisabled();

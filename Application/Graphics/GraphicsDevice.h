@@ -25,6 +25,7 @@ public:
 
     ID3D11Device* GetDevice() const;
     ID3D11DeviceContext* GetDeviceContext() const;
+    ID3D11ShaderResourceView* GetDepthSRV() const;
     float GetAspectRatio() const;
 
     Microsoft::WRL::ComPtr<ID3D11Buffer> CreateVertexBuffer(const void* data, UINT byteWidth);
@@ -64,6 +65,7 @@ private:
 
     Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depthTexture;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_dsv;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_depthSRV;
 };
 
 extern std::unique_ptr<GraphicsDevice> g_graphicsDevice;

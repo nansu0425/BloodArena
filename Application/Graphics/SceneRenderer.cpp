@@ -47,7 +47,7 @@ struct ShadowConstants
 {
     Matrix  lightViewMatrix;
     Matrix  lightProjectionMatrix;
-    Vector4 shadowParams;  // x = depthBias, y = invShadowMapSize, z = isShadowEnabled (0/1), w unused
+    Vector4 shadowParams;  // x = depthBias, y = isShadowEnabled (0/1), zw unused
 };
 
 struct ShadowSetup
@@ -395,6 +395,10 @@ void SceneRenderer::RenderShadowPass(Scene& scene)
 
     ShadowSetup setup = BuildShadowSetup(scene);
 
+    m_isLastShadowEnabled             = setup.isShadowEnabled;
+    m_lastShadowLightViewMatrix       = setup.lightViewMatrix;
+    m_lastShadowLightProjectionMatrix = setup.lightProjectionMatrix;
+
     ShadowConstants shadowCb = {};
     shadowCb.lightViewMatrix       = setup.lightViewMatrix;
     shadowCb.lightProjectionMatrix = setup.lightProjectionMatrix;
@@ -524,6 +528,21 @@ ViewMode SceneRenderer::GetViewMode() const
 void SceneRenderer::SetViewMode(ViewMode mode)
 {
     m_viewMode = mode;
+}
+
+bool SceneRenderer::IsLastShadowEnabled() const
+{
+    return m_isLastShadowEnabled;
+}
+
+Matrix SceneRenderer::GetLastShadowLightViewMatrix() const
+{
+    return m_lastShadowLightViewMatrix;
+}
+
+Matrix SceneRenderer::GetLastShadowLightProjectionMatrix() const
+{
+    return m_lastShadowLightProjectionMatrix;
 }
 
 void SceneRenderer::CreateConstantBuffers()

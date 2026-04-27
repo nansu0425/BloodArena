@@ -199,6 +199,7 @@
     <ClInclude Include="Core\Settings.h" />
     <ClInclude Include="Core\Time.h" />
     <ClInclude Include="Graphics\Gizmo\Gizmo.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
+    <ClInclude Include="Graphics\ShadowDebug.h" />
     <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="Editor\EditorConsoleSink.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Core\PathUtils.h" />
