@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Math/MathUtils.h"
+#include "Scene/CameraComponent.h"
 #include "Scene/IComponent.h"
 #include "Scene/LightComponent.h"
 #include "Scene/ModelComponent.h"

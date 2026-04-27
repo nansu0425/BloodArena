@@ -1,6 +1,7 @@
 #include "Core/PCH.h"
 #include "Scene/Scene.h"
 #include "Scene/Camera.h"
+#include "Scene/CameraComponent.h"
 #include "Graphics/ModelLibrary.h"
 #include "Core/PathUtils.h"
 
@@ -16,7 +17,7 @@ namespace
 
 using json = nlohmann::json;
 
-constexpr uint32_t kSceneSchemaVersion = 7;
+constexpr uint32_t kSceneSchemaVersion = 8;
 
 std::filesystem::path GetScenePath(const std::string& name)
 {
@@ -194,6 +195,37 @@ LightComponent ReadLightComponent(const json& j)
     return light;
 }
 
+json WriteCameraComponent(const CameraComponent& camera)
+{
+    return json{
+        {"isEnabled",               camera.IsEnabled()},
+        {"fovY",                    camera.GetFovY()},
+        {"nearZ",                   camera.GetNearZ()},
+        {"farZ",                    camera.GetFarZ()},
+        {"aspect",                  camera.GetAspect()},
+        {"isViewFrustumVisualized", camera.IsViewFrustumVisualized()},
+    };
+}
+
+CameraComponent ReadCameraComponent(const json& j)
+{
+    CameraComponent camera;
+    if (!j.is_object())
+    {
+        return camera;
+    }
+
+    camera.SetEnabled(j.value("isEnabled", true));
+    camera.SetFovY(j.value("fovY", camera.GetFovY()));
+    camera.SetNearZ(j.value("nearZ", camera.GetNearZ()));
+    camera.SetFarZ(j.value("farZ", camera.GetFarZ()));
+    camera.SetAspect(j.value("aspect", camera.GetAspect()));
+    camera.SetViewFrustumVisualized(
+        j.value("isViewFrustumVisualized", camera.IsViewFrustumVisualized()));
+
+    return camera;
+}
+
 json WriteGameObject(const GameObject& obj)
 {
     json result{
@@ -211,6 +243,10 @@ json WriteGameObject(const GameObject& obj)
     if (const auto* lc = obj.GetComponent<LightComponent>())
     {
         result["lightComponent"] = WriteLightComponent(*lc);
+    }
+    if (const auto* cc = obj.GetComponent<CameraComponent>())
+    {
+        result["cameraComponent"] = WriteCameraComponent(*cc);
     }
     return result;
 }
@@ -239,6 +275,11 @@ GameObject ReadGameObject(const json& j)
     if (j.contains("lightComponent") && j["lightComponent"].is_object())
     {
         obj.AddComponent<LightComponent>(ReadLightComponent(j["lightComponent"]));
+    }
+
+    if (j.contains("cameraComponent") && j["cameraComponent"].is_object())
+    {
+        obj.AddComponent<CameraComponent>(ReadCameraComponent(j["cameraComponent"]));
     }
 
     return obj;

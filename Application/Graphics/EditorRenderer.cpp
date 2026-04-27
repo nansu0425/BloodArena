@@ -57,6 +57,8 @@ const char* kLogLevelNames[] = { "Trace", "Debug", "Info", "Warn", "Error", "Cri
 
 const char* kShadowDebugModeLabels[] = { "Off", "Texel Grid", "PPT Heatmap" };
 
+const Vector3 kCameraFrustumVisualizationColor = { 0.2f, 0.8f, 1.0f };
+
 bool HasModelComponent(const GameObject& gameObject)
 {
     return gameObject.HasComponent<ModelComponent>();
@@ -78,6 +80,16 @@ void AddLightComponent(GameObject& gameObject)
     gameObject.AddComponent<LightComponent>();
 }
 
+bool HasCameraComponent(const GameObject& gameObject)
+{
+    return gameObject.HasComponent<CameraComponent>();
+}
+
+void AddCameraComponent(GameObject& gameObject)
+{
+    gameObject.AddComponent<CameraComponent>();
+}
+
 struct ComponentAddEntry
 {
     const char* displayName;
@@ -86,8 +98,9 @@ struct ComponentAddEntry
 };
 
 constexpr ComponentAddEntry kComponentAddEntries[] = {
-    { "Model", &HasModelComponent, &AddModelComponent },
-    { "Light", &HasLightComponent, &AddLightComponent },
+    { "Model",  &HasModelComponent,  &AddModelComponent  },
+    { "Light",  &HasLightComponent,  &AddLightComponent  },
+    { "Camera", &HasCameraComponent, &AddCameraComponent },
 };
 
 constexpr const char* kAddComponentPopupId = "AddComponentPopup";
@@ -401,6 +414,33 @@ void EditorRenderer::RenderViewport()
                     g_sceneViewport->GetHeight());
             }
             break;
+        }
+
+        for (const GameObject& gameObject : g_scene->GetGameObjects())
+        {
+            const CameraComponent* camera = gameObject.GetComponent<CameraComponent>();
+            if (!camera || !camera->IsEnabled())
+            {
+                continue;
+            }
+            if (!camera->IsViewFrustumVisualized())
+            {
+                continue;
+            }
+
+            const Matrix cameraView       = camera->GetViewMatrix(gameObject.GetTransform());
+            const Matrix cameraProjection = camera->GetProjectionMatrix();
+            const Matrix cameraViewProj   = cameraView * cameraProjection;
+
+            g_debugRenderer->DrawFrustum(
+                cameraViewProj,
+                view,
+                proj,
+                kCameraFrustumVisualizationColor,
+                g_sceneViewport->GetRTV(),
+                g_sceneViewport->GetDSV(),
+                g_sceneViewport->GetWidth(),
+                g_sceneViewport->GetHeight());
         }
 
         g_graphicsDevice->RestoreBackBuffer();
@@ -758,6 +798,8 @@ void EditorRenderer::RenderInspector()
 
     RenderLightComponent(*selected);
 
+    RenderCameraComponent(*selected);
+
     RenderAddComponentMenu(*selected);
 
     ImGui::End();
@@ -1041,6 +1083,69 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
     if (ImGui::Button("Remove##Light"))
     {
         gameObject.RemoveComponent<LightComponent>();
+    }
+}
+
+void EditorRenderer::RenderCameraComponent(GameObject& gameObject)
+{
+    CameraComponent* cameraComponent = gameObject.GetComponent<CameraComponent>();
+    if (!cameraComponent)
+    {
+        return;
+    }
+
+    if (!ImGui::CollapsingHeader("Camera Component", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        return;
+    }
+
+    bool isEnabled = cameraComponent->IsEnabled();
+    if (ImGui::Checkbox("Enabled##Camera", &isEnabled))
+    {
+        cameraComponent->SetEnabled(isEnabled);
+    }
+
+    ImGui::BeginDisabled(!isEnabled);
+
+    ImGui::TextDisabled("View follows Transform Rotation");
+
+    float fovYDeg = RadToDeg(cameraComponent->GetFovY());
+    if (ImGui::DragFloat("FOV Y (deg)", &fovYDeg, 0.5f, 1.0f, 179.0f))
+    {
+        cameraComponent->SetFovY(DegToRad(fovYDeg));
+    }
+
+    float nearZ = cameraComponent->GetNearZ();
+    if (ImGui::DragFloat("Near Z", &nearZ, 0.01f, 0.001f, 0.0f))
+    {
+        cameraComponent->SetNearZ(nearZ);
+    }
+
+    float farZ = cameraComponent->GetFarZ();
+    if (ImGui::DragFloat("Far Z", &farZ, 0.5f, 0.0f, 0.0f))
+    {
+        cameraComponent->SetFarZ(farZ);
+    }
+
+    float aspect = cameraComponent->GetAspect();
+    if (ImGui::DragFloat("Aspect", &aspect, 0.01f, 0.01f, 10.0f))
+    {
+        cameraComponent->SetAspect(aspect);
+    }
+
+    ImGui::Separator();
+
+    bool isViewFrustumVisualized = cameraComponent->IsViewFrustumVisualized();
+    if (ImGui::Checkbox("Visualize View Frustum", &isViewFrustumVisualized))
+    {
+        cameraComponent->SetViewFrustumVisualized(isViewFrustumVisualized);
+    }
+
+    ImGui::EndDisabled();
+
+    if (ImGui::Button("Remove##Camera"))
+    {
+        gameObject.RemoveComponent<CameraComponent>();
     }
 }
 
