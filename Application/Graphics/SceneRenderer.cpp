@@ -134,7 +134,7 @@ LightingConstants BuildLightingConstants(const Scene& scene)
     return data;
 }
 
-void FitDirectionalShadowFrustumsToScene(Scene& scene)
+void FitDirectionalShadowFrustumsToScene(Scene& scene, const Camera& camera, float aspect)
 {
     BA_PROFILE_SCOPE("FitDirectionalShadowFrustumsToScene");
 
@@ -155,7 +155,7 @@ void FitDirectionalShadowFrustumsToScene(Scene& scene)
         }
 
         const AutoFitShadowFrustumResult fit =
-            ComputeAutoFitShadowFrustumParameters(scene, gameObject.GetTransform());
+            ComputeAutoFitShadowFrustumParameters(scene, gameObject.GetTransform(), camera, aspect);
         if (!fit.isValid)
         {
             continue;
@@ -385,13 +385,13 @@ void SceneRenderer::Shutdown()
     BA_LOG_INFO("SceneRenderer shutdown.");
 }
 
-void SceneRenderer::RenderShadowPass(Scene& scene)
+void SceneRenderer::RenderShadowPass(Scene& scene, float aspect)
 {
     BA_PROFILE_SCOPE("SceneRenderer::RenderShadowPass");
 
     BA_ASSERT(m_shadowMap);
 
-    FitDirectionalShadowFrustumsToScene(scene);
+    FitDirectionalShadowFrustumsToScene(scene, *g_camera, aspect);
 
     ShadowSetup setup = BuildShadowSetup(scene);
 

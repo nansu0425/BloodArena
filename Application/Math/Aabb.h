@@ -18,6 +18,7 @@ struct Aabb
 Aabb MakeEmptyAabb();
 Aabb MergeAabb(const Aabb& a, const Aabb& b);
 Aabb ExpandAabbWithPoint(const Aabb& aabb, const Vector3& point);
+Aabb IntersectAabb(const Aabb& a, const Aabb& b);
 
 std::array<Vector3, kAabbCornerCount> GetAabbCorners(const Aabb& aabb);
 

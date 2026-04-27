@@ -63,6 +63,38 @@ Aabb ExpandAabbWithPoint(const Aabb& aabb, const Vector3& point)
     return expanded;
 }
 
+Aabb IntersectAabb(const Aabb& a, const Aabb& b)
+{
+    Aabb result;
+    result.isValid   = false;
+    result.minCorner = Vector3(0.0f, 0.0f, 0.0f);
+    result.maxCorner = Vector3(0.0f, 0.0f, 0.0f);
+
+    if (!a.isValid || !b.isValid)
+    {
+        return result;
+    }
+
+    const Vector3 lo = Vector3(
+        std::max(a.minCorner.x, b.minCorner.x),
+        std::max(a.minCorner.y, b.minCorner.y),
+        std::max(a.minCorner.z, b.minCorner.z));
+    const Vector3 hi = Vector3(
+        std::min(a.maxCorner.x, b.maxCorner.x),
+        std::min(a.maxCorner.y, b.maxCorner.y),
+        std::min(a.maxCorner.z, b.maxCorner.z));
+    if (lo.x > hi.x || lo.y > hi.y || lo.z > hi.z)
+    {
+        return result;
+    }
+
+    result.isValid   = true;
+    result.minCorner = lo;
+    result.maxCorner = hi;
+
+    return result;
+}
+
 std::array<Vector3, kAabbCornerCount> GetAabbCorners(const Aabb& aabb)
 {
     const Vector3& lo = aabb.minCorner;

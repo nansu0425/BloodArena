@@ -20,7 +20,7 @@ public:
     void Initialize();
     void Shutdown();
 
-    void RenderShadowPass(Scene& scene);
+    void RenderShadowPass(Scene& scene, float aspect);
     void RenderMainPass(const Scene& scene, float aspect);
 
     ViewMode GetViewMode() const;

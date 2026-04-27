@@ -344,12 +344,12 @@ void EditorRenderer::RenderViewport()
             g_sceneViewport->Resize(width, height);
         }
 
-        g_sceneRenderer->RenderShadowPass(*g_scene);
-        g_sceneViewport->Clear();
-
         float aspect = size.x / size.y;
         const Matrix view = g_camera->GetViewMatrix();
         const Matrix proj = g_camera->GetProjectionMatrix(aspect);
+
+        g_sceneRenderer->RenderShadowPass(*g_scene, aspect);
+        g_sceneViewport->Clear();
 
         g_sceneRenderer->RenderMainPass(*g_scene, aspect);
 

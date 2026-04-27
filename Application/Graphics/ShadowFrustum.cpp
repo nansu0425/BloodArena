@@ -4,6 +4,7 @@
 #include "Graphics/ModelLibrary.h"
 #include "Graphics/SceneBounds.h"
 #include "Math/MathUtils.h"
+#include "Scene/Camera.h"
 #include "Scene/GameObject.h"
 #include "Scene/LightComponent.h"
 #include "Scene/ModelComponent.h"
@@ -88,7 +89,9 @@ DirectionalShadowFrustum ComputeDirectionalShadowFrustum(
 
 AutoFitShadowFrustumResult ComputeAutoFitShadowFrustumParameters(
     const Scene&     scene,
-    const Transform& lightTransform)
+    const Transform& lightTransform,
+    const Camera&    camera,
+    float            aspect)
 {
     BA_PROFILE_SCOPE("ComputeAutoFitShadowFrustumParameters");
 
@@ -107,27 +110,54 @@ AutoFitShadowFrustumResult ComputeAutoFitShadowFrustumParameters(
     lightDir.Normalize();
     const LightAlignedBasis basis = BuildLightAlignedBasis(lightDir);
 
-    const std::array<Vector3, kAabbCornerCount> worldCorners = GetAabbCorners(worldAabb);
-
-    Aabb laAabb = MakeEmptyAabb();
-    for (const Vector3& worldCorner : worldCorners)
+    const std::array<Vector3, kAabbCornerCount> sceneCorners = GetAabbCorners(worldAabb);
+    Aabb sceneLaAabb = MakeEmptyAabb();
+    for (const Vector3& worldCorner : sceneCorners)
     {
         const Vector3 lightSpacePos = ProjectToLightAlignedSpace(worldCorner, frustumCenter, basis);
-        laAabb = ExpandAabbWithPoint(laAabb, lightSpacePos);
+        sceneLaAabb = ExpandAabbWithPoint(sceneLaAabb, lightSpacePos);
     }
 
-    const float halfDepth = std::max(std::abs(laAabb.minCorner.z), std::abs(laAabb.maxCorner.z))
+    const FrustumCornersWorld cameraCorners = ComputeFrustumCornersWorld(
+        camera.GetViewMatrix(),
+        camera.GetProjectionMatrix(aspect));
+    Aabb cameraLaAabb = MakeEmptyAabb();
+    for (const Vector3& worldCorner : cameraCorners.corners)
+    {
+        const Vector3 lightSpacePos = ProjectToLightAlignedSpace(worldCorner, frustumCenter, basis);
+        cameraLaAabb = ExpandAabbWithPoint(cameraLaAabb, lightSpacePos);
+    }
+
+    // X/Y is restricted to the camera-visible receiver region. Z keeps the full
+    // scene range so casters outside the camera frustum still cover their
+    // receivers inside it.
+    const Aabb receiverLaAabb = IntersectAabb(sceneLaAabb, cameraLaAabb);
+    Aabb       fitLaAabb      = receiverLaAabb.isValid ? receiverLaAabb : sceneLaAabb;
+    fitLaAabb.minCorner.z = sceneLaAabb.minCorner.z;
+    fitLaAabb.maxCorner.z = sceneLaAabb.maxCorner.z;
+
+    // Recenter frustum on the receiver's light-aligned X/Y center so the ortho
+    // box aligns with the receiver region. basis.right and basis.up are
+    // perpendicular to basis.forward, so this shift does not change the
+    // light-aligned Z coordinates of any point.
+    const float   laCenterX             = 0.5f * (fitLaAabb.minCorner.x + fitLaAabb.maxCorner.x);
+    const float   laCenterY             = 0.5f * (fitLaAabb.minCorner.y + fitLaAabb.maxCorner.y);
+    const Vector3 adjustedFrustumCenter = frustumCenter
+                                        + basis.right * laCenterX
+                                        + basis.up    * laCenterY;
+
+    const float halfDepth = std::max(std::abs(fitLaAabb.minCorner.z), std::abs(fitLaAabb.maxCorner.z))
                           + kAutoFitDepthMargin;
     const float farZ      = 2.0f * halfDepth;
-    const float nearZRaw  = laAabb.minCorner.z + halfDepth - kAutoFitDepthMargin;
+    const float nearZRaw  = fitLaAabb.minCorner.z + halfDepth - kAutoFitDepthMargin;
     const float nearZ     = std::max(nearZRaw, kAutoFitMinNearZ);
 
-    result.isValid     = true;
-    result.frustumCenter = frustumCenter;
-    result.orthoWidth  = (laAabb.maxCorner.x - laAabb.minCorner.x) * (1.0f + kAutoFitOrthoPaddingRatio);
-    result.orthoHeight = (laAabb.maxCorner.y - laAabb.minCorner.y) * (1.0f + kAutoFitOrthoPaddingRatio);
-    result.nearZ       = nearZ;
-    result.farZ        = farZ;
+    result.isValid       = true;
+    result.frustumCenter = adjustedFrustumCenter;
+    result.orthoWidth    = (fitLaAabb.maxCorner.x - fitLaAabb.minCorner.x) * (1.0f + kAutoFitOrthoPaddingRatio);
+    result.orthoHeight   = (fitLaAabb.maxCorner.y - fitLaAabb.minCorner.y) * (1.0f + kAutoFitOrthoPaddingRatio);
+    result.nearZ         = nearZ;
+    result.farZ          = farZ;
 
     return result;
 }

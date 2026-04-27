@@ -2,6 +2,7 @@
 
 #include "Math/MathTypes.h"
 #include <DirectXMath.h>
+#include <array>
 #include <numbers>
 
 namespace BA
@@ -49,6 +50,18 @@ inline Matrix BuildOrthographic(float width, float height, float nearZ, float fa
 {
     return DirectX::XMMatrixOrthographicLH(width, height, nearZ, farZ);
 }
+
+// --- Frustum corners ---
+
+inline constexpr size_t kFrustumCornerCount = 8;
+
+struct FrustumCornersWorld
+{
+    std::array<Vector3, kFrustumCornerCount> corners;
+};
+
+FrustumCornersWorld ComputeFrustumCornersWorld(const Matrix& viewMatrix,
+                                               const Matrix& projectionMatrix);
 
 // --- Transform ---
 
