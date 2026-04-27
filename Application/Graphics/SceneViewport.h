@@ -3,14 +3,23 @@
 namespace BA
 {
 
+class EditorCamera;
+
 class SceneViewport
 {
 public:
+    SceneViewport();
+    ~SceneViewport();
+
     void Initialize();
     void Shutdown();
 
     void Resize(UINT width, UINT height);
+    void Update(float deltaSeconds);
     void Clear();
+
+    EditorCamera*       GetEditorCamera();
+    const EditorCamera* GetEditorCamera() const;
 
     ID3D11RenderTargetView* GetRTV() const;
     ID3D11DepthStencilView* GetDSV() const;
@@ -21,6 +30,8 @@ public:
     UINT GetHeight() const;
 
 private:
+    std::unique_ptr<EditorCamera> m_editorCamera;
+
     ID3D11Device* m_device = nullptr;
     ID3D11DeviceContext* m_deviceContext = nullptr;
 

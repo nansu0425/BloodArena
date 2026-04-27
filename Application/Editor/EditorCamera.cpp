@@ -1,5 +1,5 @@
-﻿#include "Core/PCH.h"
-#include "Scene/Camera.h"
+#include "Core/PCH.h"
+#include "Editor/EditorCamera.h"
 #include "Core/Input.h"
 
 namespace BA
@@ -17,17 +17,17 @@ Matrix BuildCameraOrientation(float yaw, float pitch)
 
 } // namespace
 
-void Camera::Initialize()
+void EditorCamera::Initialize()
 {
-    BA_LOG_INFO("Camera initialized.");
+    BA_LOG_INFO("EditorCamera initialized.");
 }
 
-void Camera::Shutdown()
+void EditorCamera::Shutdown()
 {
-    BA_LOG_INFO("Camera shutdown.");
+    BA_LOG_INFO("EditorCamera shutdown.");
 }
 
-void Camera::Update(float deltaSeconds)
+void EditorCamera::Update(float deltaSeconds)
 {
     BA_ASSERT(g_input);
 
@@ -79,33 +79,48 @@ void Camera::Update(float deltaSeconds)
     }
 }
 
-Matrix Camera::GetViewMatrix() const
+Matrix EditorCamera::GetViewMatrix() const
 {
     Vector3 forward = Vector3::TransformNormal(
         kAxisForward, BuildCameraOrientation(m_settings.yaw, m_settings.pitch));
     return BuildLookAt(m_settings.position, m_settings.position + forward, kAxisUp);
 }
 
-Matrix Camera::GetProjectionMatrix(float aspect) const
+Matrix EditorCamera::GetProjectionMatrix() const
 {
-    return BuildPerspectiveFov(m_settings.fovY, aspect, m_settings.nearZ, m_settings.farZ);
+    return BuildPerspectiveFov(m_settings.fovY, m_aspect, m_settings.nearZ, m_settings.farZ);
 }
 
-CameraSettings Camera::GetSettings() const
+Vector3 EditorCamera::GetPosition() const
+{
+    return m_settings.position;
+}
+
+void EditorCamera::SetAspect(float aspect)
+{
+    BA_ASSERT(aspect > 0.0f);
+    m_aspect = aspect;
+}
+
+float EditorCamera::GetAspect() const
+{
+    return m_aspect;
+}
+
+EditorCameraSettings EditorCamera::GetSettings() const
 {
     return m_settings;
 }
 
-void Camera::SetSettings(const CameraSettings& settings)
+void EditorCamera::SetSettings(const EditorCameraSettings& settings)
 {
     m_settings = settings;
 }
 
-void Camera::ResetToDefaults()
+void EditorCamera::ResetToDefaults()
 {
-    *this = Camera{};
+    m_settings = EditorCameraSettings{};
+    m_aspect = kDefaultEditorCameraAspect;
 }
-
-std::unique_ptr<Camera> g_camera;
 
 } // namespace BA

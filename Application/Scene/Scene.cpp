@@ -1,6 +1,5 @@
 #include "Core/PCH.h"
 #include "Scene/Scene.h"
-#include "Scene/Camera.h"
 #include "Scene/CameraComponent.h"
 #include "Graphics/ModelLibrary.h"
 #include "Core/PathUtils.h"
@@ -17,7 +16,7 @@ namespace
 
 using json = nlohmann::json;
 
-constexpr uint32_t kSceneSchemaVersion = 8;
+constexpr uint32_t kSceneSchemaVersion = 9;
 
 std::filesystem::path GetScenePath(const std::string& name)
 {
@@ -83,42 +82,6 @@ Transform ReadTransform(const json& j)
     t.rotation = ReadQuaternion(j.value("rotation", json{}), t.rotation);
     t.scale    = ReadVector3(j.value("scale",    json{}), t.scale);
     return t;
-}
-
-json WriteCamera(const CameraSettings& s)
-{
-    return json{
-        {"positionX", s.position.x},
-        {"positionY", s.position.y},
-        {"positionZ", s.position.z},
-        {"yaw", s.yaw},
-        {"pitch", s.pitch},
-        {"fovY", s.fovY},
-        {"nearZ", s.nearZ},
-        {"farZ", s.farZ},
-        {"moveSpeed", s.moveSpeed},
-        {"mouseSensitivity", s.mouseSensitivity}
-    };
-}
-
-CameraSettings ReadCamera(const json& j)
-{
-    CameraSettings s;
-    if (!j.is_object())
-    {
-        return s;
-    }
-    s.position.x = j.value("positionX", s.position.x);
-    s.position.y = j.value("positionY", s.position.y);
-    s.position.z = j.value("positionZ", s.position.z);
-    s.yaw = j.value("yaw", s.yaw);
-    s.pitch = j.value("pitch", s.pitch);
-    s.fovY = j.value("fovY", s.fovY);
-    s.nearZ = j.value("nearZ", s.nearZ);
-    s.farZ = j.value("farZ", s.farZ);
-    s.moveSpeed = j.value("moveSpeed", s.moveSpeed);
-    s.mouseSensitivity = j.value("mouseSensitivity", s.mouseSensitivity);
-    return s;
 }
 
 json WriteLightComponent(const LightComponent& light)
@@ -202,7 +165,6 @@ json WriteCameraComponent(const CameraComponent& camera)
         {"fovY",                    camera.GetFovY()},
         {"nearZ",                   camera.GetNearZ()},
         {"farZ",                    camera.GetFarZ()},
-        {"aspect",                  camera.GetAspect()},
         {"isViewFrustumVisualized", camera.IsViewFrustumVisualized()},
     };
 }
@@ -219,7 +181,6 @@ CameraComponent ReadCameraComponent(const json& j)
     camera.SetFovY(j.value("fovY", camera.GetFovY()));
     camera.SetNearZ(j.value("nearZ", camera.GetNearZ()));
     camera.SetFarZ(j.value("farZ", camera.GetFarZ()));
-    camera.SetAspect(j.value("aspect", camera.GetAspect()));
     camera.SetViewFrustumVisualized(
         j.value("isViewFrustumVisualized", camera.IsViewFrustumVisualized()));
 
@@ -357,8 +318,6 @@ GameObject* Scene::FindGameObject(uint32_t id)
 
 bool Scene::SaveToFile(const std::string& name) const
 {
-    BA_ASSERT(g_camera);
-
     std::filesystem::path filePath = GetScenePath(name);
 
     std::error_code ec;
@@ -367,7 +326,6 @@ bool Scene::SaveToFile(const std::string& name) const
     json j;
     j["version"] = kSceneSchemaVersion;
     j["nextId"] = m_nextId;
-    j["camera"] = WriteCamera(g_camera->GetSettings());
 
     json objects = json::array();
     for (const GameObject& obj : m_gameObjects)
@@ -391,8 +349,6 @@ bool Scene::SaveToFile(const std::string& name) const
 bool Scene::LoadFromFile(const std::string& name)
 {
     BA_PROFILE_SCOPE("Scene::LoadFromFile");
-
-    BA_ASSERT(g_camera);
 
     std::filesystem::path filePath = GetScenePath(name);
 
@@ -422,11 +378,6 @@ bool Scene::LoadFromFile(const std::string& name)
 
     m_gameObjects.clear();
     m_nextId = j.value("nextId", static_cast<uint32_t>(1));
-
-    if (j.contains("camera"))
-    {
-        g_camera->SetSettings(ReadCamera(j["camera"]));
-    }
 
     if (j.contains("gameObjects") && j["gameObjects"].is_array())
     {

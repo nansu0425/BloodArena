@@ -14,7 +14,7 @@
 #include "Core/Input.h"
 #include "Core/PathUtils.h"
 #include "Scene/Scene.h"
-#include "Scene/Camera.h"
+#include "Editor/EditorCamera.h"
 #include "Scene/GameObject.h"
 #include "Math/MathUtils.h"
 
@@ -357,14 +357,17 @@ void EditorRenderer::RenderViewport()
             g_sceneViewport->Resize(width, height);
         }
 
-        float aspect = size.x / size.y;
-        const Matrix view = g_camera->GetViewMatrix();
-        const Matrix proj = g_camera->GetProjectionMatrix(aspect);
+        EditorCamera* editorCamera = g_sceneViewport->GetEditorCamera();
+        BA_ASSERT(editorCamera);
 
-        g_sceneRenderer->RenderShadowPass(*g_scene, aspect);
+        const Matrix  view     = editorCamera->GetViewMatrix();
+        const Matrix  proj     = editorCamera->GetProjectionMatrix();
+        const Vector3 position = editorCamera->GetPosition();
+
+        g_sceneRenderer->RenderShadowPass(*g_scene, view, proj);
         g_sceneViewport->Clear();
 
-        g_sceneRenderer->RenderMainPass(*g_scene, aspect);
+        g_sceneRenderer->RenderMainPass(*g_scene, view, proj, position);
 
         const ShadowDebugSettings shadowDebugSettings = g_debugRenderer->GetShadowDebugSettings();
         if (shadowDebugSettings.mode != ShadowDebugMode::Off
@@ -533,7 +536,7 @@ void EditorRenderer::RenderViewport()
             float ndcX = (pixelX / size.x) * 2.0f - 1.0f;
             float ndcY = 1.0f - (pixelY / size.y) * 2.0f;
 
-            uint32_t hitId = PickGameObject(ndcX, ndcY, *g_camera, aspect);
+            uint32_t hitId = PickGameObject(ndcX, ndcY, view, proj);
             g_editorState->SetSelectedGameObjectId(hitId);
         }
     }
@@ -543,9 +546,10 @@ void EditorRenderer::RenderViewport()
 
 void EditorRenderer::RenderCameraSettingsMenu()
 {
-    BA_ASSERT(g_camera);
+    EditorCamera* editorCamera = g_sceneViewport->GetEditorCamera();
+    BA_ASSERT(editorCamera);
 
-    CameraSettings settings = g_camera->GetSettings();
+    EditorCameraSettings settings = editorCamera->GetSettings();
 
     ImGui::PushItemWidth(180.0f);
 
@@ -575,12 +579,12 @@ void EditorRenderer::RenderCameraSettingsMenu()
 
     ImGui::PopItemWidth();
 
-    g_camera->SetSettings(settings);
+    editorCamera->SetSettings(settings);
 
     ImGui::Separator();
     if (ImGui::Button("Reset"))
     {
-        g_camera->ResetToDefaults();
+        editorCamera->ResetToDefaults();
     }
 }
 
@@ -614,7 +618,7 @@ void EditorRenderer::RenderHierarchy()
     if (ImGui::Button("New Scene"))
     {
         g_scene->Clear();
-        g_camera->ResetToDefaults();
+        g_sceneViewport->GetEditorCamera()->ResetToDefaults();
         g_editorState->SetSelectedGameObjectId(0);
         selectedId = 0;
         g_editorState->ClearSceneNameBuffer();
@@ -1125,12 +1129,6 @@ void EditorRenderer::RenderCameraComponent(GameObject& gameObject)
     if (ImGui::DragFloat("Far Z", &farZ, 0.5f, 0.0f, 0.0f))
     {
         cameraComponent->SetFarZ(farZ);
-    }
-
-    float aspect = cameraComponent->GetAspect();
-    if (ImGui::DragFloat("Aspect", &aspect, 0.01f, 0.01f, 10.0f))
-    {
-        cameraComponent->SetAspect(aspect);
     }
 
     ImGui::Separator();

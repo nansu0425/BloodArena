@@ -38,6 +38,29 @@ WindowSettings ReadWindowSettings(const json& j)
 }
 
 #ifdef BA_EDITOR
+EditorCameraSettings ReadEditorCameraSettings(const json& j)
+{
+    EditorCameraSettings settings;
+
+    if (!j.is_object())
+    {
+        return settings;
+    }
+
+    settings.position.x       = j.value("positionX",        settings.position.x);
+    settings.position.y       = j.value("positionY",        settings.position.y);
+    settings.position.z       = j.value("positionZ",        settings.position.z);
+    settings.yaw              = j.value("yaw",              settings.yaw);
+    settings.pitch            = j.value("pitch",            settings.pitch);
+    settings.fovY             = j.value("fovY",             settings.fovY);
+    settings.nearZ            = j.value("nearZ",            settings.nearZ);
+    settings.farZ             = j.value("farZ",             settings.farZ);
+    settings.moveSpeed        = j.value("moveSpeed",        settings.moveSpeed);
+    settings.mouseSensitivity = j.value("mouseSensitivity", settings.mouseSensitivity);
+
+    return settings;
+}
+
 EditorSettings ReadEditorSettings(const json& j)
 {
     EditorSettings settings;
@@ -48,6 +71,11 @@ EditorSettings ReadEditorSettings(const json& j)
         settings.consoleFilterLevel = static_cast<LogLevel>(
             e.value("consoleFilterLevel", static_cast<int>(settings.consoleFilterLevel)));
         settings.isConsoleAutoScroll = e.value("isConsoleAutoScroll", settings.isConsoleAutoScroll);
+
+        if (e.contains("viewportCamera") && e["viewportCamera"].is_object())
+        {
+            settings.viewportCamera = ReadEditorCameraSettings(e["viewportCamera"]);
+        }
     }
 
     return settings;
@@ -66,11 +94,28 @@ json WriteWindowSettings(const WindowSettings& settings)
 }
 
 #ifdef BA_EDITOR
+json WriteEditorCameraSettings(const EditorCameraSettings& settings)
+{
+    return json{
+        {"positionX",        settings.position.x},
+        {"positionY",        settings.position.y},
+        {"positionZ",        settings.position.z},
+        {"yaw",              settings.yaw},
+        {"pitch",            settings.pitch},
+        {"fovY",             settings.fovY},
+        {"nearZ",            settings.nearZ},
+        {"farZ",             settings.farZ},
+        {"moveSpeed",        settings.moveSpeed},
+        {"mouseSensitivity", settings.mouseSensitivity},
+    };
+}
+
 json WriteEditorSettings(const EditorSettings& settings)
 {
     return json{
-        {"consoleFilterLevel", static_cast<int>(settings.consoleFilterLevel)},
-        {"isConsoleAutoScroll", settings.isConsoleAutoScroll}
+        {"consoleFilterLevel",  static_cast<int>(settings.consoleFilterLevel)},
+        {"isConsoleAutoScroll", settings.isConsoleAutoScroll},
+        {"viewportCamera",      WriteEditorCameraSettings(settings.viewportCamera)},
     };
 }
 #endif // BA_EDITOR

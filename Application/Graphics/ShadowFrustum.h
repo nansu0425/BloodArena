@@ -5,7 +5,6 @@
 namespace BA
 {
 
-class Camera;
 class LightComponent;
 class Scene;
 struct Transform;
@@ -40,8 +39,8 @@ struct AutoFitShadowFrustumResult
 AutoFitShadowFrustumResult ComputeAutoFitShadowFrustumParameters(
     const Scene&     scene,
     const Transform& lightTransform,
-    const Camera&    camera,
-    float            aspect);
+    const Matrix&    cameraView,
+    const Matrix&    cameraProjection);
 
 bool HasAnyShadowFitMesh(const Scene& scene);
 

@@ -8,7 +8,6 @@
 #include "Math/MathUtils.h"
 #include "Graphics/ShadowFrustum.h"
 #include "Scene/Scene.h"
-#include "Scene/Camera.h"
 
 namespace BA
 {
@@ -134,7 +133,10 @@ LightingConstants BuildLightingConstants(const Scene& scene)
     return data;
 }
 
-void FitDirectionalShadowFrustumsToScene(Scene& scene, const Camera& camera, float aspect)
+void FitDirectionalShadowFrustumsToScene(
+    Scene&        scene,
+    const Matrix& cameraView,
+    const Matrix& cameraProjection)
 {
     BA_PROFILE_SCOPE("FitDirectionalShadowFrustumsToScene");
 
@@ -155,7 +157,7 @@ void FitDirectionalShadowFrustumsToScene(Scene& scene, const Camera& camera, flo
         }
 
         const AutoFitShadowFrustumResult fit =
-            ComputeAutoFitShadowFrustumParameters(scene, gameObject.GetTransform(), camera, aspect);
+            ComputeAutoFitShadowFrustumParameters(scene, gameObject.GetTransform(), cameraView, cameraProjection);
         if (!fit.isValid)
         {
             continue;
@@ -385,13 +387,15 @@ void SceneRenderer::Shutdown()
     BA_LOG_INFO("SceneRenderer shutdown.");
 }
 
-void SceneRenderer::RenderShadowPass(Scene& scene, float aspect)
+void SceneRenderer::RenderShadowPass(Scene& scene,
+                                     const Matrix& cameraView,
+                                     const Matrix& cameraProjection)
 {
     BA_PROFILE_SCOPE("SceneRenderer::RenderShadowPass");
 
     BA_ASSERT(m_shadowMap);
 
-    FitDirectionalShadowFrustumsToScene(scene, *g_camera, aspect);
+    FitDirectionalShadowFrustumsToScene(scene, cameraView, cameraProjection);
 
     ShadowSetup setup = BuildShadowSetup(scene);
 
@@ -453,7 +457,10 @@ void SceneRenderer::RenderShadowPass(Scene& scene, float aspect)
     }
 }
 
-void SceneRenderer::RenderMainPass(const Scene& scene, float aspect)
+void SceneRenderer::RenderMainPass(const Scene& scene,
+                                   const Matrix& cameraView,
+                                   const Matrix& cameraProjection,
+                                   const Vector3& cameraPositionWorld)
 {
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_deviceContext->IASetInputLayout(m_inputLayout.Get());
@@ -483,9 +490,9 @@ void SceneRenderer::RenderMainPass(const Scene& scene, float aspect)
     m_deviceContext->PSSetConstantBuffers(0, _countof(psBuffers), psBuffers);
 
     FrameConstants frameCb = BuildFrameConstants(
-        g_camera->GetViewMatrix(),
-        g_camera->GetProjectionMatrix(aspect),
-        g_camera->GetSettings().position,
+        cameraView,
+        cameraProjection,
+        cameraPositionWorld,
         m_viewMode);
     g_graphicsDevice->UpdateConstantBuffer(m_frameConstantBuffer.Get(), frameCb);
 

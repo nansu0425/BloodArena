@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Logger.h"
+#include "Editor/EditorCamera.h"
 #include "Graphics/Gizmo/Gizmo.h"
 
 namespace BA
@@ -11,8 +12,9 @@ constexpr size_t kEditorSceneNameBufferSize = 64;
 
 struct EditorSettings
 {
-    LogLevel consoleFilterLevel = LogLevel::Trace;
-    bool isConsoleAutoScroll = true;
+    LogLevel             consoleFilterLevel  = LogLevel::Trace;
+    bool                 isConsoleAutoScroll = true;
+    EditorCameraSettings viewportCamera;
 };
 
 struct ConsoleEntry

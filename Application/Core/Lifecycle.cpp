@@ -9,14 +9,17 @@
 #include "Graphics/ModelLibrary.h"
 #include "Graphics/TextureLibrary.h"
 #include "Scene/Scene.h"
-#include "Scene/Camera.h"
 
 #ifdef BA_EDITOR
 #include "Graphics/SceneViewport.h"
+#include "Editor/EditorCamera.h"
 #include "Editor/EditorState.h"
 #include "Graphics/EditorRenderer.h"
 #include "Graphics/Gizmo/Gizmo.h"
 #include "Graphics/DebugRenderer.h"
+#else
+#include "Scene/GameObject.h"
+#include "Scene/CameraComponent.h"
 #endif // BA_EDITOR
 
 namespace BA
@@ -24,6 +27,44 @@ namespace BA
 
 namespace
 {
+
+#ifndef BA_EDITOR
+struct ActiveGameCamera
+{
+    GameObject*      owner;
+    CameraComponent* camera;
+};
+
+ActiveGameCamera FindActiveGameCamera()
+{
+    for (GameObject& gameObject : g_scene->GetGameObjects())
+    {
+        CameraComponent* candidate = gameObject.GetComponent<CameraComponent>();
+        if (!candidate || !candidate->IsEnabled())
+        {
+            continue;
+        }
+        return ActiveGameCamera{ &gameObject, candidate };
+    }
+
+    return ActiveGameCamera{ nullptr, nullptr };
+}
+
+void RenderActiveGameCamera()
+{
+    const ActiveGameCamera active = FindActiveGameCamera();
+    BA_ASSERT(active.camera);
+
+    active.camera->SetAspect(g_graphicsDevice->GetAspectRatio());
+    const Matrix  view     = active.camera->GetViewMatrix(active.owner->GetTransform());
+    const Matrix  proj     = active.camera->GetProjectionMatrix();
+    const Vector3 position = active.owner->GetTransform().position;
+
+    g_sceneRenderer->RenderShadowPass(*g_scene, view, proj);
+    g_graphicsDevice->RestoreBackBuffer();
+    g_sceneRenderer->RenderMainPass(*g_scene, view, proj, position);
+}
+#endif // !BA_EDITOR
 
 void RenderFrame()
 {
@@ -37,10 +78,7 @@ void RenderFrame()
     g_editorRenderer->EndImGuiFrame();
 #else
     // TODO: When game modes are added, the game build will be locked to gameplay state
-    const float aspect = g_graphicsDevice->GetAspectRatio();
-    g_sceneRenderer->RenderShadowPass(*g_scene, aspect);
-    g_graphicsDevice->RestoreBackBuffer();
-    g_sceneRenderer->RenderMainPass(*g_scene, aspect);
+    RenderActiveGameCamera();
 #endif // BA_EDITOR
 
     g_graphicsDevice->EndFrame();
@@ -89,9 +127,6 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_modelLibrary = std::make_unique<ModelLibrary>();
     g_modelLibrary->Initialize();
 
-    g_camera = std::make_unique<Camera>();
-    g_camera->Initialize();
-
     g_scene = std::make_unique<Scene>();
     g_scene->Initialize();
 
@@ -101,6 +136,7 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 #ifdef BA_EDITOR
     g_sceneViewport = std::make_unique<SceneViewport>();
     g_sceneViewport->Initialize();
+    g_sceneViewport->GetEditorCamera()->SetSettings(appSettings.editor.viewportCamera);
 
     g_editorState = std::make_unique<EditorState>();
     g_editorState->Initialize();
@@ -142,9 +178,8 @@ int Run()
         g_editorRenderer->BeginImGuiFrame();
         g_editorRenderer->ResolveViewportInput();
         g_editorRenderer->UpdateInputCapture();
+        g_sceneViewport->Update(g_time->GetDeltaSeconds());
 #endif // BA_EDITOR
-
-        g_camera->Update(g_time->GetDeltaSeconds());
 
         g_graphicsDevice->BeginFrame();
 
@@ -152,10 +187,7 @@ int Run()
         g_editorRenderer->RenderPanels();
         g_editorRenderer->EndImGuiFrame();
 #else
-        const float aspect = g_graphicsDevice->GetAspectRatio();
-        g_sceneRenderer->RenderShadowPass(*g_scene, aspect);
-        g_graphicsDevice->RestoreBackBuffer();
-        g_sceneRenderer->RenderMainPass(*g_scene, aspect);
+        RenderActiveGameCamera();
 #endif // BA_EDITOR
 
         g_graphicsDevice->EndFrame();
@@ -175,6 +207,7 @@ void Shutdown()
     appSettings.window = g_window->GetSettings();
 #ifdef BA_EDITOR
     appSettings.editor = g_editorState->GetEditorSettings();
+    appSettings.editor.viewportCamera = g_sceneViewport->GetEditorCamera()->GetSettings();
 #endif // BA_EDITOR
     SaveSettings(appSettings);
 
@@ -199,9 +232,6 @@ void Shutdown()
 
     g_scene->Shutdown();
     g_scene.reset();
-
-    g_camera->Shutdown();
-    g_camera.reset();
 
     g_modelLibrary->Shutdown();
     g_modelLibrary.reset();

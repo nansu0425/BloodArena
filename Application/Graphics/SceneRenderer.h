@@ -20,8 +20,13 @@ public:
     void Initialize();
     void Shutdown();
 
-    void RenderShadowPass(Scene& scene, float aspect);
-    void RenderMainPass(const Scene& scene, float aspect);
+    void RenderShadowPass(Scene& scene,
+                          const Matrix& cameraView,
+                          const Matrix& cameraProjection);
+    void RenderMainPass(const Scene& scene,
+                        const Matrix& cameraView,
+                        const Matrix& cameraProjection,
+                        const Vector3& cameraPositionWorld);
 
     ViewMode GetViewMode() const;
     void     SetViewMode(ViewMode mode);

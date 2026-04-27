@@ -200,7 +200,6 @@
     <ClInclude Include="Core\Time.h" />
     <ClInclude Include="Graphics\Gizmo\Gizmo.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Graphics\ShadowDebug.h" />
-    <ClInclude Include="Scene\Camera.h" />
     <ClInclude Include="Editor\EditorConsoleSink.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Core\PathUtils.h" />
     <ClInclude Include="Graphics\GraphicsDevice.h" />
@@ -228,6 +227,7 @@
     <ClInclude Include="Scene\LightComponent.h" />
     <ClInclude Include="Scene\ModelComponent.h" />
     <ClInclude Include="Scene\Scene.h" />
+    <ClInclude Include="Editor\EditorCamera.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Editor\EditorState.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Editor\ViewportPicking.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Graphics\EditorRenderer.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
@@ -242,7 +242,6 @@
     <ClCompile Include="Core\Settings.cpp" />
     <ClCompile Include="Core\Time.cpp" />
     <ClCompile Include="Graphics\Gizmo\Gizmo.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
-    <ClCompile Include="Scene\Camera.cpp" />
     <ClCompile Include="Editor\EditorConsoleSink.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Graphics\GraphicsDevice.cpp" />
     <ClCompile Include="Graphics\ModelLoader.cpp" />
@@ -265,6 +264,7 @@
     <ClCompile Include="Scene\LightComponent.cpp" />
     <ClCompile Include="Scene\ModelComponent.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
+    <ClCompile Include="Editor\EditorCamera.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Editor\EditorState.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Editor\ViewportPicking.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Graphics\EditorRenderer.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />

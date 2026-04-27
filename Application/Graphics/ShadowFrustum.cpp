@@ -4,7 +4,6 @@
 #include "Graphics/ModelLibrary.h"
 #include "Graphics/SceneBounds.h"
 #include "Math/MathUtils.h"
-#include "Scene/Camera.h"
 #include "Scene/GameObject.h"
 #include "Scene/LightComponent.h"
 #include "Scene/ModelComponent.h"
@@ -90,8 +89,8 @@ DirectionalShadowFrustum ComputeDirectionalShadowFrustum(
 AutoFitShadowFrustumResult ComputeAutoFitShadowFrustumParameters(
     const Scene&     scene,
     const Transform& lightTransform,
-    const Camera&    camera,
-    float            aspect)
+    const Matrix&    cameraView,
+    const Matrix&    cameraProjection)
 {
     BA_PROFILE_SCOPE("ComputeAutoFitShadowFrustumParameters");
 
@@ -119,8 +118,8 @@ AutoFitShadowFrustumResult ComputeAutoFitShadowFrustumParameters(
     }
 
     const FrustumCornersWorld cameraCorners = ComputeFrustumCornersWorld(
-        camera.GetViewMatrix(),
-        camera.GetProjectionMatrix(aspect));
+        cameraView,
+        cameraProjection);
     Aabb cameraLaAabb = MakeEmptyAabb();
     for (const Vector3& worldCorner : cameraCorners.corners)
     {

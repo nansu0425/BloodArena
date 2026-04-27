@@ -2,7 +2,6 @@
 #include <cfloat>
 #include "Editor/ViewportPicking.h"
 #include "Scene/Scene.h"
-#include "Scene/Camera.h"
 #include "Graphics/ModelLibrary.h"
 #include "Math/MathUtils.h"
 
@@ -91,9 +90,10 @@ PickResult PickNode(
 
 } // namespace
 
-uint32_t PickGameObject(float ndcX, float ndcY, const Camera& camera, float aspect)
+uint32_t PickGameObject(float ndcX, float ndcY,
+                        const Matrix& view, const Matrix& projection)
 {
-    Ray ray = BuildPickRayFromNdc(ndcX, ndcY, camera.GetViewMatrix(), camera.GetProjectionMatrix(aspect));
+    Ray ray = BuildPickRayFromNdc(ndcX, ndcY, view, projection);
 
     uint32_t hitId = 0;
     float closestT = FLT_MAX;

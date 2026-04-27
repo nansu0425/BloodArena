@@ -1,9 +1,13 @@
 #include "Core/PCH.h"
 #include "Graphics/SceneViewport.h"
 #include "Graphics/GraphicsDevice.h"
+#include "Editor/EditorCamera.h"
 
 namespace BA
 {
+
+SceneViewport::SceneViewport() = default;
+SceneViewport::~SceneViewport() = default;
 
 void SceneViewport::Initialize()
 {
@@ -12,11 +16,20 @@ void SceneViewport::Initialize()
     m_device = g_graphicsDevice->GetDevice();
     m_deviceContext = g_graphicsDevice->GetDeviceContext();
 
+    m_editorCamera = std::make_unique<EditorCamera>();
+    m_editorCamera->Initialize();
+
     BA_LOG_INFO("SceneViewport initialized.");
 }
 
 void SceneViewport::Shutdown()
 {
+    if (m_editorCamera)
+    {
+        m_editorCamera->Shutdown();
+        m_editorCamera.reset();
+    }
+
     m_depthSRV.Reset();
     m_dsv.Reset();
     m_depthTexture.Reset();
@@ -118,6 +131,15 @@ void SceneViewport::Resize(UINT width, UINT height)
 
     m_width = width;
     m_height = height;
+
+    BA_ASSERT(m_editorCamera);
+    m_editorCamera->SetAspect(static_cast<float>(width) / static_cast<float>(height));
+}
+
+void SceneViewport::Update(float deltaSeconds)
+{
+    BA_ASSERT(m_editorCamera);
+    m_editorCamera->Update(deltaSeconds);
 }
 
 void SceneViewport::Clear()
@@ -137,6 +159,16 @@ void SceneViewport::Clear()
         .MaxDepth = 1.0f,
     };
     m_deviceContext->RSSetViewports(1, &vp);
+}
+
+EditorCamera* SceneViewport::GetEditorCamera()
+{
+    return m_editorCamera.get();
+}
+
+const EditorCamera* SceneViewport::GetEditorCamera() const
+{
+    return m_editorCamera.get();
 }
 
 ID3D11RenderTargetView* SceneViewport::GetRTV() const
