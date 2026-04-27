@@ -27,9 +27,10 @@ public:
     void     SetViewMode(ViewMode mode);
 
     // Snapshots from the most recent RenderShadowPass; consumed by editor-side debug overlays.
-    bool   IsLastShadowEnabled() const;
-    Matrix GetLastShadowLightViewMatrix() const;
-    Matrix GetLastShadowLightProjectionMatrix() const;
+    bool             IsLastShadowEnabled() const;
+    Matrix           GetLastShadowLightViewMatrix() const;
+    Matrix           GetLastShadowLightProjectionMatrix() const;
+    const ShadowMap* GetShadowMap() const;
 
 private:
     void CompileShaders();

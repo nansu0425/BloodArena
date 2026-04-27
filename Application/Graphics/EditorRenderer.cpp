@@ -969,6 +969,14 @@ void EditorRenderer::RenderLightComponent(GameObject& gameObject)
         ImGui::Text("Shadow Map: %ux%u",
                     kDefaultShadowMapResolution, kDefaultShadowMapResolution);
 
+        if (g_sceneRenderer->IsLastShadowEnabled())
+        {
+            ID3D11ShaderResourceView* shadowSrv = g_sceneRenderer->GetShadowMap()->GetSRV();
+            const float previewSize = ImGui::GetContentRegionAvail().x;
+            ImGui::Image(reinterpret_cast<ImTextureID>(shadowSrv),
+                         ImVec2(previewSize, previewSize));
+        }
+
         bool isShadowFrustumVisualized = lightComponent->IsShadowFrustumVisualized();
         if (ImGui::Checkbox("Visualize Shadow Frustum", &isShadowFrustumVisualized))
         {

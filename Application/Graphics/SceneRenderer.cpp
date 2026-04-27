@@ -545,6 +545,11 @@ Matrix SceneRenderer::GetLastShadowLightProjectionMatrix() const
     return m_lastShadowLightProjectionMatrix;
 }
 
+const ShadowMap* SceneRenderer::GetShadowMap() const
+{
+    return m_shadowMap.get();
+}
+
 void SceneRenderer::CreateConstantBuffers()
 {
     m_modelConstantBuffer    = g_graphicsDevice->CreateConstantBuffer(sizeof(ModelConstants));
