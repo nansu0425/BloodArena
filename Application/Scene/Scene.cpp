@@ -260,6 +260,10 @@ void Scene::Shutdown()
     BA_LOG_INFO("Scene shutdown.");
 }
 
+void Scene::Tick(float /*deltaSeconds*/)
+{
+}
+
 uint32_t Scene::CreateGameObject()
 {
     uint32_t id = m_nextId++;
@@ -316,12 +320,24 @@ GameObject* Scene::FindGameObject(uint32_t id)
     return (it != m_gameObjects.end()) ? &(*it) : nullptr;
 }
 
-bool Scene::SaveToFile(const std::string& name) const
+ActiveCameraResult Scene::FindActiveCamera()
 {
-    std::filesystem::path filePath = GetScenePath(name);
+    for (GameObject& gameObject : m_gameObjects)
+    {
+        CameraComponent* candidate = gameObject.GetComponent<CameraComponent>();
+        if (!candidate || !candidate->IsEnabled())
+        {
+            continue;
+        }
+        return ActiveCameraResult{ true, &gameObject, candidate };
+    }
 
-    std::error_code ec;
-    std::filesystem::create_directories(filePath.parent_path(), ec);
+    return ActiveCameraResult{ false, nullptr, nullptr };
+}
+
+std::string Scene::SerializeToString() const
+{
+    BA_PROFILE_SCOPE("Scene::SerializeToString");
 
     json j;
     j["version"] = kSceneSchemaVersion;
@@ -334,6 +350,51 @@ bool Scene::SaveToFile(const std::string& name) const
     }
     j["gameObjects"] = std::move(objects);
 
+    return j.dump(4);
+}
+
+bool Scene::DeserializeFromString(const std::string& jsonText)
+{
+    BA_PROFILE_SCOPE("Scene::DeserializeFromString");
+
+    json j = json::parse(jsonText, nullptr, false);
+    if (j.is_discarded())
+    {
+        BA_LOG_WARN("Failed to parse scene JSON.");
+        return false;
+    }
+
+    uint32_t fileVersion = j.value("version", static_cast<uint32_t>(0));
+    if (fileVersion != kSceneSchemaVersion)
+    {
+        BA_LOG_WARN(
+            "Scene schema version mismatch (data: {}, expected: {}).",
+            fileVersion, kSceneSchemaVersion
+        );
+        return false;
+    }
+
+    m_gameObjects.clear();
+    m_nextId = j.value("nextId", static_cast<uint32_t>(1));
+
+    if (j.contains("gameObjects") && j["gameObjects"].is_array())
+    {
+        for (const json& entry : j["gameObjects"])
+        {
+            m_gameObjects.push_back(ReadGameObject(entry));
+        }
+    }
+
+    return true;
+}
+
+bool Scene::SaveToFile(const std::string& name) const
+{
+    std::filesystem::path filePath = GetScenePath(name);
+
+    std::error_code ec;
+    std::filesystem::create_directories(filePath.parent_path(), ec);
+
     std::ofstream file(filePath);
     if (!file.is_open())
     {
@@ -341,7 +402,7 @@ bool Scene::SaveToFile(const std::string& name) const
         return false;
     }
 
-    file << j.dump(4);
+    file << SerializeToString();
     BA_LOG_INFO("Scene saved to: {}", filePath.string());
     return true;
 }
@@ -359,32 +420,15 @@ bool Scene::LoadFromFile(const std::string& name)
         return false;
     }
 
-    json j = json::parse(file, nullptr, false);
-    if (j.is_discarded())
+    std::string content(
+        (std::istreambuf_iterator<char>(file)),
+        std::istreambuf_iterator<char>()
+    );
+
+    if (!DeserializeFromString(content))
     {
-        BA_LOG_WARN("Failed to parse scene file: {}", filePath.string());
+        BA_LOG_WARN("Failed to deserialize scene from: {}", filePath.string());
         return false;
-    }
-
-    uint32_t fileVersion = j.value("version", static_cast<uint32_t>(0));
-    if (fileVersion != kSceneSchemaVersion)
-    {
-        BA_LOG_WARN(
-            "Scene schema version mismatch (file: {}, expected: {}): {}",
-            fileVersion, kSceneSchemaVersion, filePath.string()
-        );
-        return false;
-    }
-
-    m_gameObjects.clear();
-    m_nextId = j.value("nextId", static_cast<uint32_t>(1));
-
-    if (j.contains("gameObjects") && j["gameObjects"].is_array())
-    {
-        for (const json& entry : j["gameObjects"])
-        {
-            m_gameObjects.push_back(ReadGameObject(entry));
-        }
     }
 
     BA_LOG_INFO("Scene loaded from: {}", filePath.string());

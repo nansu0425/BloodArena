@@ -13,6 +13,7 @@
 #include "Core/Window.h"
 #include "Core/Input.h"
 #include "Core/PathUtils.h"
+#include "Core/PlaySession.h"
 #include "Scene/Scene.h"
 #include "Editor/EditorCamera.h"
 #include "Scene/GameObject.h"
@@ -309,6 +310,45 @@ void EditorRenderer::RenderViewport()
 
     if (ImGui::BeginMenuBar())
     {
+        const PlayMode playMode = g_playSession->GetMode();
+        const bool canPlay  = (playMode != PlayMode::Playing);
+        const bool canPause = (playMode == PlayMode::Playing);
+        const bool canStop  = (playMode != PlayMode::Edit);
+
+        ImGui::BeginDisabled(!canPlay);
+        if (ImGui::Button("Play"))
+        {
+            if (playMode == PlayMode::Edit)
+            {
+                g_playSession->StartPlay();
+            }
+            else
+            {
+                g_playSession->Resume();
+            }
+        }
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+
+        ImGui::BeginDisabled(!canPause);
+        if (ImGui::Button("Pause"))
+        {
+            g_playSession->Pause();
+        }
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+
+        ImGui::BeginDisabled(!canStop);
+        if (ImGui::Button("Stop"))
+        {
+            g_playSession->Stop();
+        }
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+
+        ImGui::TextUnformatted("|");
+        ImGui::SameLine();
+
         ImGui::TextUnformatted(GizmoModeToLabel(g_editorState->GetGizmoMode()));
         ImGui::SameLine();
         ImGui::TextUnformatted("|");
@@ -357,12 +397,32 @@ void EditorRenderer::RenderViewport()
             g_sceneViewport->Resize(width, height);
         }
 
-        EditorCamera* editorCamera = g_sceneViewport->GetEditorCamera();
-        BA_ASSERT(editorCamera);
+        Matrix  view;
+        Matrix  proj;
+        Vector3 position;
 
-        const Matrix  view     = editorCamera->GetViewMatrix();
-        const Matrix  proj     = editorCamera->GetProjectionMatrix();
-        const Vector3 position = editorCamera->GetPosition();
+        if (g_playSession->GetMode() == PlayMode::Edit)
+        {
+            EditorCamera* editorCamera = g_sceneViewport->GetEditorCamera();
+            BA_ASSERT(editorCamera);
+
+            view     = editorCamera->GetViewMatrix();
+            proj     = editorCamera->GetProjectionMatrix();
+            position = editorCamera->GetPosition();
+        }
+        else
+        {
+            const ActiveCameraResult active = g_scene->FindActiveCamera();
+            BA_ASSERT(active.isFound);
+
+            const float aspect = static_cast<float>(g_sceneViewport->GetWidth())
+                               / static_cast<float>(g_sceneViewport->GetHeight());
+            active.camera->SetAspect(aspect);
+
+            view     = active.camera->GetViewMatrix(active.owner->GetTransform());
+            proj     = active.camera->GetProjectionMatrix();
+            position = active.owner->GetTransform().position;
+        }
 
         g_sceneRenderer->RenderShadowPass(*g_scene, view, proj);
         g_sceneViewport->Clear();

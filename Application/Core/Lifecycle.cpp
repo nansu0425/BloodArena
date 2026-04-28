@@ -4,6 +4,7 @@
 #include "Core/Window.h"
 #include "Core/Time.h"
 #include "Core/Input.h"
+#include "Core/PlaySession.h"
 #include "Graphics/GraphicsDevice.h"
 #include "Graphics/SceneRenderer.h"
 #include "Graphics/ModelLibrary.h"
@@ -29,31 +30,10 @@ namespace
 {
 
 #ifndef BA_EDITOR
-struct ActiveGameCamera
+void RenderGameToBackBuffer()
 {
-    GameObject*      owner;
-    CameraComponent* camera;
-};
-
-ActiveGameCamera FindActiveGameCamera()
-{
-    for (GameObject& gameObject : g_scene->GetGameObjects())
-    {
-        CameraComponent* candidate = gameObject.GetComponent<CameraComponent>();
-        if (!candidate || !candidate->IsEnabled())
-        {
-            continue;
-        }
-        return ActiveGameCamera{ &gameObject, candidate };
-    }
-
-    return ActiveGameCamera{ nullptr, nullptr };
-}
-
-void RenderActiveGameCamera()
-{
-    const ActiveGameCamera active = FindActiveGameCamera();
-    BA_ASSERT(active.camera);
+    const ActiveCameraResult active = g_scene->FindActiveCamera();
+    BA_ASSERT(active.isFound);
 
     active.camera->SetAspect(g_graphicsDevice->GetAspectRatio());
     const Matrix  view     = active.camera->GetViewMatrix(active.owner->GetTransform());
@@ -77,8 +57,7 @@ void RenderFrame()
     g_editorRenderer->RenderPanels();
     g_editorRenderer->EndImGuiFrame();
 #else
-    // TODO: When game modes are added, the game build will be locked to gameplay state
-    RenderActiveGameCamera();
+    RenderGameToBackBuffer();
 #endif // BA_EDITOR
 
     g_graphicsDevice->EndFrame();
@@ -133,6 +112,9 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
     g_sceneRenderer = std::make_unique<SceneRenderer>();
     g_sceneRenderer->Initialize();
 
+    g_playSession = std::make_unique<PlaySession>();
+    g_playSession->Initialize();
+
 #ifdef BA_EDITOR
     g_sceneViewport = std::make_unique<SceneViewport>();
     g_sceneViewport->Initialize();
@@ -152,6 +134,11 @@ void Initialize(HINSTANCE hInstance, int nShowCmd)
 #endif // BA_EDITOR
 
     g_window->SetResizeCallback(OnResize);
+
+#ifndef BA_EDITOR
+    const bool isPlayStarted = g_playSession->StartPlay();
+    BA_ASSERT(isPlayStarted);
+#endif // !BA_EDITOR
 }
 
 int Run()
@@ -174,11 +161,19 @@ int Run()
 
         g_time->Tick();
 
+        if (g_playSession->IsPlaying())
+        {
+            g_scene->Tick(g_time->GetDeltaSeconds());
+        }
+
 #ifdef BA_EDITOR
         g_editorRenderer->BeginImGuiFrame();
         g_editorRenderer->ResolveViewportInput();
         g_editorRenderer->UpdateInputCapture();
-        g_sceneViewport->Update(g_time->GetDeltaSeconds());
+        if (g_playSession->GetMode() == PlayMode::Edit)
+        {
+            g_sceneViewport->Update(g_time->GetDeltaSeconds());
+        }
 #endif // BA_EDITOR
 
         g_graphicsDevice->BeginFrame();
@@ -187,7 +182,7 @@ int Run()
         g_editorRenderer->RenderPanels();
         g_editorRenderer->EndImGuiFrame();
 #else
-        RenderActiveGameCamera();
+        RenderGameToBackBuffer();
 #endif // BA_EDITOR
 
         g_graphicsDevice->EndFrame();
@@ -226,6 +221,9 @@ void Shutdown()
     g_sceneViewport->Shutdown();
     g_sceneViewport.reset();
 #endif // BA_EDITOR
+
+    g_playSession->Shutdown();
+    g_playSession.reset();
 
     g_sceneRenderer->Shutdown();
     g_sceneRenderer.reset();

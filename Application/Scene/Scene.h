@@ -5,11 +5,22 @@
 namespace BA
 {
 
+class CameraComponent;
+
+struct ActiveCameraResult
+{
+    bool             isFound;
+    GameObject*      owner;
+    CameraComponent* camera;
+};
+
 class Scene
 {
 public:
     void Initialize();
     void Shutdown();
+
+    void Tick(float deltaSeconds);
 
     uint32_t CreateGameObject();
     void DestroyGameObject(uint32_t id);
@@ -18,6 +29,10 @@ public:
     std::span<const GameObject> GetGameObjects() const;
     std::span<GameObject>       GetGameObjects();
     GameObject* FindGameObject(uint32_t id);
+    ActiveCameraResult FindActiveCamera();
+
+    std::string SerializeToString() const;
+    bool DeserializeFromString(const std::string& jsonText);
 
     bool SaveToFile(const std::string& name) const;
     bool LoadFromFile(const std::string& name);

@@ -217,6 +217,7 @@
     <ClInclude Include="Graphics\DebugRenderer.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Core\Window.h" />
     <ClInclude Include="Core\Lifecycle.h" />
+    <ClInclude Include="Core\PlaySession.h" />
     <ClInclude Include="Graphics\SceneViewport.h" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClInclude Include="Math\MathTypes.h" />
     <ClInclude Include="Math\MathUtils.h" />
@@ -256,6 +257,7 @@
     <ClCompile Include="Core\Window.cpp" />
     <ClCompile Include="Core\WinMain.cpp" />
     <ClCompile Include="Core\Lifecycle.cpp" />
+    <ClCompile Include="Core\PlaySession.cpp" />
     <ClCompile Include="Graphics\SceneViewport.cpp" Condition="'$(Configuration)'=='Debug_Editor' Or '$(Configuration)'=='Release_Editor'" />
     <ClCompile Include="Math\MathUtils.cpp" />
     <ClCompile Include="Math\Aabb.cpp" />
