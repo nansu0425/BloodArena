@@ -1,6 +1,8 @@
 #include "Core/PCH.h"
 #include "Scene/Scene.h"
 #include "Scene/CameraComponent.h"
+#include "Scene/CameraControllerComponent.h"
+#include "Scene/ITickable.h"
 #include "Graphics/ModelLibrary.h"
 #include "Core/PathUtils.h"
 
@@ -16,7 +18,7 @@ namespace
 
 using json = nlohmann::json;
 
-constexpr uint32_t kSceneSchemaVersion = 9;
+constexpr uint32_t kSceneSchemaVersion = 10;
 
 std::filesystem::path GetScenePath(const std::string& name)
 {
@@ -187,6 +189,49 @@ CameraComponent ReadCameraComponent(const json& j)
     return camera;
 }
 
+void TickComponentIfTickable(IComponent& component, float deltaSeconds, GameObject& owner)
+{
+    if (!component.IsEnabled())
+    {
+        return;
+    }
+
+    ITickable* tickable = dynamic_cast<ITickable*>(&component);
+    if (tickable)
+    {
+        tickable->Tick(deltaSeconds, owner);
+    }
+}
+
+json WriteCameraControllerComponent(const CameraControllerComponent& controller)
+{
+    return json{
+        {"isEnabled",        controller.IsEnabled()},
+        {"moveSpeed",        controller.GetMoveSpeed()},
+        {"mouseSensitivity", controller.GetMouseSensitivity()},
+        {"yaw",              controller.GetYaw()},
+        {"pitch",            controller.GetPitch()},
+    };
+}
+
+CameraControllerComponent ReadCameraControllerComponent(const json& j)
+{
+    CameraControllerComponent controller;
+    if (!j.is_object())
+    {
+        return controller;
+    }
+
+    controller.SetEnabled(j.value("isEnabled", true));
+    controller.SetMoveSpeed(j.value("moveSpeed", controller.GetMoveSpeed()));
+    controller.SetMouseSensitivity(
+        j.value("mouseSensitivity", controller.GetMouseSensitivity()));
+    controller.SetYaw(j.value("yaw", controller.GetYaw()));
+    controller.SetPitch(j.value("pitch", controller.GetPitch()));
+
+    return controller;
+}
+
 json WriteGameObject(const GameObject& obj)
 {
     json result{
@@ -208,6 +253,10 @@ json WriteGameObject(const GameObject& obj)
     if (const auto* cc = obj.GetComponent<CameraComponent>())
     {
         result["cameraComponent"] = WriteCameraComponent(*cc);
+    }
+    if (const auto* ccc = obj.GetComponent<CameraControllerComponent>())
+    {
+        result["cameraControllerComponent"] = WriteCameraControllerComponent(*ccc);
     }
     return result;
 }
@@ -243,6 +292,12 @@ GameObject ReadGameObject(const json& j)
         obj.AddComponent<CameraComponent>(ReadCameraComponent(j["cameraComponent"]));
     }
 
+    if (j.contains("cameraControllerComponent") && j["cameraControllerComponent"].is_object())
+    {
+        obj.AddComponent<CameraControllerComponent>(
+            ReadCameraControllerComponent(j["cameraControllerComponent"]));
+    }
+
     return obj;
 }
 
@@ -260,8 +315,12 @@ void Scene::Shutdown()
     BA_LOG_INFO("Scene shutdown.");
 }
 
-void Scene::Tick(float /*deltaSeconds*/)
+void Scene::Tick(float deltaSeconds)
 {
+    for (GameObject& gameObject : m_gameObjects)
+    {
+        gameObject.ForEachComponent([&](IComponent& c) { TickComponentIfTickable(c, deltaSeconds, gameObject); });
+    }
 }
 
 uint32_t Scene::CreateGameObject()

@@ -1,16 +1,48 @@
-#include "Core/PCH.h"
+﻿#include "Core/PCH.h"
 #include "Core/Input.h"
+#include "Core/Window.h"
 
 namespace BA
 {
 
+namespace
+{
+
+struct WindowCenterPoint
+{
+    int clientX;
+    int clientY;
+    int screenX;
+    int screenY;
+};
+
+WindowCenterPoint GetWindowCenterPoint(HWND hwnd)
+{
+    RECT clientRect = {};
+    GetClientRect(hwnd, &clientRect);
+    POINT point = {
+        (clientRect.right - clientRect.left) / 2,
+        (clientRect.bottom - clientRect.top) / 2
+    };
+
+    const int clientX = point.x;
+    const int clientY = point.y;
+    ClientToScreen(hwnd, &point);
+
+    return WindowCenterPoint{ clientX, clientY, point.x, point.y };
+}
+
+} // namespace
+
 void Input::Initialize()
 {
     m_keyDown.fill(false);
+    m_keyDownPrev.fill(false);
     m_mouseDelta = {};
     m_rightMouseDown = false;
     m_isKeyboardCaptured = false;
     m_isMouseCaptured = false;
+    m_isCursorLocked = false;
 
     BA_LOG_INFO("Input initialized.");
 }
@@ -22,7 +54,16 @@ void Input::Shutdown()
 
 void Input::BeginFrame()
 {
+    m_keyDownPrev = m_keyDown;
     m_mouseDelta = {};
+
+    if (m_isCursorLocked && g_window)
+    {
+        WindowCenterPoint center = GetWindowCenterPoint(g_window->GetHandle());
+        SetCursorPos(center.screenX, center.screenY);
+        m_lastMouseX = center.clientX;
+        m_lastMouseY = center.clientY;
+    }
 }
 
 void Input::OnKeyDown(uint32_t vkCode)
@@ -39,7 +80,7 @@ void Input::OnKeyUp(uint32_t vkCode)
 
 void Input::OnMouseMove(int32_t x, int32_t y)
 {
-    if (!m_rightMouseDown)
+    if (!m_rightMouseDown && !m_isCursorLocked)
     {
         return;
     }
@@ -65,19 +106,44 @@ void Input::OnRightMouseUp()
 bool Input::IsKeyDown(uint32_t vkCode) const
 {
     BA_ASSERT(vkCode < kKeyCount);
-    if (m_isKeyboardCaptured)
+    if (!m_isCursorLocked && m_isKeyboardCaptured)
     {
         return false;
     }
+
     return m_keyDown[vkCode];
+}
+
+bool Input::IsKeyJustPressed(uint32_t vkCode) const
+{
+    BA_ASSERT(vkCode < kKeyCount);
+    if (!m_isCursorLocked && m_isKeyboardCaptured)
+    {
+        return false;
+    }
+
+    return m_keyDown[vkCode] && !m_keyDownPrev[vkCode];
+}
+
+bool Input::IsSystemKeyDown(uint32_t vkCode) const
+{
+    BA_ASSERT(vkCode < kKeyCount);
+    return m_keyDown[vkCode];
+}
+
+bool Input::IsSystemKeyJustPressed(uint32_t vkCode) const
+{
+    BA_ASSERT(vkCode < kKeyCount);
+    return m_keyDown[vkCode] && !m_keyDownPrev[vkCode];
 }
 
 Vector2 Input::GetMouseDelta() const
 {
-    if (m_isMouseCaptured)
+    if (!m_isCursorLocked && m_isMouseCaptured)
     {
         return {0.0f, 0.0f};
     }
+
     return m_mouseDelta;
 }
 
@@ -98,6 +164,31 @@ void Input::SetKeyboardCaptured(bool isCaptured)
 void Input::SetMouseCaptured(bool isCaptured)
 {
     m_isMouseCaptured = isCaptured;
+}
+
+void Input::SetCursorLocked(bool isLocked)
+{
+    if (m_isCursorLocked == isLocked)
+    {
+        return;
+    }
+
+    m_isCursorLocked = isLocked;
+    m_mouseDelta = {};
+
+    if (isLocked)
+    {
+        ShowCursor(FALSE);
+    }
+    else
+    {
+        ShowCursor(TRUE);
+    }
+}
+
+bool Input::IsCursorLocked() const
+{
+    return m_isCursorLocked;
 }
 
 std::unique_ptr<Input> g_input;

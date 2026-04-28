@@ -75,6 +75,15 @@ public:
         m_components.erase(std::type_index(typeid(T)));
     }
 
+    template <typename F>
+    void ForEachComponent(F&& fn)
+    {
+        for (auto& [type, component] : m_components)
+        {
+            fn(*component);
+        }
+    }
+
 private:
     uint32_t    m_id = 0;
     std::string m_name;

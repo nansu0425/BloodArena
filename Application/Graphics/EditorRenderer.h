@@ -36,6 +36,7 @@ private:
     void RenderModelComponent(GameObject& gameObject);
     void RenderLightComponent(GameObject& gameObject);
     void RenderCameraComponent(GameObject& gameObject);
+    void RenderCameraControllerComponent(GameObject& gameObject);
     void RenderAddComponentMenu(GameObject& gameObject);
     void RenderConsole();
 

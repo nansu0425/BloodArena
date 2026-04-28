@@ -1,5 +1,6 @@
 #include "Core/PCH.h"
 #include "Core/PlaySession.h"
+#include "Core/Input.h"
 #include "Scene/Scene.h"
 
 namespace BA
@@ -31,6 +32,8 @@ bool PlaySession::StartPlay()
     m_editSnapshot = g_scene->SerializeToString();
     m_mode = PlayMode::Playing;
 
+    g_input->SetCursorLocked(true);
+
     BA_LOG_INFO("Play started.");
     return true;
 }
@@ -40,6 +43,8 @@ void PlaySession::Pause()
     BA_ASSERT(m_mode == PlayMode::Playing);
 
     m_mode = PlayMode::Paused;
+    g_input->SetCursorLocked(false);
+
     BA_LOG_INFO("Play paused.");
 }
 
@@ -48,12 +53,16 @@ void PlaySession::Resume()
     BA_ASSERT(m_mode == PlayMode::Paused);
 
     m_mode = PlayMode::Playing;
+    g_input->SetCursorLocked(true);
+
     BA_LOG_INFO("Play resumed.");
 }
 
 void PlaySession::Stop()
 {
     BA_ASSERT(m_mode == PlayMode::Playing || m_mode == PlayMode::Paused);
+
+    g_input->SetCursorLocked(false);
 
     const bool isRestored = g_scene->DeserializeFromString(m_editSnapshot);
     BA_ASSERT(isRestored);

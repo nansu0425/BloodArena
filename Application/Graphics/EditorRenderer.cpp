@@ -17,6 +17,7 @@
 #include "Scene/Scene.h"
 #include "Editor/EditorCamera.h"
 #include "Scene/GameObject.h"
+#include "Scene/CameraControllerComponent.h"
 #include "Math/MathUtils.h"
 
 #include <filesystem>
@@ -91,6 +92,16 @@ void AddCameraComponent(GameObject& gameObject)
     gameObject.AddComponent<CameraComponent>();
 }
 
+bool HasCameraControllerComponent(const GameObject& gameObject)
+{
+    return gameObject.HasComponent<CameraControllerComponent>();
+}
+
+void AddCameraControllerComponent(GameObject& gameObject)
+{
+    gameObject.AddComponent<CameraControllerComponent>();
+}
+
 struct ComponentAddEntry
 {
     const char* displayName;
@@ -99,9 +110,10 @@ struct ComponentAddEntry
 };
 
 constexpr ComponentAddEntry kComponentAddEntries[] = {
-    { "Model",  &HasModelComponent,  &AddModelComponent  },
-    { "Light",  &HasLightComponent,  &AddLightComponent  },
-    { "Camera", &HasCameraComponent, &AddCameraComponent },
+    { "Model",             &HasModelComponent,             &AddModelComponent             },
+    { "Light",             &HasLightComponent,             &AddLightComponent             },
+    { "Camera",            &HasCameraComponent,            &AddCameraComponent            },
+    { "Camera Controller", &HasCameraControllerComponent,  &AddCameraControllerComponent  },
 };
 
 constexpr const char* kAddComponentPopupId = "AddComponentPopup";
@@ -864,6 +876,8 @@ void EditorRenderer::RenderInspector()
 
     RenderCameraComponent(*selected);
 
+    RenderCameraControllerComponent(*selected);
+
     RenderAddComponentMenu(*selected);
 
     ImGui::End();
@@ -1204,6 +1218,47 @@ void EditorRenderer::RenderCameraComponent(GameObject& gameObject)
     if (ImGui::Button("Remove##Camera"))
     {
         gameObject.RemoveComponent<CameraComponent>();
+    }
+}
+
+void EditorRenderer::RenderCameraControllerComponent(GameObject& gameObject)
+{
+    CameraControllerComponent* controller = gameObject.GetComponent<CameraControllerComponent>();
+    if (!controller)
+    {
+        return;
+    }
+
+    if (!ImGui::CollapsingHeader("Camera Controller Component", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        return;
+    }
+
+    bool isEnabled = controller->IsEnabled();
+    if (ImGui::Checkbox("Enabled##CameraController", &isEnabled))
+    {
+        controller->SetEnabled(isEnabled);
+    }
+
+    ImGui::BeginDisabled(!isEnabled);
+
+    float moveSpeed = controller->GetMoveSpeed();
+    if (ImGui::DragFloat("Move Speed", &moveSpeed, 0.1f, 0.0f, 0.0f))
+    {
+        controller->SetMoveSpeed(moveSpeed);
+    }
+
+    float mouseSensitivity = controller->GetMouseSensitivity();
+    if (ImGui::DragFloat("Mouse Sensitivity", &mouseSensitivity, 0.0001f, 0.0f, 0.0f, "%.4f"))
+    {
+        controller->SetMouseSensitivity(mouseSensitivity);
+    }
+
+    ImGui::EndDisabled();
+
+    if (ImGui::Button("Remove##CameraController"))
+    {
+        gameObject.RemoveComponent<CameraControllerComponent>();
     }
 }
 

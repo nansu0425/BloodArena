@@ -29,6 +29,15 @@ namespace BA
 namespace
 {
 
+#ifdef BA_EDITOR
+bool IsShiftHeld()
+{
+    return g_input->IsSystemKeyDown(VK_SHIFT)
+        || g_input->IsSystemKeyDown(VK_LSHIFT)
+        || g_input->IsSystemKeyDown(VK_RSHIFT);
+}
+#endif // BA_EDITOR
+
 #ifndef BA_EDITOR
 void RenderGameToBackBuffer()
 {
@@ -160,6 +169,31 @@ int Run()
         }
 
         g_time->Tick();
+
+#ifdef BA_EDITOR
+        if (g_input->IsSystemKeyJustPressed(VK_ESCAPE))
+        {
+            const PlayMode currentMode = g_playSession->GetMode();
+            if (IsShiftHeld())
+            {
+                if (currentMode == PlayMode::Playing || currentMode == PlayMode::Paused)
+                {
+                    g_playSession->Stop();
+                }
+            }
+            else
+            {
+                if (currentMode == PlayMode::Playing)
+                {
+                    g_playSession->Pause();
+                }
+                else if (currentMode == PlayMode::Paused)
+                {
+                    g_playSession->Resume();
+                }
+            }
+        }
+#endif // BA_EDITOR
 
         if (g_playSession->IsPlaying())
         {
