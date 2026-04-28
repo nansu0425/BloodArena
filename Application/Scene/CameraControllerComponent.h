@@ -20,6 +20,8 @@ public:
 
     void Tick(float deltaSeconds, GameObject& owner) override;
 
+    void SyncRotationFromOwner(const GameObject& owner);
+
     float GetMoveSpeed() const;
     void  SetMoveSpeed(float moveSpeed);
 

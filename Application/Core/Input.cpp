@@ -43,6 +43,7 @@ void Input::Initialize()
     m_isKeyboardCaptured = false;
     m_isMouseCaptured = false;
     m_isCursorLocked = false;
+    m_consumeFirstLockedDelta = false;
 
     BA_LOG_INFO("Input initialized.");
 }
@@ -178,12 +179,24 @@ void Input::SetCursorLocked(bool isLocked)
 
     if (isLocked)
     {
+        m_consumeFirstLockedDelta = true;
         ShowCursor(FALSE);
     }
     else
     {
         ShowCursor(TRUE);
     }
+}
+
+void Input::ConsumeFirstLockedDelta()
+{
+    if (!m_consumeFirstLockedDelta)
+    {
+        return;
+    }
+
+    m_mouseDelta = {};
+    m_consumeFirstLockedDelta = false;
 }
 
 bool Input::IsCursorLocked() const

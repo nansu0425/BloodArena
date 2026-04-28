@@ -168,6 +168,8 @@ int Run()
             break;
         }
 
+        g_input->ConsumeFirstLockedDelta();
+
         g_time->Tick();
 
 #ifdef BA_EDITOR

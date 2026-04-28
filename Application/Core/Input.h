@@ -32,6 +32,8 @@ public:
     void SetCursorLocked(bool isLocked);
     bool IsCursorLocked() const;
 
+    void ConsumeFirstLockedDelta();
+
 private:
     static constexpr uint32_t kKeyCount = 256;
 
@@ -44,6 +46,7 @@ private:
     bool m_isKeyboardCaptured = false;
     bool m_isMouseCaptured = false;
     bool m_isCursorLocked = false;
+    bool m_consumeFirstLockedDelta = false;
 };
 
 extern std::unique_ptr<Input> g_input;

@@ -113,6 +113,13 @@
                 "isViewFrustumVisualized": true,
                 "nearZ": 0.10000000149011612
             },
+            "cameraControllerComponent": {
+                "isEnabled": true,
+                "mouseSensitivity": 0.003000000026077032,
+                "moveSpeed": 5.0,
+                "pitch": 0.0,
+                "yaw": 0.0
+            },
             "id": 4,
             "name": "Camera",
             "transform": {

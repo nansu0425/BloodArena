@@ -2,6 +2,8 @@
 #include "Core/PlaySession.h"
 #include "Core/Input.h"
 #include "Scene/Scene.h"
+#include "Scene/GameObject.h"
+#include "Scene/CameraControllerComponent.h"
 
 namespace BA
 {
@@ -31,6 +33,11 @@ bool PlaySession::StartPlay()
 
     m_editSnapshot = g_scene->SerializeToString();
     m_mode = PlayMode::Playing;
+
+    if (CameraControllerComponent* controller = activeCamera.owner->GetComponent<CameraControllerComponent>())
+    {
+        controller->SyncRotationFromOwner(*activeCamera.owner);
+    }
 
     g_input->SetCursorLocked(true);
 

@@ -77,6 +77,14 @@ void CameraControllerComponent::Tick(float deltaSeconds, GameObject& owner)
     }
 }
 
+void CameraControllerComponent::SyncRotationFromOwner(const GameObject& owner)
+{
+    Vector3 euler = QuaternionToEulerZXY(owner.GetTransform().rotation);
+
+    m_yaw   = euler.y;
+    m_pitch = euler.x;
+}
+
 float CameraControllerComponent::GetMoveSpeed() const
 {
     return m_moveSpeed;
