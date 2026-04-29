@@ -1,0 +1,9 @@
+<Project>
+  <!--
+    Counterpart to Directory.Build.props. Imports vcpkg's MSBuild targets
+    (auto-restore, applocal deployment, link inputs) after the project body.
+    See Directory.Build.props for resolution semantics.
+  -->
+  <Import Project="$(VcpkgRoot)\scripts\buildsystems\msbuild\vcpkg.targets"
+          Condition="'$(VcpkgRoot)' != '' and Exists('$(VcpkgRoot)\scripts\buildsystems\msbuild\vcpkg.targets')" />
+</Project>

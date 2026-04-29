@@ -25,20 +25,45 @@ This is why no existing game engine is used — engines impose their own archite
 
 ## Environment Setup
 
-Dependencies are managed via vcpkg manifest mode. On a fresh machine, run the one-time setup below before the first build.
+Dependencies are managed via vcpkg manifest mode. The repository's solution-root `Directory.Build.props` / `Directory.Build.targets` explicitly import vcpkg's MSBuild integration, so the build is **IDE- and Installer-agnostic** — it does not depend on `vcpkg integrate install`'s user-wide files or on Visual Studio Installer's `vcpkg package manager` component.
 
-From the repository root in PowerShell:
+### One-time setup
 
-```powershell
-powershell -ExecutionPolicy Bypass -File Scripts\setup-env.ps1
-```
+1. **Install Visual Studio 2026 Community** with the **Game development with C++** workload. Required optional components:
+   - `MSVC Build Tools for x64/x86 (Latest)` — provides the v145 toolset that the project targets
+   - `MSVC AddressSanitizer`
+   - `Windows 11 SDK (latest)`
+   - `HLSL Tools`
 
-The script idempotently performs: vcpkg clone → bootstrap → `integrate install` → `VCPKG_ROOT` user environment variable registration. Override the install path with `-VcpkgRoot C:\other\path` if needed.
+   Uncheck everything else — in particular **`vcpkg package manager`** (the project provides its own integration), `C++ profiling tools` (Tracy already covers in-engine profiling), `IntelliCode`, and all Unreal Engine related items. No additional Individual Components are required.
 
-- `vcpkg integrate install`: applies user-wide MSBuild integration.
-- `VCPKG_ROOT`: referenced by Visual Studio's MSBuild vcpkg integration for automatic manifest restore. Visual Studio must be fully restarted after the variable is set.
+2. **Install the D3D11 Debug Layer.** Debug builds (`Debug_Editor` / `Debug_Game`) create the D3D11 device with `D3D11_CREATE_DEVICE_DEBUG`, which requires the OS-level "Graphics Tools" optional component (not bundled with Visual Studio or the Windows SDK). Run in **administrator PowerShell**:
+
+   ```powershell
+   Add-WindowsCapability -Online -Name "Tools.Graphics.DirectX~~~~0.0.1.0"
+   ```
+
+   GUI alternative: **Settings → Apps → Optional features → Add an optional feature → "Graphics Tools"**. No reboot required.
+
+   Without this, debug builds crash on startup at D3D11 device creation with `DXGI_ERROR_SDK_COMPONENT_MISSING (0x887a002d)`. Release builds don't enable the debug flag and run without this component — but the debug layer is invaluable for catching D3D usage errors during development.
+
+3. **Set up vcpkg.** From the repository root in PowerShell:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File Scripts\setup-env.ps1
+   ```
+
+   The script idempotently performs: vcpkg clone → bootstrap → `vcpkg integrate install` (user-wide; harmless with the self-contained approach) → `VCPKG_ROOT` user environment variable registration. Override the install path with `-VcpkgRoot C:\other\path` if needed.
+
+4. **Restart Visual Studio** so it inherits the newly registered `VCPKG_ROOT`.
+
+### How vcpkg integrates with the build
+
+`Directory.Build.props` resolves the `VCPKG_ROOT` env var into the `VcpkgRoot` MSBuild property and imports `$(VcpkgRoot)\scripts\buildsystems\msbuild\vcpkg.props`. `Directory.Build.targets` imports the matching targets. MSBuild auto-discovers both at the solution root, so:
+
+- Manifest auto-restore (`<VcpkgEnableManifest>true</VcpkgEnableManifest>` in `Application.vcxproj`) runs on every build.
 - The custom triplet `x64-windows-noexcept` is applied automatically via the `vcpkg-custom-triplets/` overlay declared in `vcpkg-configuration.json` — no manual configuration required.
-- The first build downloads and compiles `directxtk`, `spdlog`, `tinygltf`, `nlohmann-json`, and `imgui`, which can take several minutes. Subsequent builds reuse the `vcpkg_installed/` cache.
+- The first build downloads and compiles `directxtk`, `spdlog`, `tinygltf`, `nlohmann-json`, `imgui` (with `dx11-binding` / `win32-binding` / `docking-experimental`), `imguizmo`, and `tracy` — several to ~15 minutes depending on the machine. Subsequent builds reuse the `vcpkg_installed/` cache.
 
 ## Build Configuration
 

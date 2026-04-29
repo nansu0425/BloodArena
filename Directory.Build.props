@@ -1,0 +1,21 @@
+<Project>
+  <!--
+    Self-contained vcpkg MSBuild integration.
+
+    Auto-imported by MSBuild for any project under this directory, before the
+    project file's own imports. Removes the build's dependency on
+    `vcpkg integrate install`'s user-wide files and on Visual Studio
+    Installer's "vcpkg package manager" component.
+
+    Resolution order for the vcpkg root:
+      1. $(VcpkgRoot) if already set by an outer property sheet.
+      2. $(VCPKG_ROOT) environment variable (the standard convention; set by
+         Scripts/setup-env.ps1).
+  -->
+  <PropertyGroup>
+    <VcpkgRoot Condition="'$(VcpkgRoot)' == '' and '$(VCPKG_ROOT)' != ''">$(VCPKG_ROOT)</VcpkgRoot>
+  </PropertyGroup>
+
+  <Import Project="$(VcpkgRoot)\scripts\buildsystems\msbuild\vcpkg.props"
+          Condition="'$(VcpkgRoot)' != '' and Exists('$(VcpkgRoot)\scripts\buildsystems\msbuild\vcpkg.props')" />
+</Project>
